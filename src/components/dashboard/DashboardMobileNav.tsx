@@ -3,30 +3,14 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-const mobileItems = [
-  { label: "Accueil", href: "/dashboard" },
-  { label: "Menus", href: "/dashboard/menu" },
-  { label: "Commandes", href: "/dashboard/orders" },
-  { label: "Avis", href: "/dashboard/reviews" },
-  { label: "QR", href: "/dashboard/tables" },
-  { label: "Stats", href: "/dashboard/statistics" },
-  { label: "Réglages", href: "/dashboard/settings" },
-];
-
-function isActivePath(pathname: string, href: string) {
-  if (href === "/dashboard") {
-    return pathname === href;
-  }
-
-  return pathname === href || pathname.startsWith(`${href}/`);
-}
+import { dashboardNavigationItems, isDashboardPathActive } from "./dashboardNavigation";
 
 export function DashboardMobileNav() {
   const pathname = usePathname();
 
   return (
     <div className="border-b border-emerald-100 bg-white px-4 py-4 lg:hidden">
-      <div className="mb-4 flex items-center justify-between gap-3">
+      <div className="flex items-center justify-between gap-3">
         <Link href="/dashboard" className="flex items-center gap-2" aria-label="TableFlash dashboard">
           <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-700 text-white shadow-lg shadow-emerald-900/15">
             <svg aria-hidden="true" className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
@@ -39,9 +23,39 @@ export function DashboardMobileNav() {
           Le Bistrot
         </div>
       </div>
-      <div className="flex gap-2 overflow-x-auto pb-1" aria-label="Navigation mobile du dashboard">
-        {mobileItems.map((item) => {
-          const active = isActivePath(pathname, item.href);
+
+      <div className="mt-4 rounded-3xl border border-emerald-100 bg-emerald-50/70 p-3">
+        <p className="text-xs font-bold uppercase tracking-[0.18em] text-emerald-700/80">Restaurant</p>
+        <button
+          className="mt-2 flex w-full items-center justify-between rounded-2xl bg-white px-4 py-3 text-left text-sm font-black text-slate-950 shadow-sm"
+          type="button"
+        >
+          <span>Le Bistrot des Halles</span>
+          <span aria-hidden="true" className="text-emerald-700">⌄</span>
+        </button>
+      </div>
+
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        <div className="rounded-3xl bg-emerald-700 p-4 text-white shadow-lg shadow-emerald-900/10">
+          <p className="text-base font-black">14 jours offerts</p>
+          <p className="mt-1 text-sm font-semibold text-emerald-50/80">
+            Pour les 10 premiers restaurants pilotes
+          </p>
+        </div>
+        <div className="flex items-center gap-3 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+          <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-50 text-sm font-black text-emerald-800">
+            LB
+          </span>
+          <div>
+            <p className="text-sm font-black text-slate-950">Le Bistrot</p>
+            <p className="text-xs font-semibold text-slate-500">Voir mon compte</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-4 flex gap-2 overflow-x-auto pb-1" aria-label="Navigation mobile du dashboard">
+        {dashboardNavigationItems.map((item) => {
+          const active = isDashboardPathActive(pathname, item.href);
 
           return (
             <Link
@@ -52,7 +66,8 @@ export function DashboardMobileNav() {
               href={item.href}
               key={item.href}
             >
-              {item.label}
+              <span className="sm:hidden">{item.shortLabel}</span>
+              <span className="hidden sm:inline">{item.label}</span>
             </Link>
           );
         })}
