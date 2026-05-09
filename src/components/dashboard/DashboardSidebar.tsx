@@ -3,29 +3,21 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-type NavigationItem = {
-  label: string;
-  href: string;
-  icon: React.ReactNode;
+import {
+  type DashboardNavigationHref,
+  dashboardNavigationItems,
+  isDashboardPathActive,
+} from "./dashboardNavigation";
+
+const navigationIcons: Record<DashboardNavigationHref, React.ReactNode> = {
+  "/dashboard": <DashboardIcon />,
+  "/dashboard/menu": <MenuIcon />,
+  "/dashboard/orders": <OrdersIcon />,
+  "/dashboard/reviews": <ReviewsIcon />,
+  "/dashboard/tables": <QrIcon />,
+  "/dashboard/statistics": <StatsIcon />,
+  "/dashboard/settings": <SettingsIcon />,
 };
-
-const navigationItems: NavigationItem[] = [
-  { label: "Tableau de bord", href: "/dashboard", icon: <DashboardIcon /> },
-  { label: "Menus", href: "/dashboard/menu", icon: <MenuIcon /> },
-  { label: "Commandes", href: "/dashboard/orders", icon: <OrdersIcon /> },
-  { label: "Avis clients", href: "/dashboard/reviews", icon: <ReviewsIcon /> },
-  { label: "QR par table", href: "/dashboard/tables", icon: <QrIcon /> },
-  { label: "Statistiques", href: "/dashboard/statistics", icon: <StatsIcon /> },
-  { label: "Paramètres", href: "/dashboard/settings", icon: <SettingsIcon /> },
-];
-
-function isActivePath(pathname: string, href: string) {
-  if (href === "/dashboard") {
-    return pathname === href;
-  }
-
-  return pathname === href || pathname.startsWith(`${href}/`);
-}
 
 export function DashboardSidebar() {
   const pathname = usePathname();
@@ -49,8 +41,8 @@ export function DashboardSidebar() {
         </div>
 
         <nav className="mt-6 space-y-1.5" aria-label="Navigation du dashboard">
-          {navigationItems.map((item) => {
-            const active = isActivePath(pathname, item.href);
+          {dashboardNavigationItems.map((item) => {
+            const active = isDashboardPathActive(pathname, item.href);
 
             return (
               <Link
@@ -63,7 +55,7 @@ export function DashboardSidebar() {
                 href={item.href}
                 key={item.href}
               >
-                <span className={active ? "text-emerald-700" : "text-emerald-100/80"}>{item.icon}</span>
+                <span className={active ? "text-emerald-700" : "text-emerald-100/80"}>{navigationIcons[item.href]}</span>
                 {item.label}
               </Link>
             );
