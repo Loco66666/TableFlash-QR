@@ -1,9 +1,14 @@
-export function RestaurantSelectorCard() {
+type RestaurantSelectorCardProps = {
+  onClick: () => void;
+};
+
+export function RestaurantSelectorCard({ onClick }: RestaurantSelectorCardProps) {
   return (
     <section className="rounded-[2rem] border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/70 sm:p-5">
       <button
         aria-label="Changer de restaurant"
         className="group flex w-full items-center justify-between gap-4 rounded-[1.5rem] bg-slate-50 p-3 text-left transition hover:bg-emerald-50"
+        onClick={onClick}
         type="button"
       >
         <span className="flex min-w-0 items-center gap-4">
