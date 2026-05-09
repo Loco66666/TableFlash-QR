@@ -33,7 +33,51 @@ export function ProductTable({ products }: ProductTableProps) {
         </div>
       </div>
 
-      <div className="overflow-x-auto">
+      <div className="divide-y divide-slate-100 lg:hidden">
+        {products.map((product) => (
+          <article className="p-5" key={product.name}>
+            <div className="flex items-start gap-4">
+              <ProductThumbnail product={product} />
+              <div className="min-w-0 flex-1">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <h3 className="font-black text-slate-950">{product.name}</h3>
+                    <p className="mt-1 text-sm font-medium leading-5 text-slate-500">{product.description}</p>
+                  </div>
+                  <button className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-700" type="button" aria-label={`Actions pour ${product.name}`}>
+                    <DotsIcon />
+                  </button>
+                </div>
+                <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+                  <MobileMeta label="Prix" value={product.price} strong />
+                  <div>
+                    <p className="text-xs font-black uppercase tracking-[0.14em] text-slate-400">Disponibilité</p>
+                    <div className="mt-2"><StatusBadge variant={product.availability === "Disponible" ? "success" : "danger"}>{product.availability}</StatusBadge></div>
+                  </div>
+                  <div>
+                    <p className="text-xs font-black uppercase tracking-[0.14em] text-slate-400">Promo</p>
+                    <div className="mt-2">{product.promo === "Promo" ? <StatusBadge variant="warning">Promo</StatusBadge> : <span className="text-sm font-bold text-slate-400">—</span>}</div>
+                  </div>
+                  <div>
+                    <p className="text-xs font-black uppercase tracking-[0.14em] text-slate-400">Visibilité</p>
+                    <div className="mt-2 flex items-center gap-2 text-sm font-bold text-slate-600">
+                      <VisibilityIcon visible={product.visible} />
+                      {product.visible ? "Visible" : "Masqué"}
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-4 flex flex-wrap gap-1.5">
+                  {product.allergens.map((allergen) => (
+                    <AllergenBadge allergen={allergen} key={allergen} />
+                  ))}
+                </div>
+              </div>
+            </div>
+          </article>
+        ))}
+      </div>
+
+      <div className="hidden overflow-x-auto lg:block">
         <table className="min-w-[920px] w-full border-separate border-spacing-0 text-left">
           <thead>
             <tr className="text-xs font-black uppercase tracking-[0.14em] text-slate-400">
@@ -51,10 +95,7 @@ export function ProductTable({ products }: ProductTableProps) {
               <tr className="group border-t border-slate-100" key={product.name}>
                 <td className="border-t border-slate-100 px-5 py-4 lg:px-6">
                   <div className="flex items-center gap-4">
-                    <span className={`relative flex h-14 w-14 shrink-0 overflow-hidden rounded-2xl bg-gradient-to-br ${product.imageTone}`}>
-                      <span className="absolute inset-x-3 bottom-2 h-5 rounded-full bg-white/55 blur-sm" />
-                      <span className="m-auto h-7 w-7 rounded-full bg-white/50 ring-1 ring-white/60" />
-                    </span>
+                    <ProductThumbnail product={product} />
                     <span>
                       <span className="block font-black text-slate-950">{product.name}</span>
                       <span className="mt-1 block max-w-xs text-sm font-medium text-slate-500">{product.description}</span>
@@ -65,7 +106,7 @@ export function ProductTable({ products }: ProductTableProps) {
                 <td className="border-t border-slate-100 px-4 py-4">
                   <div className="flex flex-wrap gap-1.5">
                     {product.allergens.map((allergen) => (
-                      <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-600" key={allergen}>{allergen}</span>
+                      <AllergenBadge allergen={allergen} key={allergen} />
                     ))}
                   </div>
                 </td>
@@ -76,9 +117,7 @@ export function ProductTable({ products }: ProductTableProps) {
                   {product.promo === "Promo" ? <StatusBadge variant="warning">Promo</StatusBadge> : <span className="text-sm font-bold text-slate-400">—</span>}
                 </td>
                 <td className="border-t border-slate-100 px-4 py-4">
-                  <span className={`inline-flex h-9 w-9 items-center justify-center rounded-full ${product.visible ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-400"}`} title={product.visible ? "Visible" : "Masqué"}>
-                    {product.visible ? <EyeIcon /> : <EyeOffIcon />}
-                  </span>
+                  <VisibilityIcon visible={product.visible} />
                 </td>
                 <td className="border-t border-slate-100 px-5 py-4 text-right lg:px-6">
                   <button className="inline-flex h-9 w-9 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-700" type="button" aria-label={`Actions pour ${product.name}`}>
@@ -91,6 +130,36 @@ export function ProductTable({ products }: ProductTableProps) {
         </table>
       </div>
     </section>
+  );
+}
+
+function ProductThumbnail({ product }: { product: ProductItem }) {
+  return (
+    <span className={`relative flex h-14 w-14 shrink-0 overflow-hidden rounded-2xl bg-gradient-to-br ${product.imageTone}`}>
+      <span className="absolute inset-x-3 bottom-2 h-5 rounded-full bg-white/55 blur-sm" />
+      <span className="m-auto h-7 w-7 rounded-full bg-white/50 ring-1 ring-white/60" />
+    </span>
+  );
+}
+
+function AllergenBadge({ allergen }: { allergen: string }) {
+  return <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-600">{allergen}</span>;
+}
+
+function VisibilityIcon({ visible }: { visible: boolean }) {
+  return (
+    <span className={`inline-flex h-9 w-9 items-center justify-center rounded-full ${visible ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-400"}`} title={visible ? "Visible" : "Masqué"}>
+      {visible ? <EyeIcon /> : <EyeOffIcon />}
+    </span>
+  );
+}
+
+function MobileMeta({ label, value, strong = false }: { label: string; value: string; strong?: boolean }) {
+  return (
+    <div>
+      <p className="text-xs font-black uppercase tracking-[0.14em] text-slate-400">{label}</p>
+      <p className={`mt-2 ${strong ? "font-black text-slate-950" : "font-bold text-slate-600"}`}>{value}</p>
+    </div>
   );
 }
 
