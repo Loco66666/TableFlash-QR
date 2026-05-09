@@ -1,0 +1,356 @@
+"use client";
+
+import { useMemo, useState } from "react";
+
+import { DashboardHeader } from "@/components/dashboard";
+
+import { CategoryList } from "./CategoryList";
+import { MenuSummaryCard } from "./MenuSummaryCard";
+import { ProductEditPanel } from "./ProductEditPanel";
+import { ProductTable, type ActiveMenuFilter } from "./ProductTable";
+import { MobilePreview, PublicMenuPreview } from "./PublicMenuPreview";
+import { RestaurantSelectorCard } from "./RestaurantSelectorCard";
+import { categoryItems, products as initialProducts, type CategoryItem, type ProductDraft, type ProductItem, type SummaryItem } from "./menuData";
+
+const blankProductDraft = (categoryId: string): ProductDraft => ({
+  name: "",
+  description: "",
+  categoryId,
+  price: "",
+  allergens: [],
+  available: true,
+  promo: false,
+  visible: true,
+  promoType: "Pourcentage",
+  promoValue: "",
+  promoEndDate: "",
+});
+
+const imageTones = [
+  "from-amber-200 via-orange-100 to-emerald-100",
+  "from-lime-200 via-emerald-100 to-stone-100",
+  "from-yellow-200 via-amber-100 to-orange-100",
+  "from-cyan-100 via-lime-100 to-emerald-100",
+  "from-stone-300 via-amber-100 to-yellow-50",
+];
+
+export function InteractiveMenuDashboard() {
+  const [products, setProducts] = useState<ProductItem[]>(initialProducts);
+  const [categories, setCategories] = useState<CategoryItem[]>(categoryItems);
+  const [selectedProductId, setSelectedProductId] = useState<string | null>(initialProducts[0]?.id ?? null);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | "all">("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeFilter, setActiveFilter] = useState<ActiveMenuFilter>("all");
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [isAddProductOpen, setIsAddProductOpen] = useState(false);
+  const [isAddCategoryOpen, setIsAddCategoryOpen] = useState(false);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<ProductDraft | null>(() => productToDraft(initialProducts[0]));
+  const [newProductDraft, setNewProductDraft] = useState<ProductDraft>(() => blankProductDraft(categoryItems[0]?.id ?? "general"));
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
+  const [rowActionProductId, setRowActionProductId] = useState<string | null>(null);
+
+  const selectedProduct = products.find((product) => product.id === selectedProductId) ?? null;
+
+  const productCounts = useMemo(() => products.reduce<Record<string, number>>((counts, product) => {
+    counts[product.categoryId] = (counts[product.categoryId] ?? 0) + 1;
+    return counts;
+  }, {}), [products]);
+
+  const summaryItems = useMemo<SummaryItem[]>(() => [
+    { value: String(categories.length), label: "Catégories", helper: "Toutes vos catégories", tone: "emerald" },
+    { value: String(products.filter((product) => product.available && product.visible).length), label: "Produits actifs", helper: "Disponibles à la vente", tone: "sky" },
+    { value: String(products.filter((product) => !product.available).length), label: "Produit en rupture", helper: "Non disponible", tone: "rose" },
+    { value: String(products.filter((product) => product.promo).length), label: "Promotions actives", helper: "En cours", tone: "amber" },
+  ], [categories.length, products]);
+
+  const filteredProducts = useMemo(() => {
+    const normalizedSearch = searchQuery.trim().toLocaleLowerCase("fr-FR");
+
+    return products.filter((product) => {
+      const matchesCategory = selectedCategoryId === "all" || product.categoryId === selectedCategoryId;
+      const matchesSearch = normalizedSearch.length === 0 || `${product.name} ${product.description}`.toLocaleLowerCase("fr-FR").includes(normalizedSearch);
+      const matchesFilter = activeFilter === "all" || (activeFilter === "available" && product.available) || (activeFilter === "unavailable" && !product.available) || (activeFilter === "promo" && product.promo);
+
+      return matchesCategory && matchesSearch && matchesFilter;
+    });
+  }, [activeFilter, products, searchQuery, selectedCategoryId]);
+
+  const showMessage = (message: string) => setSuccessMessage(message);
+
+  const selectProduct = (productId: string) => {
+    const product = products.find((item) => item.id === productId);
+    if (!product) return;
+
+    setSelectedProductId(productId);
+    setEditingProduct(productToDraft(product));
+    setRowActionProductId(null);
+  };
+
+  const saveEditedProduct = () => {
+    if (!selectedProduct || !editingProduct) return;
+
+    setProducts((currentProducts) => currentProducts.map((product) => product.id === selectedProduct.id ? { ...product, ...editingProduct } : product));
+    showMessage("Modification enregistrée dans la maquette.");
+  };
+
+  const cancelEditedProduct = () => {
+    setEditingProduct(productToDraft(selectedProduct));
+    showMessage("Modifications annulées dans la maquette.");
+  };
+
+  const toggleVisibility = (productId: string) => {
+    setProducts((currentProducts) => currentProducts.map((product) => product.id === productId ? { ...product, visible: !product.visible } : product));
+    setRowActionProductId(null);
+    showMessage("Visibilité mise à jour dans la maquette.");
+  };
+
+  const duplicateProduct = (productId: string) => {
+    const product = products.find((item) => item.id === productId);
+    if (!product) return;
+
+    const duplicate: ProductItem = {
+      ...product,
+      id: createId(`${product.name}-copie-${Date.now()}`),
+      name: `${product.name} copie`,
+      visible: true,
+    };
+
+    setProducts((currentProducts) => [duplicate, ...currentProducts]);
+    setSelectedProductId(duplicate.id);
+    setEditingProduct(productToDraft(duplicate));
+    setRowActionProductId(null);
+    showMessage("Produit dupliqué dans la maquette.");
+  };
+
+  const deleteProduct = (productId: string) => {
+    const product = products.find((item) => item.id === productId);
+    if (!product || !window.confirm(`Supprimer ${product.name} de la maquette ?`)) return;
+
+    const remainingProducts = products.filter((item) => item.id !== productId);
+    setProducts(remainingProducts);
+    const nextSelected = remainingProducts[0] ?? null;
+    setSelectedProductId(nextSelected?.id ?? null);
+    setEditingProduct(productToDraft(nextSelected));
+    setRowActionProductId(null);
+    showMessage("Produit supprimé de la maquette.");
+  };
+
+  const openAddProduct = () => {
+    setNewProductDraft(blankProductDraft(selectedCategoryId === "all" ? categories[0]?.id ?? "general" : selectedCategoryId));
+    setIsAddProductOpen(true);
+  };
+
+  const addProduct = () => {
+    if (!newProductDraft.name.trim() || !newProductDraft.price.trim()) {
+      showMessage("Renseignez au minimum le nom et le prix du produit.");
+      return;
+    }
+
+    const product: ProductItem = {
+      ...newProductDraft,
+      id: createId(`${newProductDraft.name}-${Date.now()}`),
+      imageTone: imageTones[products.length % imageTones.length],
+      name: newProductDraft.name.trim(),
+      description: newProductDraft.description.trim(),
+      price: newProductDraft.price.trim(),
+    };
+
+    setProducts((currentProducts) => [product, ...currentProducts]);
+    setSelectedProductId(product.id);
+    setSelectedCategoryId(product.categoryId);
+    setEditingProduct(productToDraft(product));
+    setIsAddProductOpen(false);
+    showMessage("Produit ajouté dans la maquette.");
+  };
+
+  const addCategory = () => {
+    const name = newCategoryName.trim();
+    if (!name) {
+      showMessage("Renseignez un nom de catégorie.");
+      return;
+    }
+
+    const category = { id: createId(`${name}-${Date.now()}`), name };
+    setCategories((currentCategories) => [...currentCategories, category]);
+    setSelectedCategoryId(category.id);
+    setNewCategoryName("");
+    setIsAddCategoryOpen(false);
+    showMessage("Catégorie ajoutée dans la maquette.");
+  };
+
+  return (
+    <>
+      <DashboardHeader
+        eyebrow="Le Bistrot des Halles"
+        title="Gestion du menu"
+        subtitle="Organisez vos catégories, produits, disponibilités et promotions."
+      >
+        <button className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-black text-slate-700 shadow-sm transition hover:border-emerald-200 hover:bg-emerald-50" onClick={() => setIsPreviewOpen(true)} type="button">
+          Aperçu public
+        </button>
+        <button className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-black text-emerald-800 transition hover:bg-emerald-100" onClick={() => setIsAddCategoryOpen(true)} type="button">
+          Ajouter une catégorie
+        </button>
+        <button className="rounded-2xl bg-emerald-700 px-4 py-3 text-sm font-black text-white shadow-lg shadow-emerald-900/15 transition hover:bg-emerald-800" onClick={openAddProduct} type="button">
+          Ajouter un produit
+        </button>
+      </DashboardHeader>
+
+      <main className="flex-1 space-y-7 p-5 lg:p-8">
+        {successMessage ? (
+          <div className="rounded-3xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm font-black text-emerald-800" role="status">
+            {successMessage}
+          </div>
+        ) : null}
+
+        <RestaurantSelectorCard onClick={() => showMessage("Le changement de restaurant est désactivé dans cette maquette locale.")} />
+
+        <section className="grid gap-4 sm:grid-cols-2 2xl:grid-cols-4">
+          {summaryItems.map((item) => (
+            <MenuSummaryCard key={item.label} {...item} />
+          ))}
+        </section>
+
+        <section className="grid gap-7 2xl:grid-cols-[300px_minmax(0,1fr)_380px]">
+          <div className="space-y-7">
+            <CategoryList categories={categories} productCounts={productCounts} selectedCategoryId={selectedCategoryId} onSelectCategory={setSelectedCategoryId} />
+          </div>
+
+          <div className="min-w-0">
+            <ProductTable
+              activeFilter={activeFilter}
+              isFilterOpen={isFilterOpen}
+              onDeleteProduct={deleteProduct}
+              onDuplicateProduct={duplicateProduct}
+              onEditProduct={selectProduct}
+              onSearchChange={setSearchQuery}
+              onSelectFilter={(filter) => { setActiveFilter(filter); setIsFilterOpen(false); }}
+              onSelectProduct={selectProduct}
+              onToggleFilter={() => setIsFilterOpen((isOpen) => !isOpen)}
+              onToggleRowActions={(productId) => setRowActionProductId((currentId) => currentId === productId ? null : productId)}
+              onToggleVisibility={toggleVisibility}
+              products={filteredProducts}
+              rowActionProductId={rowActionProductId}
+              searchQuery={searchQuery}
+              selectedProductId={selectedProductId}
+            />
+          </div>
+
+          <div className="space-y-7">
+            <ProductEditPanel categories={categories} draft={editingProduct} onCancel={cancelEditedProduct} onDraftChange={setEditingProduct} onPhotoAction={(action) => showMessage(action === "changer" ? "Changement de photo simulé dans la maquette." : "Suppression de photo simulée dans la maquette.")} onSave={saveEditedProduct} product={selectedProduct} />
+            <PublicMenuPreview categories={categories} products={products} selectedCategoryId={selectedCategoryId} onCartClick={() => showMessage("Le panier public est simulé dans cette maquette.")} />
+          </div>
+        </section>
+      </main>
+
+      {isAddProductOpen ? (
+        <Modal title="Ajouter un produit" onClose={() => setIsAddProductOpen(false)}>
+          <ProductForm categories={categories} draft={newProductDraft} onChange={setNewProductDraft} />
+          <ModalActions onCancel={() => setIsAddProductOpen(false)} onSave={addProduct} saveLabel="Ajouter" />
+        </Modal>
+      ) : null}
+
+      {isAddCategoryOpen ? (
+        <Modal title="Ajouter une catégorie" onClose={() => setIsAddCategoryOpen(false)}>
+          <label className="block">
+            <span className="text-sm font-black text-slate-700">Nom de la catégorie</span>
+            <input className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700 outline-none focus:border-emerald-300 focus:bg-white focus:ring-4 focus:ring-emerald-100" onChange={(event) => setNewCategoryName(event.target.value)} value={newCategoryName} />
+          </label>
+          <ModalActions onCancel={() => setIsAddCategoryOpen(false)} onSave={addCategory} saveLabel="Ajouter" />
+        </Modal>
+      ) : null}
+
+      {isPreviewOpen ? (
+        <Modal title="Aperçu public" onClose={() => setIsPreviewOpen(false)} wide>
+          <MobilePreview categories={categories} products={products.filter((product) => product.visible && (selectedCategoryId === "all" || product.categoryId === selectedCategoryId))} selectedCategoryId={selectedCategoryId} onCartClick={() => showMessage("Le panier public est simulé dans cette maquette.")} />
+        </Modal>
+      ) : null}
+    </>
+  );
+}
+
+function ProductForm({ categories, draft, onChange }: { categories: CategoryItem[]; draft: ProductDraft; onChange: (draft: ProductDraft) => void }) {
+  const updateDraft = (patch: Partial<ProductDraft>) => onChange({ ...draft, ...patch });
+
+  return (
+    <div className="space-y-4">
+      <FormField label="Nom" value={draft.name} onChange={(value) => updateDraft({ name: value })} />
+      <label className="block">
+        <span className="text-sm font-black text-slate-700">Catégorie</span>
+        <select className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700 outline-none" onChange={(event) => updateDraft({ categoryId: event.target.value })} value={draft.categoryId}>
+          {categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
+        </select>
+      </label>
+      <FormField label="Prix" value={draft.price} onChange={(value) => updateDraft({ price: value })} />
+      <FormField label="Description" value={draft.description} onChange={(value) => updateDraft({ description: value })} multiline />
+    </div>
+  );
+}
+
+function FormField({ label, value, onChange, multiline = false }: { label: string; value: string; onChange: (value: string) => void; multiline?: boolean }) {
+  return (
+    <label className="block">
+      <span className="text-sm font-black text-slate-700">{label}</span>
+      {multiline ? (
+        <textarea className="mt-2 min-h-24 w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700 outline-none focus:border-emerald-300 focus:bg-white focus:ring-4 focus:ring-emerald-100" onChange={(event) => onChange(event.target.value)} value={value} />
+      ) : (
+        <input className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700 outline-none focus:border-emerald-300 focus:bg-white focus:ring-4 focus:ring-emerald-100" onChange={(event) => onChange(event.target.value)} value={value} />
+      )}
+    </label>
+  );
+}
+
+function Modal({ children, onClose, title, wide = false }: { children: React.ReactNode; onClose: () => void; title: string; wide?: boolean }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-sm">
+      <section className={`max-h-[90vh] w-full overflow-y-auto rounded-[2rem] border border-slate-200 bg-white p-5 shadow-2xl shadow-slate-950/20 ${wide ? "max-w-xl" : "max-w-lg"}`}>
+        <div className="mb-5 flex items-start justify-between gap-4">
+          <div>
+            <p className="text-sm font-bold uppercase tracking-[0.18em] text-emerald-700">Maquette locale</p>
+            <h2 className="mt-2 text-2xl font-black text-slate-950">{title}</h2>
+          </div>
+          <button aria-label="Fermer" className="flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-100 text-slate-500 transition hover:bg-slate-200" onClick={onClose} type="button">×</button>
+        </div>
+        {children}
+      </section>
+    </div>
+  );
+}
+
+function ModalActions({ onCancel, onSave, saveLabel }: { onCancel: () => void; onSave: () => void; saveLabel: string }) {
+  return (
+    <div className="mt-6 grid grid-cols-2 gap-3">
+      <button className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-black text-slate-700 shadow-sm" onClick={onCancel} type="button">Annuler</button>
+      <button className="rounded-2xl bg-emerald-700 px-4 py-3 text-sm font-black text-white shadow-lg shadow-emerald-900/15" onClick={onSave} type="button">{saveLabel}</button>
+    </div>
+  );
+}
+
+function productToDraft(product: ProductItem | null | undefined): ProductDraft | null {
+  if (!product) return null;
+
+  return {
+    name: product.name,
+    description: product.description,
+    categoryId: product.categoryId,
+    price: product.price,
+    allergens: [...product.allergens],
+    available: product.available,
+    promo: product.promo,
+    visible: product.visible,
+    promoType: product.promoType,
+    promoValue: product.promoValue,
+    promoEndDate: product.promoEndDate,
+  };
+}
+
+function createId(value: string) {
+  return value
+    .toLocaleLowerCase("fr-FR")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+}

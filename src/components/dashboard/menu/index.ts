@@ -1,3 +1,4 @@
+export { InteractiveMenuDashboard } from "./InteractiveMenuDashboard";
 export { CategoryList } from "./CategoryList";
 export { MenuSummaryCard } from "./MenuSummaryCard";
 export { ProductEditPanel } from "./ProductEditPanel";
