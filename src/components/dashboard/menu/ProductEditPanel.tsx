@@ -11,10 +11,12 @@ type ProductEditPanelProps = {
   onDraftChange: (draft: ProductDraft) => void;
   onCancel: () => void;
   onNormalizePrice: () => void;
+  onNormalizePromotionValue: () => void;
+  onPromotionTypeChange: (promoType: ProductDraft["promoType"]) => void;
   onSave: () => void;
 };
 
-export function ProductEditPanel({ product, draft, categories, onDraftChange, onCancel, onNormalizePrice, onSave }: ProductEditPanelProps) {
+export function ProductEditPanel({ product, draft, categories, onDraftChange, onCancel, onNormalizePrice, onNormalizePromotionValue, onPromotionTypeChange, onSave }: ProductEditPanelProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (!product || !draft) {
@@ -99,12 +101,12 @@ export function ProductEditPanel({ product, draft, categories, onDraftChange, on
           <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
             <label className="block">
               <span className="text-sm font-black text-slate-700">Type de promotion</span>
-              <select className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 outline-none" onChange={(event) => updateDraft({ promoType: event.target.value as ProductDraft["promoType"] })} value={draft.promoType}>
-                <option>Pourcentage</option>
-                <option>Montant fixe</option>
+              <select className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 outline-none" onChange={(event) => onPromotionTypeChange(event.target.value as ProductDraft["promoType"])} value={draft.promoType}>
+                <option value="Pourcentage">Pourcentage</option>
+                <option value="Montant fixe">Montant fixe</option>
               </select>
             </label>
-            <Field label="Valeur" value={draft.promoValue} onChange={(value) => updateDraft({ promoValue: value })} compact />
+            <Field label="Valeur" value={draft.promoValue} onBlur={onNormalizePromotionValue} onChange={(value) => updateDraft({ promoValue: value })} compact />
           </div>
           <div className="mt-3">
             <Field label="Fin de la promotion" value={draft.promoEndDate} onChange={(value) => updateDraft({ promoEndDate: value })} compact type="date" />

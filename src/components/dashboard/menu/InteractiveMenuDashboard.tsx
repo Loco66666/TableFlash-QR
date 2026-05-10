@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { DashboardHeader } from "@/components/dashboard";
-import { formatEuro, parseEuroInput } from "@/lib/formatters";
+import { formatEuro, formatPromotionValue, parseEuroInput, type PromotionFormatterType } from "@/lib/formatters";
 
 import { CategoryList } from "./CategoryList";
 import { MenuSummaryCard } from "./MenuSummaryCard";
@@ -26,6 +26,11 @@ const blankProductDraft = (categoryId: string): ProductDraft => ({
   promoValue: "",
   promoEndDate: "",
 });
+
+const promoTypeToFormatterType: Record<ProductDraft["promoType"], PromotionFormatterType> = {
+  Pourcentage: "percentage",
+  "Montant fixe": "fixed",
+};
 
 const imageTones = [
   "from-amber-200 via-orange-100 to-emerald-100",
@@ -103,6 +108,12 @@ export function InteractiveMenuDashboard() {
     };
   };
 
+  const normalizeDraftPromotion = (draft: ProductDraft, promoType: ProductDraft["promoType"] = draft.promoType) => ({
+    ...draft,
+    promoType,
+    promoValue: draft.promoValue.trim() ? formatPromotionValue(draft.promoValue, promoTypeToFormatterType[promoType]) : "",
+  });
+
   const closeRowActions = useCallback(() => setRowAction(null), []);
 
   const openRowActions = useCallback((productId: string, buttonRect: DOMRect) => {
@@ -135,7 +146,7 @@ export function InteractiveMenuDashboard() {
   const saveEditedProduct = () => {
     if (!selectedProductId || !editingProduct) return;
 
-    const normalizedDraft = normalizeDraftPrice(editingProduct, selectedProduct?.price);
+    const normalizedDraft = normalizeDraftPromotion(normalizeDraftPrice(editingProduct, selectedProduct?.price));
     const parsedPrice = parseEuroInput(normalizedDraft.price) ?? selectedProduct?.price ?? 0;
     const savedDraft = {
       ...normalizedDraft,
@@ -212,7 +223,7 @@ export function InteractiveMenuDashboard() {
       return;
     }
 
-    const normalizedDraft = normalizeDraftPrice(newProductDraft, parsedPrice);
+    const normalizedDraft = normalizeDraftPromotion(normalizeDraftPrice(newProductDraft, parsedPrice));
     const product: ProductItem = {
       ...normalizedDraft,
       id: createId(`${newProductDraft.name}-${Date.now()}`),
@@ -302,7 +313,7 @@ export function InteractiveMenuDashboard() {
 
           <div className="space-y-7">
             <div ref={editPanelRef}>
-              <ProductEditPanel categories={categories} draft={editingProduct} onCancel={cancelEditedProduct} onDraftChange={setEditingProduct} onNormalizePrice={() => setEditingProduct((currentDraft) => currentDraft ? normalizeDraftPrice(currentDraft, selectedProduct?.price) : currentDraft)} onSave={saveEditedProduct} product={selectedProduct} />
+              <ProductEditPanel categories={categories} draft={editingProduct} onCancel={cancelEditedProduct} onDraftChange={setEditingProduct} onNormalizePrice={() => setEditingProduct((currentDraft) => currentDraft ? normalizeDraftPrice(currentDraft, selectedProduct?.price) : currentDraft)} onNormalizePromotionValue={() => setEditingProduct((currentDraft) => currentDraft ? normalizeDraftPromotion(currentDraft) : currentDraft)} onPromotionTypeChange={(promoType) => setEditingProduct((currentDraft) => currentDraft ? normalizeDraftPromotion(currentDraft, promoType) : currentDraft)} onSave={saveEditedProduct} product={selectedProduct} />
             </div>
             <PublicMenuPreview categories={categories} products={products} selectedCategoryId={selectedCategoryId} onCartClick={() => showMessage("Le panier public est simulé dans cette maquette.")} />
           </div>
