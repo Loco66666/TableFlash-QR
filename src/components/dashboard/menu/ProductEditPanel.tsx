@@ -2,6 +2,8 @@
 
 import { useRef } from "react";
 
+import { formatPromotionValue } from "@/lib/formatters";
+
 import type { ProductDraft, ProductItem } from "./menuData";
 
 type ProductEditPanelProps = {
@@ -43,6 +45,13 @@ export function ProductEditPanel({ product, draft, categories, onDraftChange, on
       }
     };
     reader.readAsDataURL(file);
+  };
+
+  const handlePromoTypeChange = (promoType: ProductDraft["promoType"]) => {
+    updateDraft({
+      promoType,
+      promoValue: draft.promoValue ? formatPromotionValue(draft.promoValue, promoType) : draft.promoValue,
+    });
   };
 
   return (
@@ -99,12 +108,20 @@ export function ProductEditPanel({ product, draft, categories, onDraftChange, on
           <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
             <label className="block">
               <span className="text-sm font-black text-slate-700">Type de promotion</span>
-              <select className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 outline-none" onChange={(event) => updateDraft({ promoType: event.target.value as ProductDraft["promoType"] })} value={draft.promoType}>
+              <select className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 outline-none" onChange={(event) => handlePromoTypeChange(event.target.value as ProductDraft["promoType"])} value={draft.promoType}>
                 <option>Pourcentage</option>
                 <option>Montant fixe</option>
               </select>
             </label>
-            <Field label="Valeur" value={draft.promoValue} onChange={(value) => updateDraft({ promoValue: value })} compact />
+            <label className="block">
+              <span className="text-sm font-black text-slate-700">Valeur</span>
+              <input
+                className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 outline-none focus:border-emerald-300 focus:bg-white focus:ring-4 focus:ring-emerald-100"
+                onBlur={() => updateDraft({ promoValue: formatPromotionValue(draft.promoValue, draft.promoType) })}
+                onChange={(event) => updateDraft({ promoValue: event.target.value })}
+                value={draft.promoValue}
+              />
+            </label>
           </div>
           <div className="mt-3">
             <Field label="Fin de la promotion" value={draft.promoEndDate} onChange={(value) => updateDraft({ promoEndDate: value })} compact type="date" />
