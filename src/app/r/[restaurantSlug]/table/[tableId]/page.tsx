@@ -17,5 +17,5 @@ export default async function PublicTableMenuPage({ params }: PublicTableMenuPag
   const { restaurantSlug, tableId } = await params;
   const tableName = deriveTableName(tableId);
 
-  return <InteractivePublicMenu restaurantSlug={restaurantSlug} tableName={tableName} />;
+  return <InteractivePublicMenu restaurantSlug={restaurantSlug} tableId={tableId} tableName={tableName} />;
 }

@@ -4,6 +4,16 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import { DashboardHeader } from "@/components/dashboard";
 import { formatEuro, parseEuroInput } from "@/lib/formatters";
+import {
+  clearLocalOrders,
+  getLocalOrders,
+  LOCAL_ORDER_CREATED_EVENT,
+  LOCAL_ORDER_RESET_EVENT,
+  LOCAL_ORDER_UPDATED_EVENT,
+  LOCAL_ORDERS_STORAGE_KEY,
+  mapLocalOrderToDashboardOrder,
+  updateLocalOrder,
+} from "@/lib/localOrders";
 
 import { EmptyOrdersState } from "./EmptyOrdersState";
 import { LiveServiceStatusCard } from "./LiveServiceStatusCard";
@@ -53,6 +63,33 @@ export function InteractiveOrdersDashboard() {
   const autoCloseTimeoutRef = useRef<number | null>(null);
 
   const visibleOrders = useMemo(() => filterOrders(orders, activeFilter, searchQuery), [activeFilter, orders, searchQuery]);
+
+  useEffect(() => {
+    function refreshLocalOrders() {
+      const submittedOrders = getLocalOrders();
+
+      setOrders((currentOrders) => mergeSubmittedLocalOrders(currentOrders, submittedOrders.map(mapLocalOrderToDashboardOrder)));
+    }
+
+    function handleStorage(event: StorageEvent) {
+      if (event.key === LOCAL_ORDERS_STORAGE_KEY) {
+        refreshLocalOrders();
+      }
+    }
+
+    refreshLocalOrders();
+    window.addEventListener("storage", handleStorage);
+    window.addEventListener(LOCAL_ORDER_CREATED_EVENT, refreshLocalOrders);
+    window.addEventListener(LOCAL_ORDER_UPDATED_EVENT, refreshLocalOrders);
+    window.addEventListener(LOCAL_ORDER_RESET_EVENT, refreshLocalOrders);
+
+    return () => {
+      window.removeEventListener("storage", handleStorage);
+      window.removeEventListener(LOCAL_ORDER_CREATED_EVENT, refreshLocalOrders);
+      window.removeEventListener(LOCAL_ORDER_UPDATED_EVENT, refreshLocalOrders);
+      window.removeEventListener(LOCAL_ORDER_RESET_EVENT, refreshLocalOrders);
+    };
+  }, []);
 
   useEffect(() => () => {
     if (autoCloseTimeoutRef.current) {
@@ -107,6 +144,18 @@ export function InteractiveOrdersDashboard() {
 
     setOrders(nextOrders);
 
+    const updatedOrder = nextOrders.find((order) => order.orderNumber === orderNumber);
+
+    if (updatedOrder?.source === "public-menu") {
+      updateLocalOrder(orderNumber, {
+        status: nextStatus,
+        paymentStatus: nextPaymentStatus ?? updatedOrder.paymentStatus,
+        acceptedAt: updatedOrder.acceptedAt,
+        preparationStartedAt: updatedOrder.preparationStartedAt,
+        mockElapsedMinutes: updatedOrder.mockElapsedMinutes,
+      });
+    }
+
     return nextOrders;
   }
 
@@ -158,6 +207,24 @@ export function InteractiveOrdersDashboard() {
     });
   }
 
+
+  function handleResetLocalOrders() {
+    const confirmed = window.confirm("Voulez-vous vraiment supprimer les commandes locales de démonstration ?");
+
+    if (!confirmed) {
+      return;
+    }
+
+    clearLocalOrders();
+    setOrders((currentOrders) => currentOrders.filter((order) => order.source !== "public-menu"));
+    setSelectedOrderId((currentSelectedOrderId) => {
+      const currentOrder = orders.find((order) => order.orderNumber === currentSelectedOrderId);
+
+      return currentOrder?.source === "public-menu" ? null : currentSelectedOrderId;
+    });
+    showToast("Commandes locales réinitialisées.");
+  }
+
   function handleAddTestOrder() {
     const highestOrderNumber = Math.max(...orders.map((order) => Number.parseInt(order.orderNumber.replace("#", ""), 10)).filter(Number.isFinite));
     const nextOrderNumber = `#${highestOrderNumber + 1}`;
@@ -192,6 +259,9 @@ export function InteractiveOrdersDashboard() {
       >
         <button className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-black text-slate-700 shadow-sm transition hover:border-amber-200 hover:bg-amber-50 hover:text-amber-800" onClick={handleTogglePause} type="button">
           {servicePaused ? "Reprendre le service" : "Mettre en pause"}
+        </button>
+        <button className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-black text-slate-500 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-800" onClick={handleResetLocalOrders} type="button">
+          Réinitialiser les commandes locales
         </button>
         <button className="rounded-2xl bg-emerald-600 px-5 py-3 text-sm font-black text-white shadow-lg shadow-emerald-900/15 transition hover:bg-emerald-700" onClick={handleAddTestOrder} type="button">
           Nouvelle commande test
@@ -274,6 +344,13 @@ export function InteractiveOrdersDashboard() {
   );
 }
 
+function mergeSubmittedLocalOrders(currentOrders: Order[], submittedOrders: Order[]): Order[] {
+  const submittedOrderNumbers = new Set(submittedOrders.map((order) => order.orderNumber));
+  const dashboardOrders = currentOrders.filter((order) => order.source !== "public-menu" && !submittedOrderNumbers.has(order.orderNumber));
+
+  return [...submittedOrders, ...dashboardOrders];
+}
+
 function filterOrders(orders: Order[], activeFilter: OrderFilter, searchQuery: string) {
   const normalizedQuery = searchQuery.trim().toLowerCase();
 
@@ -283,6 +360,7 @@ function filterOrders(orders: Order[], activeFilter: OrderFilter, searchQuery: s
       order.orderNumber,
       order.table,
       order.note ?? "",
+      order.source === "public-menu" ? "QR client Depuis le menu public" : "",
       ...order.items.map((item) => item.name),
     ].join(" ").toLowerCase();
     const matchesSearch = !normalizedQuery || searchableContent.includes(normalizedQuery);

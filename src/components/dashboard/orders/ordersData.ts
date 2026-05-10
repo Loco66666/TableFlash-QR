@@ -66,6 +66,8 @@ export type Order = {
   estimatedPrepMinutes: number;
   mockElapsedMinutes: number;
   note?: string;
+  source?: "public-menu";
+  localOrderId?: string;
 };
 
 export const mainOrderFilters: OrderFilter[] = ["Toutes", "Nouvelles", "En cours", "Prêtes", "Terminées"];

@@ -35,7 +35,10 @@ export function OrderCard({ actions, order, selected = false, onAction, onSelect
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-400">Commande</p>
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-400">Commande</p>
+            {order.source === "public-menu" ? <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[0.68rem] font-black uppercase tracking-[0.12em] text-emerald-700 ring-1 ring-emerald-100">QR client</span> : null}
+          </div>
           <h2 className="mt-1 text-2xl font-black tracking-tight text-slate-950">{order.orderNumber}</h2>
         </div>
         <div className="flex flex-wrap justify-end gap-2">

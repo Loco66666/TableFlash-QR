@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { addLocalOrder, createLocalOrder } from "@/lib/localOrders";
 import { PublicCartBar } from "./PublicCartBar";
 import { PublicCartDrawer } from "./PublicCartDrawer";
 import { PublicEmptyState } from "./PublicEmptyState";
@@ -15,6 +16,7 @@ import type { ConfirmedOrder, PublicCartItem, PublicMenuCategory, PublicMenuProd
 
 type InteractivePublicMenuProps = {
   restaurantSlug: string;
+  tableId: string;
   tableName: string;
 };
 
@@ -27,11 +29,7 @@ function makeCartKey(productId: string, note?: string) {
   return `${productId}::${note?.trim() ?? ""}`;
 }
 
-function makeOrderNumber() {
-  return `#${Math.floor(1000 + Math.random() * 9000)}`;
-}
-
-export function InteractivePublicMenu({ restaurantSlug, tableName }: InteractivePublicMenuProps) {
+export function InteractivePublicMenu({ restaurantSlug, tableId, tableName }: InteractivePublicMenuProps) {
   const [selectedCategory, setSelectedCategory] = useState<PublicMenuCategory>(publicMenuCategories[0]);
   const [cartItems, setCartItems] = useState<PublicCartItem[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<PublicMenuProduct | null>(null);
@@ -201,10 +199,26 @@ export function InteractivePublicMenu({ restaurantSlug, tableName }: Interactive
       return;
     }
 
-    const order: ConfirmedOrder = {
-      orderNumber: makeOrderNumber(),
+    const localOrder = addLocalOrder(createLocalOrder({
+      restaurantSlug,
+      restaurantName: restaurant.name,
+      tableId,
       tableName,
+      customerNote: globalNote,
       total: cartTotal,
+      items: cartItems.map((item) => ({
+        id: item.productId,
+        name: item.name,
+        quantity: item.quantity,
+        price: item.price,
+        note: item.note,
+      })),
+    }));
+
+    const order: ConfirmedOrder = {
+      orderNumber: localOrder.orderNumber,
+      tableName: localOrder.tableName,
+      total: localOrder.total,
       items: cartItems,
     };
 
@@ -212,7 +226,7 @@ export function InteractivePublicMenu({ restaurantSlug, tableName }: Interactive
     setCartItems([]);
     setGlobalNote("");
     setIsCartOpen(false);
-    showToast("Commande confirmée et transmise au restaurant.");
+    showToast("Commande transmise au restaurant.");
   }
 
   function handleBackToMenu() {
