@@ -106,7 +106,7 @@ export function PublicCartDrawer({
         </div>
 
         <div className="mt-4 rounded-3xl border border-emerald-100 bg-emerald-50 p-4 text-sm leading-6 text-emerald-900">
-          <p className="font-black">Règlement sur place</p>
+          <p className="font-black">Paiement au restaurant</p>
           <p className="mt-1">Le règlement se fera à la caisse ou auprès du serveur.</p>
         </div>
 

@@ -22,7 +22,7 @@ export function PublicPaymentNotice({ note, compact = false, inverted = false }:
         }`}
       >
         <p className={`text-xs font-black uppercase tracking-[0.2em] ${inverted ? "text-emerald-100" : "text-emerald-700"}`}>
-          Règlement sur place
+          Paiement au restaurant
         </p>
         <p className="mt-1 text-sm">{note}</p>
       </div>
@@ -33,7 +33,7 @@ export function PublicPaymentNotice({ note, compact = false, inverted = false }:
     <section className="rounded-[1.75rem] border border-emerald-100 bg-white p-4 shadow-lg shadow-emerald-950/5" aria-labelledby="customer-journey-title">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-xs font-black uppercase tracking-[0.2em] text-emerald-700">Commande à table</p>
+          <p className="text-xs font-black uppercase tracking-[0.2em] text-emerald-700">Parcours en 4 étapes</p>
           <h2 id="customer-journey-title" className="mt-1 text-xl font-black tracking-[-0.04em] text-slate-950">
             Comment ça se passe ?
           </h2>

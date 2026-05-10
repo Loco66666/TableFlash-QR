@@ -236,14 +236,11 @@ export function InteractivePublicMenu({ restaurantSlug, tableName }: Interactive
             <p className="mt-3 text-[0.95rem] leading-6 text-slate-600">
               Choisissez vos produits, ajoutez une note si besoin, puis confirmez votre commande. Le règlement se fait ensuite à la caisse ou auprès du serveur.
             </p>
-            <div className="mt-4 flex flex-wrap gap-2">
-              {['Commande à table', 'Confirmation avant envoi', 'Règlement sur place'].map((label) => (
-                <span key={label} className="rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1.5 text-xs font-extrabold text-emerald-800">
-                  {label}
-                </span>
-              ))}
-            </div>
           </section>
+
+          <div className="mt-4">
+            <PublicPaymentNotice note={restaurant.paymentNote} />
+          </div>
 
           {orderingDisabled ? (
             <div className="mt-4 rounded-3xl border border-amber-100 bg-amber-50 p-4 text-sm font-bold text-amber-800">
@@ -288,10 +285,6 @@ export function InteractivePublicMenu({ restaurantSlug, tableName }: Interactive
               </div>
             )}
           </section>
-
-          <div className="mt-6">
-            <PublicPaymentNotice note={restaurant.paymentNote} />
-          </div>
         </div>
       </div>
 
