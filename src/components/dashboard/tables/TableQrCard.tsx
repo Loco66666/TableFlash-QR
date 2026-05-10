@@ -1,4 +1,4 @@
-import { QrMockCode } from "./QrMockCode";
+import { QrCodeRenderer } from "./QrCodeRenderer";
 import { ZoneBadge } from "./ZoneBadge";
 import type { RestaurantTable } from "./tablesData";
 
@@ -29,7 +29,7 @@ export function TableQrCard({ canMoveDown, canMoveUp, isReorderMode, onCopy, onM
           </div>
         </div>
         <div className="shrink-0 rounded-2xl border border-emerald-100 bg-emerald-50/50 p-1.5">
-          <QrMockCode compact label={table.name} muted={!table.isActive} />
+          <QrCodeRenderer label={table.name} muted={!table.isActive} value={table.publicUrl} variant="compact" />
         </div>
       </div>
 

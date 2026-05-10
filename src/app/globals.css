@@ -71,17 +71,37 @@ summary {
     background: #ffffff !important;
   }
 
+  .print-card,
+  .print-sheet,
+  .tableflash-print-card,
   .tableflash-print-sheet {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  .tableflash-print-sheet {
+    display: block !important;
+    width: 100%;
+  }
+
+  .tableflash-print-sheet-header {
+    align-items: end;
+    border-bottom: 1px solid #d1d5db;
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8mm;
+    padding-bottom: 5mm;
+  }
+
+  .tableflash-print-sheet-grid {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8mm;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     width: 100%;
   }
 
   .tableflash-print-card {
     box-shadow: none !important;
-    page-break-inside: avoid;
-    break-inside: avoid;
     margin: 0 auto;
     border-color: #d1d5db !important;
     background: #ffffff !important;
@@ -93,11 +113,12 @@ summary {
   }
 
   .tableflash-print-sheet .tableflash-print-card {
-    min-height: 126mm;
+    min-height: 122mm;
     width: 100%;
   }
 
-  .tableflash-print-card * {
+  .tableflash-print-card *,
+  .tableflash-print-sheet * {
     box-shadow: none !important;
     text-shadow: none !important;
   }

@@ -1,4 +1,4 @@
-import { QrMockCode } from "./QrMockCode";
+import { QrCodeRenderer } from "./QrCodeRenderer";
 import { ZoneBadge } from "./ZoneBadge";
 import type { RestaurantTable } from "./tablesData";
 
@@ -42,7 +42,7 @@ export function TableQrPreviewPanel({ onClose, onCopy, onDelete, onDownload, onE
       </div>
 
       <div className="mt-4 flex justify-center rounded-[1.5rem] border border-emerald-100 bg-gradient-to-br from-white to-emerald-50/50 p-3">
-        <QrMockCode large label={table.name} muted={!table.isActive} />
+        <QrCodeRenderer label={table.name} muted={!table.isActive} value={table.publicUrl} variant="preview" />
       </div>
 
       <div className="mt-4 rounded-2xl border border-slate-200/80 bg-slate-50/70 p-3">
