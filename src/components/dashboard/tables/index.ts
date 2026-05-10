@@ -1,0 +1,1 @@
+export { InteractiveTablesDashboard } from "./InteractiveTablesDashboard";
