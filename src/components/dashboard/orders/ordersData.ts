@@ -24,11 +24,13 @@ export type OrderAction =
 export type OrderFilter =
   | "Toutes"
   | "Nouvelles"
+  | "En cours"
+  | "Prêtes"
+  | "Terminées"
   | "Acceptées"
   | "À payer"
   | "Payées"
   | "En préparation"
-  | "Prêtes"
   | "Servies"
   | "Refusées"
   | "Annulées";
@@ -53,30 +55,17 @@ export type Order = {
   note?: string;
 };
 
-export const orderFilters: OrderFilter[] = [
-  "Toutes",
-  "Nouvelles",
+export const mainOrderFilters: OrderFilter[] = ["Toutes", "Nouvelles", "En cours", "Prêtes", "Terminées"];
+
+export const advancedOrderFilters: OrderFilter[] = [
   "Acceptées",
   "À payer",
   "Payées",
   "En préparation",
-  "Prêtes",
   "Servies",
   "Refusées",
   "Annulées",
 ];
-
-export const filterStatusMap: Partial<Record<OrderFilter, OrderStatus>> = {
-  Nouvelles: "Nouvelle",
-  Acceptées: "Acceptée",
-  "À payer": "À payer",
-  Payées: "Payée",
-  "En préparation": "En préparation",
-  Prêtes: "Prête",
-  Servies: "Servie",
-  Refusées: "Refusée",
-  Annulées: "Annulée",
-};
 
 export const orders: Order[] = [
   {

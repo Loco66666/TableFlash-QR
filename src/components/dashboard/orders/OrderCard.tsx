@@ -79,7 +79,7 @@ export function OrderCard({ actions, order, selected = false, onAction, onSelect
             {action}
           </button>
         )) : (
-          <span className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-black text-slate-500">Workflow terminé</span>
+          <span className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-black text-slate-500">Commande clôturée</span>
         )}
       </div>
     </article>
