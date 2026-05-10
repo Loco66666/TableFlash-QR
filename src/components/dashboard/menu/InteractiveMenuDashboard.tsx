@@ -1,13 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 
 import { DashboardHeader } from "@/components/dashboard";
 
 import { CategoryList } from "./CategoryList";
 import { MenuSummaryCard } from "./MenuSummaryCard";
 import { ProductEditPanel } from "./ProductEditPanel";
-import { ProductTable, type ActiveMenuFilter } from "./ProductTable";
+import { ProductTable, type ActiveMenuFilter, type RowActionState } from "./ProductTable";
 import { MobilePreview, PublicMenuPreview } from "./PublicMenuPreview";
 import { RestaurantSelectorCard } from "./RestaurantSelectorCard";
 import { categoryItems, products as initialProducts, type CategoryItem, type ProductDraft, type ProductItem, type SummaryItem } from "./menuData";
@@ -49,7 +49,8 @@ export function InteractiveMenuDashboard() {
   const [newProductDraft, setNewProductDraft] = useState<ProductDraft>(() => blankProductDraft(categoryItems[0]?.id ?? "general"));
   const [newCategoryName, setNewCategoryName] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
-  const [rowActionProductId, setRowActionProductId] = useState<string | null>(null);
+  const [rowAction, setRowAction] = useState<RowActionState | null>(null);
+  const editPanelRef = useRef<HTMLDivElement>(null);
 
   const selectedProduct = products.find((product) => product.id === selectedProductId) ?? null;
 
@@ -79,14 +80,34 @@ export function InteractiveMenuDashboard() {
 
   const showMessage = (message: string) => setSuccessMessage(message);
 
-  const selectProduct = (productId: string) => {
+  const closeRowActions = useCallback(() => setRowAction(null), []);
+
+  const openRowActions = useCallback((productId: string, buttonRect: DOMRect) => {
+    const dropdownWidth = 192;
+    const dropdownHeight = 188;
+    const margin = 16;
+    const top = buttonRect.bottom + dropdownHeight + margin > window.innerHeight
+      ? Math.max(margin, buttonRect.top - dropdownHeight - 8)
+      : buttonRect.bottom + 8;
+    const left = Math.min(Math.max(margin, buttonRect.right - dropdownWidth), window.innerWidth - dropdownWidth - margin);
+
+    setRowAction({ productId, top, left });
+  }, []);
+
+  const selectProduct = (productId: string, options: { focusPanel?: boolean } = {}) => {
     const product = products.find((item) => item.id === productId);
     if (!product) return;
 
     setSelectedProductId(productId);
     setEditingProduct(productToDraft(product));
-    setRowActionProductId(null);
+    setRowAction(null);
+
+    if (options.focusPanel) {
+      window.setTimeout(() => editPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 0);
+    }
   };
+
+  const editProductFromMenu = (productId: string) => selectProduct(productId, { focusPanel: true });
 
   const saveEditedProduct = () => {
     if (!selectedProduct || !editingProduct) return;
@@ -102,8 +123,11 @@ export function InteractiveMenuDashboard() {
 
   const toggleVisibility = (productId: string) => {
     setProducts((currentProducts) => currentProducts.map((product) => product.id === productId ? { ...product, visible: !product.visible } : product));
-    setRowActionProductId(null);
-    showMessage("Visibilité mise à jour dans la maquette.");
+    setRowAction(null);
+    if (selectedProductId === productId) {
+      setEditingProduct((currentDraft) => currentDraft ? { ...currentDraft, visible: !currentDraft.visible } : currentDraft);
+    }
+    showMessage("Visibilité du produit mise à jour.");
   };
 
   const duplicateProduct = (productId: string) => {
@@ -113,14 +137,14 @@ export function InteractiveMenuDashboard() {
     const duplicate: ProductItem = {
       ...product,
       id: createId(`${product.name}-copie-${Date.now()}`),
-      name: `${product.name} copie`,
+      name: `${product.name} (copie)`,
       visible: true,
     };
 
     setProducts((currentProducts) => [duplicate, ...currentProducts]);
     setSelectedProductId(duplicate.id);
     setEditingProduct(productToDraft(duplicate));
-    setRowActionProductId(null);
+    setRowAction(null);
     showMessage("Produit dupliqué dans la maquette.");
   };
 
@@ -130,10 +154,10 @@ export function InteractiveMenuDashboard() {
 
     const remainingProducts = products.filter((item) => item.id !== productId);
     setProducts(remainingProducts);
-    const nextSelected = remainingProducts[0] ?? null;
+    const nextSelected = remainingProducts.find((item) => item.available && item.visible) ?? remainingProducts[0] ?? null;
     setSelectedProductId(nextSelected?.id ?? null);
     setEditingProduct(productToDraft(nextSelected));
-    setRowActionProductId(null);
+    setRowAction(null);
     showMessage("Produit supprimé de la maquette.");
   };
 
@@ -224,22 +248,25 @@ export function InteractiveMenuDashboard() {
               isFilterOpen={isFilterOpen}
               onDeleteProduct={deleteProduct}
               onDuplicateProduct={duplicateProduct}
-              onEditProduct={selectProduct}
+              onEditProduct={editProductFromMenu}
               onSearchChange={setSearchQuery}
               onSelectFilter={(filter) => { setActiveFilter(filter); setIsFilterOpen(false); }}
               onSelectProduct={selectProduct}
               onToggleFilter={() => setIsFilterOpen((isOpen) => !isOpen)}
-              onToggleRowActions={(productId) => setRowActionProductId((currentId) => currentId === productId ? null : productId)}
+              onCloseRowActions={closeRowActions}
+              onOpenRowActions={openRowActions}
               onToggleVisibility={toggleVisibility}
               products={filteredProducts}
-              rowActionProductId={rowActionProductId}
+              rowAction={rowAction}
               searchQuery={searchQuery}
               selectedProductId={selectedProductId}
             />
           </div>
 
           <div className="space-y-7">
-            <ProductEditPanel categories={categories} draft={editingProduct} onCancel={cancelEditedProduct} onDraftChange={setEditingProduct} onPhotoAction={(action) => showMessage(action === "changer" ? "Changement de photo simulé dans la maquette." : "Suppression de photo simulée dans la maquette.")} onSave={saveEditedProduct} product={selectedProduct} />
+            <div ref={editPanelRef}>
+              <ProductEditPanel categories={categories} draft={editingProduct} onCancel={cancelEditedProduct} onDraftChange={setEditingProduct} onSave={saveEditedProduct} product={selectedProduct} />
+            </div>
             <PublicMenuPreview categories={categories} products={products} selectedCategoryId={selectedCategoryId} onCartClick={() => showMessage("Le panier public est simulé dans cette maquette.")} />
           </div>
         </section>
@@ -343,6 +370,7 @@ function productToDraft(product: ProductItem | null | undefined): ProductDraft |
     promoType: product.promoType,
     promoValue: product.promoValue,
     promoEndDate: product.promoEndDate,
+    imageUrl: product.imageUrl ?? null,
   };
 }
 

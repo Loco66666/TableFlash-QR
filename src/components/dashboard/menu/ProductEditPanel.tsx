@@ -1,3 +1,7 @@
+"use client";
+
+import { useRef } from "react";
+
 import type { ProductDraft, ProductItem } from "./menuData";
 
 type ProductEditPanelProps = {
@@ -7,21 +11,38 @@ type ProductEditPanelProps = {
   onDraftChange: (draft: ProductDraft) => void;
   onCancel: () => void;
   onSave: () => void;
-  onPhotoAction: (action: "changer" | "supprimer") => void;
 };
 
-export function ProductEditPanel({ product, draft, categories, onDraftChange, onCancel, onSave, onPhotoAction }: ProductEditPanelProps) {
+export function ProductEditPanel({ product, draft, categories, onDraftChange, onCancel, onSave }: ProductEditPanelProps) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   if (!product || !draft) {
     return (
       <aside className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/70 lg:p-6">
         <p className="text-sm font-bold uppercase tracking-[0.18em] text-emerald-700">Produit sélectionné</p>
         <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950">Édition du produit</h2>
         <p className="mt-6 rounded-3xl bg-slate-50 p-5 text-sm font-semibold leading-6 text-slate-500">Sélectionnez un produit pour modifier ses informations dans la maquette.</p>
+        <div className="mt-5 grid grid-cols-2 gap-3 border-t border-slate-100 pt-5">
+          <button className="cursor-not-allowed rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-black text-slate-300" disabled type="button">Annuler</button>
+          <button className="cursor-not-allowed rounded-2xl bg-slate-200 px-4 py-3 text-sm font-black text-white" disabled type="button">Enregistrer</button>
+        </div>
       </aside>
     );
   }
 
   const updateDraft = (patch: Partial<ProductDraft>) => onDraftChange({ ...draft, ...patch });
+
+  const handlePhotoChange = (file: File | undefined) => {
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === "string") {
+        updateDraft({ imageUrl: reader.result });
+      }
+    };
+    reader.readAsDataURL(file);
+  };
 
   return (
     <aside className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/70 lg:p-6">
@@ -48,15 +69,27 @@ export function ProductEditPanel({ product, draft, categories, onDraftChange, on
         <ToggleRow label="Disponible" checked={draft.available} onChange={() => updateDraft({ available: !draft.available })} />
 
         <div>
-          <p className="text-sm font-black text-slate-700">Photo preview</p>
-          <div className={`mt-3 overflow-hidden rounded-3xl border border-slate-200 bg-gradient-to-br ${product.imageTone} p-4`}>
-            <div className="flex h-32 items-center justify-center rounded-2xl bg-white/35 ring-1 ring-white/60">
-              <span className="rounded-full bg-white/80 px-4 py-2 text-sm font-black text-emerald-800">{draft.name || "Produit"}</span>
+          <p className="text-sm font-black text-slate-700">Photo</p>
+          <div className={`mt-3 overflow-hidden rounded-3xl border border-slate-200 ${draft.imageUrl ? "bg-slate-100" : `bg-gradient-to-br ${product.imageTone}`} p-4`}>
+            <div className="flex h-32 items-center justify-center overflow-hidden rounded-2xl bg-white/35 ring-1 ring-white/60">
+              {draft.imageUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img alt={`Aperçu de ${draft.name || product.name}`} className="h-full w-full object-cover" src={draft.imageUrl} />
+              ) : (
+                <span className="rounded-full bg-white/80 px-4 py-2 text-sm font-black text-emerald-800">Aucune photo</span>
+              )}
             </div>
           </div>
+          <input
+            accept="image/*"
+            className="hidden"
+            onChange={(event) => handlePhotoChange(event.target.files?.[0])}
+            ref={fileInputRef}
+            type="file"
+          />
           <div className="mt-3 grid grid-cols-2 gap-3">
-            <button className="rounded-2xl bg-emerald-700 px-4 py-3 text-sm font-black text-white shadow-lg shadow-emerald-900/15" onClick={() => onPhotoAction("changer")} type="button">Changer</button>
-            <button className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-black text-rose-700" onClick={() => onPhotoAction("supprimer")} type="button">Supprimer</button>
+            <button className="rounded-2xl bg-emerald-700 px-4 py-3 text-sm font-black text-white shadow-lg shadow-emerald-900/15" onClick={() => fileInputRef.current?.click()} type="button">Changer</button>
+            <button className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-black text-rose-700 disabled:cursor-not-allowed disabled:opacity-50" disabled={!draft.imageUrl} onClick={() => updateDraft({ imageUrl: null })} type="button">Supprimer</button>
           </div>
         </div>
 
@@ -77,9 +110,9 @@ export function ProductEditPanel({ product, draft, categories, onDraftChange, on
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 pt-2">
-          <button className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-black text-slate-700 shadow-sm" onClick={onCancel} type="button">Annuler</button>
-          <button className="rounded-2xl bg-emerald-700 px-4 py-3 text-sm font-black text-white shadow-lg shadow-emerald-900/15" onClick={onSave} type="button">Enregistrer</button>
+        <div className="sticky bottom-0 z-10 -mx-5 grid grid-cols-2 gap-3 border-t border-slate-100 bg-white/95 px-5 pb-1 pt-4 backdrop-blur lg:-mx-6 lg:px-6">
+          <button className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-black text-slate-700 shadow-sm transition hover:bg-slate-50" onClick={onCancel} type="button">Annuler</button>
+          <button className="rounded-2xl bg-emerald-700 px-4 py-3 text-sm font-black text-white shadow-lg shadow-emerald-900/15 transition hover:bg-emerald-800" onClick={onSave} type="button">Enregistrer</button>
         </div>
       </div>
     </aside>
