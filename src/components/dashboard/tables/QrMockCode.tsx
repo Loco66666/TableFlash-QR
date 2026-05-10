@@ -1,5 +1,6 @@
 type QrMockCodeProps = {
   label: string;
+  compact?: boolean;
   large?: boolean;
   muted?: boolean;
 };
@@ -20,14 +21,19 @@ const activeCells = new Set([
   132, 133, 135, 137, 139, 140, 142,
 ]);
 
-export function QrMockCode({ label, large = false, muted = false }: QrMockCodeProps) {
-  const sizeClass = large ? "h-64 w-64" : "h-36 w-36";
+export function QrMockCode({ compact = false, label, large = false, muted = false }: QrMockCodeProps) {
+  const sizeClass = large ? "h-56 w-56" : compact ? "h-24 w-24" : "h-32 w-32";
   const cellClass = large ? "rounded-[3px]" : "rounded-[2px]";
+  const wrapperGapClass = compact ? "gap-0" : "gap-3";
+  const outerRadiusClass = compact ? "rounded-[1.25rem]" : "rounded-[2rem]";
+  const outerPaddingClass = large ? "p-4" : compact ? "p-2.5" : "p-3";
+  const innerRadiusClass = compact ? "rounded-xl" : "rounded-2xl";
+  const logoSizeClass = large ? "h-12 w-12 rounded-2xl border-4 text-xl" : compact ? "h-8 w-8 rounded-xl border-[3px] text-sm" : "h-10 w-10 rounded-2xl border-4 text-base";
 
   return (
-    <div className="flex flex-col items-center gap-3">
-      <div className={`${sizeClass} rounded-[2rem] border border-slate-200 bg-white p-4 shadow-inner shadow-emerald-950/5 ${muted ? "opacity-55 grayscale" : ""}`} aria-label={`QR code de démonstration pour ${label}`} role="img">
-        <div className="relative grid h-full w-full grid-cols-12 gap-1 rounded-2xl bg-slate-50 p-2">
+    <div className={`flex flex-col items-center ${wrapperGapClass}`}>
+      <div className={`${sizeClass} ${outerRadiusClass} border border-slate-200/80 bg-white ${outerPaddingClass} shadow-inner shadow-emerald-950/[0.04] ${muted ? "opacity-55 grayscale" : ""}`} aria-label={`QR code de démonstration pour ${label}`} role="img">
+        <div className={`relative grid h-full w-full grid-cols-12 gap-1 ${innerRadiusClass} bg-emerald-50/40 p-1.5`}>
           {Array.from({ length: 144 }, (_, index) => {
             const isFinder = isFinderCell(index);
             const isActive = activeCells.has(index) || isFinder;
@@ -39,12 +45,12 @@ export function QrMockCode({ label, large = false, muted = false }: QrMockCodePr
               />
             );
           })}
-          <span className="absolute left-1/2 top-1/2 flex h-12 w-12 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-2xl border-4 border-white bg-emerald-600 text-xl font-black text-white shadow-lg shadow-emerald-950/20" aria-hidden="true">
+          <span className={`absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center justify-center border-white bg-emerald-600 font-black text-white shadow-lg shadow-emerald-950/15 ${logoSizeClass}`} aria-hidden="true">
             ⚡
           </span>
         </div>
       </div>
-      <p className="text-center text-sm font-black text-slate-800">{label}</p>
+      {compact ? null : <p className="text-center text-sm font-black text-slate-800">{label}</p>}
     </div>
   );
 }
