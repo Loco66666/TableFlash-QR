@@ -110,15 +110,28 @@ export function InteractiveMenuDashboard() {
   const editProductFromMenu = (productId: string) => selectProduct(productId, { focusPanel: true });
 
   const saveEditedProduct = () => {
-    if (!selectedProduct || !editingProduct) return;
+    if (!selectedProductId || !editingProduct) return;
 
-    setProducts((currentProducts) => currentProducts.map((product) => product.id === selectedProduct.id ? { ...product, ...editingProduct } : product));
+    const savedDraft = {
+      ...editingProduct,
+      name: editingProduct.name.trim(),
+      description: editingProduct.description.trim(),
+      price: editingProduct.price.trim(),
+      allergens: editingProduct.allergens.map((allergen) => allergen.trim()).filter(Boolean),
+      imageUrl: editingProduct.imageUrl ?? null,
+    };
+
+    setProducts((currentProducts) => currentProducts.map((product) => product.id === selectedProductId ? { ...product, ...savedDraft } : product));
+    setSelectedProductId(selectedProductId);
+    setEditingProduct(savedDraft);
     showMessage("Modification enregistrée dans la maquette.");
   };
 
   const cancelEditedProduct = () => {
+    if (!selectedProduct) return;
+
     setEditingProduct(productToDraft(selectedProduct));
-    showMessage("Modifications annulées dans la maquette.");
+    showMessage("Modifications annulées.");
   };
 
   const toggleVisibility = (productId: string) => {

@@ -18,13 +18,13 @@ export function ProductEditPanel({ product, draft, categories, onDraftChange, on
 
   if (!product || !draft) {
     return (
-      <aside className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/70 lg:p-6">
+      <aside className="isolate rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/70 lg:p-6">
         <p className="text-sm font-bold uppercase tracking-[0.18em] text-emerald-700">Produit sélectionné</p>
         <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950">Édition du produit</h2>
         <p className="mt-6 rounded-3xl bg-slate-50 p-5 text-sm font-semibold leading-6 text-slate-500">Sélectionnez un produit pour modifier ses informations dans la maquette.</p>
         <div className="mt-5 grid grid-cols-2 gap-3 border-t border-slate-100 pt-5">
-          <button className="cursor-not-allowed rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-black text-slate-300" disabled type="button">Annuler</button>
-          <button className="cursor-not-allowed rounded-2xl bg-slate-200 px-4 py-3 text-sm font-black text-white" disabled type="button">Enregistrer</button>
+          <button className="cursor-not-allowed rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-black text-slate-300 opacity-60" disabled type="button">Annuler</button>
+          <button className="cursor-not-allowed rounded-2xl bg-slate-200 px-4 py-3 text-sm font-black text-white opacity-60" disabled type="button">Enregistrer</button>
         </div>
       </aside>
     );
@@ -45,7 +45,7 @@ export function ProductEditPanel({ product, draft, categories, onDraftChange, on
   };
 
   return (
-    <aside className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/70 lg:p-6">
+    <aside className="isolate rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/70 lg:p-6">
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-sm font-bold uppercase tracking-[0.18em] text-emerald-700">Produit sélectionné</p>
@@ -110,9 +110,9 @@ export function ProductEditPanel({ product, draft, categories, onDraftChange, on
           </div>
         </div>
 
-        <div className="sticky bottom-0 z-10 -mx-5 grid grid-cols-2 gap-3 border-t border-slate-100 bg-white/95 px-5 pb-1 pt-4 backdrop-blur lg:-mx-6 lg:px-6">
-          <button className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-black text-slate-700 shadow-sm transition hover:bg-slate-50" onClick={onCancel} type="button">Annuler</button>
-          <button className="rounded-2xl bg-emerald-700 px-4 py-3 text-sm font-black text-white shadow-lg shadow-emerald-900/15 transition hover:bg-emerald-800" onClick={onSave} type="button">Enregistrer</button>
+        <div className="sticky bottom-0 z-30 -mx-5 grid grid-cols-2 gap-3 border-t border-slate-100 bg-white/95 px-5 pb-1 pt-4 backdrop-blur lg:-mx-6 lg:px-6">
+          <button className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-black text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60" disabled={!product} onClick={onCancel} type="button">Annuler</button>
+          <button className="rounded-2xl bg-emerald-700 px-4 py-3 text-sm font-black text-white shadow-lg shadow-emerald-900/15 transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-60" disabled={!product} onClick={onSave} type="button">Enregistrer</button>
         </div>
       </div>
     </aside>
