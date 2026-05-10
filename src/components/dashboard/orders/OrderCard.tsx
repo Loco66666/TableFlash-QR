@@ -1,15 +1,35 @@
-import type { Order } from "./ordersData";
+import type { Order, OrderAction } from "./ordersData";
 import { OrderStatusBadge } from "./OrderStatusBadge";
 import { PaymentStatusBadge } from "./PaymentStatusBadge";
 
-type OrderCardProps = {
-  order: Order;
-  selected?: boolean;
+const actionClasses: Record<"default" | "danger" | "neutral", string> = {
+  default: "rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-black text-emerald-800 transition hover:bg-emerald-100 focus:outline-none focus:ring-4 focus:ring-emerald-100",
+  danger: "rounded-2xl border border-rose-200 bg-white px-4 py-2 text-sm font-black text-rose-700 transition hover:bg-rose-50 focus:outline-none focus:ring-4 focus:ring-rose-100",
+  neutral: "rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 transition hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-slate-100",
 };
 
-export function OrderCard({ order, selected = false }: OrderCardProps) {
+type OrderCardProps = {
+  actions: OrderAction[];
+  order: Order;
+  selected?: boolean;
+  onAction: (orderNumber: string, action: OrderAction) => void;
+  onSelect: (orderNumber: string) => void;
+};
+
+export function OrderCard({ actions, order, selected = false, onAction, onSelect }: OrderCardProps) {
   return (
-    <article className={`rounded-[2rem] border bg-white p-5 shadow-sm shadow-slate-200/70 transition hover:-translate-y-0.5 hover:shadow-xl hover:shadow-emerald-950/5 ${selected ? "border-emerald-300 ring-4 ring-emerald-100" : "border-slate-200"}`}>
+    <article
+      className={`rounded-[2rem] border bg-white p-5 text-left shadow-sm shadow-slate-200/70 transition hover:-translate-y-0.5 hover:shadow-xl hover:shadow-emerald-950/5 focus:outline-none focus:ring-4 focus:ring-emerald-100 ${selected ? "border-emerald-300 ring-4 ring-emerald-100" : "border-slate-200"}`}
+      onClick={() => onSelect(order.orderNumber)}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onSelect(order.orderNumber);
+        }
+      }}
+      role="button"
+      tabIndex={0}
+    >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-400">Commande</p>
@@ -46,17 +66,21 @@ export function OrderCard({ order, selected = false }: OrderCardProps) {
       </div>
 
       <div className="mt-5 flex flex-wrap gap-2">
-        {order.actions.map((action) => (
+        {actions.length > 0 ? actions.map((action) => (
           <button
-            className={action === "Refuser"
-              ? "rounded-2xl border border-rose-200 bg-white px-4 py-2 text-sm font-black text-rose-700 transition hover:bg-rose-50"
-              : "rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-black text-emerald-800 transition hover:bg-emerald-100"}
+            className={action === "Refuser" ? actionClasses.danger : action === "Voir détail" ? actionClasses.neutral : actionClasses.default}
             key={`${order.orderNumber}-${action}`}
+            onClick={(event) => {
+              event.stopPropagation();
+              onAction(order.orderNumber, action);
+            }}
             type="button"
           >
             {action}
           </button>
-        ))}
+        )) : (
+          <span className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-black text-slate-500">Workflow terminé</span>
+        )}
       </div>
     </article>
   );

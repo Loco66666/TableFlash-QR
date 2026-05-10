@@ -1,6 +1,7 @@
 export type OrderStatus =
   | "Nouvelle"
   | "Acceptée"
+  | "À payer"
   | "Payée"
   | "En préparation"
   | "Prête"
@@ -9,6 +10,28 @@ export type OrderStatus =
   | "Annulée";
 
 export type PaymentStatus = "À payer" | "Payée" | "Annulée";
+
+export type OrderAction =
+  | "Accepter"
+  | "Refuser"
+  | "Marquer à payer"
+  | "Marquer payée"
+  | "En préparation"
+  | "Prête"
+  | "Servie"
+  | "Voir détail";
+
+export type OrderFilter =
+  | "Toutes"
+  | "Nouvelles"
+  | "Acceptées"
+  | "À payer"
+  | "Payées"
+  | "En préparation"
+  | "Prêtes"
+  | "Servies"
+  | "Refusées"
+  | "Annulées";
 
 export type SummaryTone = "emerald" | "amber" | "sky" | "slate" | "rose" | "green";
 
@@ -28,18 +51,9 @@ export type Order = {
   total: string;
   items: OrderItem[];
   note?: string;
-  actions: string[];
 };
 
-export const summaryCards = [
-  { value: "4", label: "Nouvelles commandes", helper: "À valider", tone: "emerald" },
-  { value: "6", label: "En préparation", helper: "Cuisine active", tone: "amber" },
-  { value: "3", label: "Prêtes", helper: "À servir", tone: "sky" },
-  { value: "12", label: "Servies", helper: "Aujourd’hui", tone: "slate" },
-  { value: "286,50 €", label: "Total du jour", helper: "Paiement physique", tone: "rose" },
-] satisfies Array<{ value: string; label: string; helper: string; tone: SummaryTone }>;
-
-export const orderFilters = [
+export const orderFilters: OrderFilter[] = [
   "Toutes",
   "Nouvelles",
   "Acceptées",
@@ -52,6 +66,18 @@ export const orderFilters = [
   "Annulées",
 ];
 
+export const filterStatusMap: Partial<Record<OrderFilter, OrderStatus>> = {
+  Nouvelles: "Nouvelle",
+  Acceptées: "Acceptée",
+  "À payer": "À payer",
+  Payées: "Payée",
+  "En préparation": "En préparation",
+  Prêtes: "Prête",
+  Servies: "Servie",
+  Refusées: "Refusée",
+  Annulées: "Annulée",
+};
+
 export const orders: Order[] = [
   {
     orderNumber: "#1257",
@@ -61,12 +87,11 @@ export const orders: Order[] = [
     paymentStatus: "À payer",
     total: "31,50 €",
     items: [
-      { quantity: 1, name: "Burger Classique" },
-      { quantity: 1, name: "Frites Maison" },
-      { quantity: 1, name: "Limonade" },
+      { quantity: 1, name: "Burger Classique", price: "18,00 €" },
+      { quantity: 1, name: "Frites Maison", price: "4,50 €" },
+      { quantity: 1, name: "Limonade", price: "3,50 €" },
     ],
     note: "Sans oignons.",
-    actions: ["Accepter", "Refuser"],
   },
   {
     orderNumber: "#1256",
@@ -76,10 +101,9 @@ export const orders: Order[] = [
     paymentStatus: "À payer",
     total: "44,00 €",
     items: [
-      { quantity: 2, name: "Salade César" },
-      { quantity: 2, name: "Limonade" },
+      { quantity: 2, name: "Salade César", price: "29,00 €" },
+      { quantity: 2, name: "Limonade", price: "7,00 €" },
     ],
-    actions: ["À payer", "En préparation"],
   },
   {
     orderNumber: "#1255",
@@ -88,8 +112,7 @@ export const orders: Order[] = [
     status: "Payée",
     paymentStatus: "Payée",
     total: "18,00 €",
-    items: [{ quantity: 1, name: "Burger Classique" }],
-    actions: ["En préparation"],
+    items: [{ quantity: 1, name: "Burger Classique", price: "18,00 €" }],
   },
   {
     orderNumber: "#1254",
@@ -99,10 +122,9 @@ export const orders: Order[] = [
     paymentStatus: "Payée",
     total: "26,50 €",
     items: [
-      { quantity: 1, name: "Tiramisu" },
-      { quantity: 2, name: "Café gourmand" },
+      { quantity: 1, name: "Tiramisu", price: "6,50 €" },
+      { quantity: 2, name: "Café gourmand", price: "20,00 €" },
     ],
-    actions: ["Prête"],
   },
   {
     orderNumber: "#1253",
@@ -112,10 +134,9 @@ export const orders: Order[] = [
     paymentStatus: "Payée",
     total: "39,50 €",
     items: [
-      { quantity: 2, name: "Burger Classique" },
-      { quantity: 1, name: "Frites Maison" },
+      { quantity: 2, name: "Burger Classique", price: "36,00 €" },
+      { quantity: 1, name: "Frites Maison", price: "3,50 €" },
     ],
-    actions: ["Servie"],
   },
   {
     orderNumber: "#1252",
@@ -125,32 +146,30 @@ export const orders: Order[] = [
     paymentStatus: "Payée",
     total: "52,00 €",
     items: [
-      { quantity: 2, name: "Salade César" },
-      { quantity: 2, name: "Tiramisu" },
+      { quantity: 2, name: "Salade César", price: "29,00 €" },
+      { quantity: 2, name: "Tiramisu", price: "13,00 €" },
     ],
-    actions: ["Voir détail"],
   },
 ];
 
-export const selectedOrderItems = [
-  { name: "Burger Classique", price: "18,00 €", note: "Sans oignons" },
-  { name: "Frites Maison", price: "4,50 €" },
-  { name: "Limonade", price: "3,50 €" },
-];
-
-export const quickActions = [
-  "Accepter",
-  "Refuser",
-  "Marquer à payer",
-  "Marquer payée",
-  "En préparation",
-  "Prête",
-  "Servie",
-];
-
-export const topProducts = [
-  { name: "Burger Classique", count: "18 commandes", percentage: "w-full" },
-  { name: "Salade César", count: "12 commandes", percentage: "w-2/3" },
-  { name: "Limonade", count: "9 commandes", percentage: "w-1/2" },
-  { name: "Tiramisu", count: "7 commandes", percentage: "w-2/5" },
-];
+export function getOrderActions(status: OrderStatus): OrderAction[] {
+  switch (status) {
+    case "Nouvelle":
+      return ["Accepter", "Refuser"];
+    case "Acceptée":
+      return ["Marquer à payer", "En préparation"];
+    case "À payer":
+      return ["Marquer payée"];
+    case "Payée":
+      return ["En préparation"];
+    case "En préparation":
+      return ["Prête"];
+    case "Prête":
+      return ["Servie"];
+    case "Servie":
+      return ["Voir détail"];
+    case "Refusée":
+    case "Annulée":
+      return [];
+  }
+}
