@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { DashboardHeader } from "@/components/dashboard";
 import { formatEuro, parseEuroInput } from "@/lib/formatters";
@@ -29,6 +29,9 @@ type ToastState = {
   message: string;
 };
 
+const completedStatuses: OrderStatus[] = ["Servie", "Refusée", "Annulée"];
+const activeStatusPriority: OrderStatus[] = ["Nouvelle", "Acceptée", "À payer", "Payée", "En préparation", "Prête"];
+
 const actionMessages: Partial<Record<OrderAction, string>> = {
   Accepter: "Commande acceptée dans la maquette.",
   Refuser: "Commande refusée dans la maquette.",
@@ -47,24 +50,15 @@ export function InteractiveOrdersDashboard() {
   const [servicePaused, setServicePaused] = useState(false);
   const [successMessage, setSuccessMessage] = useState<ToastState | null>(null);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const autoCloseTimeoutRef = useRef<number | null>(null);
 
-  const visibleOrders = useMemo(() => {
-    const normalizedQuery = searchQuery.trim().toLowerCase();
-    const filterStatus = filterStatusMap[activeFilter];
+  const visibleOrders = useMemo(() => filterOrders(orders, activeFilter, searchQuery), [activeFilter, orders, searchQuery]);
 
-    return orders.filter((order) => {
-      const matchesStatus = !filterStatus || order.status === filterStatus;
-      const searchableContent = [
-        order.orderNumber,
-        order.table,
-        order.note ?? "",
-        ...order.items.map((item) => item.name),
-      ].join(" ").toLowerCase();
-      const matchesSearch = !normalizedQuery || searchableContent.includes(normalizedQuery);
-
-      return matchesStatus && matchesSearch;
-    });
-  }, [activeFilter, orders, searchQuery]);
+  useEffect(() => () => {
+    if (autoCloseTimeoutRef.current) {
+      window.clearTimeout(autoCloseTimeoutRef.current);
+    }
+  }, []);
 
   useEffect(() => {
     if (!successMessage) {
@@ -76,7 +70,7 @@ export function InteractiveOrdersDashboard() {
     return () => window.clearTimeout(timeoutId);
   }, [successMessage]);
 
-  const selectedOrder = visibleOrders.find((order) => order.orderNumber === selectedOrderId) ?? visibleOrders[0] ?? null;
+  const selectedOrder = selectedOrderId ? visibleOrders.find((order) => order.orderNumber === selectedOrderId) ?? null : null;
   const effectiveSelectedOrderId = selectedOrder?.orderNumber ?? null;
   const selectedActions = selectedOrder ? getOrderActions(selectedOrder.status) : [];
   const summaryCards = useMemo(() => buildSummaryCards(orders), [orders]);
@@ -86,8 +80,17 @@ export function InteractiveOrdersDashboard() {
     setSuccessMessage({ id: Date.now(), message });
   }
 
+  function handleCloseSelectedOrder() {
+    if (autoCloseTimeoutRef.current) {
+      window.clearTimeout(autoCloseTimeoutRef.current);
+      autoCloseTimeoutRef.current = null;
+    }
+
+    setSelectedOrderId(null);
+  }
+
   function updateOrderStatus(orderNumber: string, nextStatus: OrderStatus, nextPaymentStatus?: PaymentStatus) {
-    setOrders((currentOrders) => currentOrders.map((order) => {
+    const nextOrders = orders.map((order) => {
       if (order.orderNumber !== orderNumber) {
         return order;
       }
@@ -97,7 +100,11 @@ export function InteractiveOrdersDashboard() {
         status: nextStatus,
         paymentStatus: nextPaymentStatus ?? order.paymentStatus,
       };
-    }));
+    });
+
+    setOrders(nextOrders);
+
+    return nextOrders;
   }
 
   function handleAction(orderNumber: string, action: OrderAction) {
@@ -120,9 +127,24 @@ export function InteractiveOrdersDashboard() {
       return;
     }
 
-    updateOrderStatus(orderNumber, nextState.status, nextState.paymentStatus);
+    if (autoCloseTimeoutRef.current) {
+      window.clearTimeout(autoCloseTimeoutRef.current);
+      autoCloseTimeoutRef.current = null;
+    }
+
+    const nextOrders = updateOrderStatus(orderNumber, nextState.status, nextState.paymentStatus);
     setSelectedOrderId(orderNumber);
     showToast(actionMessages[action] ?? "Commande mise à jour dans la maquette.");
+
+    if (isCompletedStatus(nextState.status)) {
+      autoCloseTimeoutRef.current = window.setTimeout(() => {
+        const nextVisibleOrders = filterOrders(nextOrders, activeFilter, searchQuery);
+        const nextActiveOrder = findNextActiveOrder(nextVisibleOrders, orderNumber);
+
+        setSelectedOrderId(nextActiveOrder?.orderNumber ?? null);
+        autoCloseTimeoutRef.current = null;
+      }, 600);
+    }
   }
 
   function handleTogglePause() {
@@ -188,7 +210,7 @@ export function InteractiveOrdersDashboard() {
           searchQuery={searchQuery}
         />
 
-        <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
+        <section className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_420px]">
           <div className="space-y-4">
             <div className="flex items-center justify-between gap-4">
               <div>
@@ -219,7 +241,7 @@ export function InteractiveOrdersDashboard() {
           </div>
 
           <div className="space-y-6">
-            <SelectedOrderPanel actions={selectedActions} onAction={handleAction} order={selectedOrder} />
+            <SelectedOrderPanel actions={selectedActions} onAction={handleAction} onClose={handleCloseSelectedOrder} order={selectedOrder} />
             <TopProductsWidget products={topProducts} />
             <PreparationTimeWidget />
             <PaymentReminderCard />
@@ -244,6 +266,39 @@ export function InteractiveOrdersDashboard() {
       ) : null}
     </>
   );
+}
+
+function filterOrders(orders: Order[], activeFilter: OrderFilter, searchQuery: string) {
+  const normalizedQuery = searchQuery.trim().toLowerCase();
+  const filterStatus = filterStatusMap[activeFilter];
+
+  return orders.filter((order) => {
+    const matchesStatus = !filterStatus || order.status === filterStatus;
+    const searchableContent = [
+      order.orderNumber,
+      order.table,
+      order.note ?? "",
+      ...order.items.map((item) => item.name),
+    ].join(" ").toLowerCase();
+    const matchesSearch = !normalizedQuery || searchableContent.includes(normalizedQuery);
+
+    return matchesStatus && matchesSearch;
+  });
+}
+
+function isCompletedStatus(status: OrderStatus) {
+  return completedStatuses.includes(status);
+}
+
+function findNextActiveOrder(orders: Order[], completedOrderNumber: string) {
+  const activeOrders = orders.filter((order) => order.orderNumber !== completedOrderNumber && !isCompletedStatus(order.status));
+
+  return [...activeOrders].sort((firstOrder, secondOrder) => {
+    const firstPriority = activeStatusPriority.indexOf(firstOrder.status);
+    const secondPriority = activeStatusPriority.indexOf(secondOrder.status);
+
+    return firstPriority - secondPriority;
+  })[0] ?? null;
 }
 
 function getNextState(action: OrderAction): { paymentStatus?: PaymentStatus; status: OrderStatus } | null {

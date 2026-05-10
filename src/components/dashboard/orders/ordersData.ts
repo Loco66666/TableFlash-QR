@@ -167,7 +167,6 @@ export function getOrderActions(status: OrderStatus): OrderAction[] {
     case "Prête":
       return ["Servie"];
     case "Servie":
-      return ["Voir détail"];
     case "Refusée":
     case "Annulée":
       return [];
