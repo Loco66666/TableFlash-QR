@@ -27,6 +27,7 @@ type TableFormValues = {
 export function InteractiveTablesDashboard() {
   const [tables, setTables] = useState<RestaurantTable[]>(initialTables);
   const [selectedTableId, setSelectedTableId] = useState<string | null>(initialTables[0]?.id ?? null);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeZoneFilter, setActiveZoneFilter] = useState<TableZoneFilter>("Toutes");
   const [activeStatusFilter, setActiveStatusFilter] = useState<TableStatusFilter>("Tous");
@@ -98,6 +99,15 @@ export function InteractiveTablesDashboard() {
     window.print();
   }
 
+  function handleOpenPreview(tableId: string) {
+    setSelectedTableId(tableId);
+    setIsPreviewOpen(true);
+  }
+
+  function closePreviewPanel() {
+    setIsPreviewOpen(false);
+  }
+
   function handleToggleActive(table: RestaurantTable) {
     setTables((currentTables) => currentTables.map((currentTable) => currentTable.id === table.id ? { ...currentTable, isActive: !currentTable.isActive } : currentTable));
     showToast(table.isActive ? "QR désactivé." : "QR activé.");
@@ -113,7 +123,11 @@ export function InteractiveTablesDashboard() {
     setTables((currentTables) => {
       const nextTables = currentTables.filter((currentTable) => currentTable.id !== table.id);
       if (selectedTableId === table.id) {
-        setSelectedTableId(nextTables[0]?.id ?? null);
+        const nextSelectedTable = nextTables[0] ?? null;
+        setSelectedTableId(nextSelectedTable?.id ?? null);
+        if (!nextSelectedTable) {
+          setIsPreviewOpen(false);
+        }
       }
       return nextTables;
     });
@@ -278,7 +292,7 @@ export function InteractiveTablesDashboard() {
           sortMode={sortMode}
         />
 
-        <section className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
+        <section className={`grid items-start gap-5 ${isPreviewOpen ? "2xl:grid-cols-[minmax(0,1fr)_380px]" : ""}`}>
           <div className="space-y-3">
             <div className="flex items-center justify-between gap-4">
               <div>
@@ -288,7 +302,7 @@ export function InteractiveTablesDashboard() {
             </div>
 
             {visibleTables.length > 0 ? (
-              <div className="grid gap-3 lg:grid-cols-2">
+              <div className={`grid gap-3 ${isPreviewOpen ? "xl:grid-cols-2" : "md:grid-cols-2 xl:grid-cols-3"}`}>
                 {visibleTables.map((table) => {
                   const customIndex = tables.findIndex((currentTable) => currentTable.id === table.id);
                   return (
@@ -298,15 +312,11 @@ export function InteractiveTablesDashboard() {
                       isReorderMode={isReorderMode}
                       key={table.id}
                       onCopy={handleCopy}
-                      onDelete={handleDelete}
-                      onDownload={handleDownload}
-                      onEdit={handleOpenEdit}
                       onMoveDown={(tableId) => moveTable(tableId, "down")}
                       onMoveUp={(tableId) => moveTable(tableId, "up")}
-                      onPrint={handlePrintTable}
-                      onSelect={setSelectedTableId}
+                      onSelect={handleOpenPreview}
                       onToggleActive={handleToggleActive}
-                      selected={table.id === selectedTableId}
+                      selected={isPreviewOpen && table.id === selectedTableId}
                       table={table}
                     />
                   );
@@ -317,14 +327,18 @@ export function InteractiveTablesDashboard() {
             )}
           </div>
 
-          <TableQrPreviewPanel
-            onCopy={handleCopy}
-            onDownload={handleDownload}
-            onEdit={handleOpenEdit}
-            onPrint={handlePrintTable}
-            onToggleActive={handleToggleActive}
-            table={selectedTable}
-          />
+          {isPreviewOpen ? (
+            <TableQrPreviewPanel
+              onClose={closePreviewPanel}
+              onCopy={handleCopy}
+              onDelete={handleDelete}
+              onDownload={handleDownload}
+              onEdit={handleOpenEdit}
+              onPrint={handlePrintTable}
+              onToggleActive={handleToggleActive}
+              table={selectedTable}
+            />
+          ) : null}
         </section>
       </main>
 
