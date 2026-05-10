@@ -12,17 +12,19 @@ export function PublicCartBar({ itemCount, total, onOpenCart }: PublicCartBarPro
   }
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-40 flex justify-center bg-gradient-to-t from-slate-950/15 to-transparent p-3">
+    <div className="fixed inset-x-0 bottom-0 z-40 flex justify-center bg-gradient-to-t from-slate-950/20 via-slate-950/5 to-transparent p-3">
       <button
         type="button"
         onClick={onOpenCart}
-        className="flex min-h-16 w-full max-w-[520px] items-center justify-between rounded-3xl bg-slate-950 px-5 text-white shadow-2xl shadow-slate-950/30 active:scale-[0.99]"
+        className="flex min-h-16 w-full max-w-[460px] items-center justify-between gap-4 rounded-[1.5rem] bg-slate-950 px-4 text-white shadow-2xl shadow-slate-950/30 ring-1 ring-white/10 active:scale-[0.99]"
       >
         <span className="text-left">
-          <span className="block text-base font-black">Voir le panier</span>
-          <span className="block text-xs font-semibold text-slate-300">{itemCount} article{itemCount > 1 ? "s" : ""}</span>
+          <span className="block text-sm font-extrabold text-slate-300">
+            {itemCount} article{itemCount > 1 ? "s" : ""} · {formatEuro(total)}
+          </span>
+          <span className="mt-0.5 block text-base font-black">Voir le panier</span>
         </span>
-        <span className="rounded-2xl bg-emerald-500 px-4 py-2 text-base font-black text-emerald-950">{formatEuro(total)}</span>
+        <span className="grid h-11 w-11 place-items-center rounded-2xl bg-emerald-400 text-lg font-black text-emerald-950">→</span>
       </button>
     </div>
   );
