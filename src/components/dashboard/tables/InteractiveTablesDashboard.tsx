@@ -9,6 +9,7 @@ import { EmptyTablesState } from "./EmptyTablesState";
 import { TableFormModal } from "./TableFormModal";
 import { TableQrCard } from "./TableQrCard";
 import { PrintableQrCard } from "./PrintableQrCard";
+import { PrintableQrSheet } from "./PrintableQrSheet";
 import { TableQrPreviewPanel } from "./TableQrPreviewPanel";
 import { TableSummaryCard } from "./TableSummaryCard";
 import { TablesToolbar } from "./TablesToolbar";
@@ -72,7 +73,7 @@ export function InteractiveTablesDashboard() {
   }
 
   function handleHeaderPrint() {
-    const tablesToPrint = isPreviewOpen && selectedTable ? [selectedTable] : tables.filter((table) => table.isActive);
+    const tablesToPrint = selectedTable ? [selectedTable] : tables.filter((table) => table.isActive);
 
     if (tablesToPrint.length === 0) {
       showToast("Sélectionnez un QR puis cliquez sur Imprimer dans l’aperçu.");
@@ -121,7 +122,8 @@ export function InteractiveTablesDashboard() {
       setPrintTargetTables(tablesToPrint);
       setSuccessMessage({ id: Date.now(), message: "Préparation de l’impression des QR." });
     });
-    window.print();
+
+    window.setTimeout(() => window.print(), 0);
   }
 
   function handleOpenPreview(tableId: string) {
@@ -262,15 +264,11 @@ export function InteractiveTablesDashboard() {
 
   return (
     <>
-      <section aria-label="QR à imprimer" className="tableflash-print-area" data-print-ready={printTargetTables.length > 0 ? "true" : "false"}>
-        <div className="tableflash-print-grid">
-          {printTargetTables.map((table) => (
-            <PrintableQrCard key={table.id} table={table} />
-          ))}
-        </div>
+      <section aria-label="QR à imprimer" className="print-only tableflash-print-area" data-print-ready={printTargetTables.length > 0 ? "true" : "false"}>
+        {printTargetTables.length === 1 ? <PrintableQrCard table={printTargetTables[0]} /> : <PrintableQrSheet tables={printTargetTables} />}
       </section>
 
-      <div className="tableflash-dashboard-screen">
+      <div className="no-print tableflash-dashboard-screen">
         <DashboardHeader
           eyebrow="Le Bistrot des Halles"
           title="QR par table"
