@@ -32,7 +32,10 @@ export function SelectedOrderPanel({ actions, order, onAction, onClose }: Select
       <div className="shrink-0 px-4 pt-4">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="text-xs font-black uppercase tracking-[0.18em] text-emerald-700">Détail commande</p>
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-emerald-700">Détail commande</p>
+              {order.source === "public-menu" ? <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[0.68rem] font-black uppercase tracking-[0.12em] text-emerald-700 ring-1 ring-emerald-100">QR client</span> : null}
+            </div>
             <h2 className="mt-1 text-2xl font-black tracking-tight text-slate-950">{order.orderNumber}</h2>
           </div>
           <div className="flex shrink-0 items-center gap-2">
