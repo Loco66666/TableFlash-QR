@@ -197,7 +197,7 @@ export function InteractivePublicMenu({ restaurantSlug, tableName }: Interactive
 
   function handleValidateOrder() {
     if (cartItems.length === 0) {
-      showToast("Ajoutez au moins un produit avant de valider.");
+      showToast("Ajoutez au moins un produit avant de confirmer.");
       return;
     }
 
@@ -212,7 +212,7 @@ export function InteractivePublicMenu({ restaurantSlug, tableName }: Interactive
     setCartItems([]);
     setGlobalNote("");
     setIsCartOpen(false);
-    showToast("Commande envoyée au restaurant.");
+    showToast("Commande confirmée et transmise au restaurant.");
   }
 
   function handleBackToMenu() {
@@ -234,10 +234,10 @@ export function InteractivePublicMenu({ restaurantSlug, tableName }: Interactive
             <p className="text-xs font-black uppercase tracking-[0.22em] text-emerald-700">Bienvenue à table</p>
             <h2 className="mt-2 text-[1.7rem] font-black tracking-[-0.05em] text-slate-950">Commandez à votre rythme</h2>
             <p className="mt-3 text-[0.95rem] leading-6 text-slate-600">
-              Choisissez vos produits, ajoutez une note si besoin, puis validez votre commande. Le règlement se fait ensuite à la caisse ou auprès du serveur.
+              Choisissez vos produits, ajoutez une note si besoin, puis confirmez votre commande. Le règlement se fait ensuite à la caisse ou auprès du serveur.
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
-              {['Menu à table', 'Sans paiement en ligne', 'Préparation en cuisine'].map((label) => (
+              {['Commande à table', 'Confirmation avant envoi', 'Règlement sur place'].map((label) => (
                 <span key={label} className="rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1.5 text-xs font-extrabold text-emerald-800">
                   {label}
                 </span>

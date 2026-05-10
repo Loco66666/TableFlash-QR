@@ -84,7 +84,7 @@ export function PublicProductDetailModal({
 
         <div className="mt-5 rounded-3xl bg-slate-50 p-4">
           <label className="text-sm font-extrabold text-slate-950" htmlFor="product-note">
-            Une précision pour la cuisine ?
+            Une demande particulière ?
           </label>
           <textarea
             id="product-note"

@@ -26,13 +26,13 @@ export function PublicOrderConfirmation({ order, paymentNote, onBackToMenu, onNe
             ✓
           </div>
           <h2 id="order-confirmation-title" className="mt-4 text-3xl font-black tracking-[-0.05em] text-slate-950">
-            Commande envoyée
+            Commande confirmée
           </h2>
           <p className="mt-3 text-sm leading-6 text-slate-600">
             Votre commande a bien été transmise au restaurant.
           </p>
           <p className="mt-2 text-sm font-bold text-emerald-800">
-            Un membre de l’équipe prendra en charge votre commande.
+            Un membre de l’équipe va la prendre en charge.
           </p>
         </div>
 
@@ -68,7 +68,7 @@ export function PublicOrderConfirmation({ order, paymentNote, onBackToMenu, onNe
         </div>
 
         <div className="mt-4 rounded-3xl border border-emerald-100 bg-emerald-50 p-4 text-sm leading-6 text-emerald-900">
-          <p className="font-black">Rappel paiement</p>
+          <p className="font-black">Règlement sur place</p>
           <p className="mt-1">{paymentNote}</p>
         </div>
 
