@@ -17,7 +17,7 @@ export type ProductItem = {
   name: string;
   description: string;
   categoryId: string;
-  price: string;
+  price: number;
   allergens: string[];
   available: boolean;
   promo: boolean;
@@ -29,7 +29,9 @@ export type ProductItem = {
   imageUrl?: string | null;
 };
 
-export type ProductDraft = Omit<ProductItem, "id" | "imageTone">;
+export type ProductDraft = Omit<ProductItem, "id" | "imageTone" | "price"> & {
+  price: string;
+};
 
 export const categoryItems: CategoryItem[] = [
   { id: "entrees", name: "Entrées" },
@@ -44,7 +46,7 @@ export const products: ProductItem[] = [
     name: "Burger Classique",
     description: "Steak haché, cheddar, salade, tomate, oignons rouges, sauce maison.",
     categoryId: "plats",
-    price: "18,00 €",
+    price: 18,
     allergens: ["Gluten", "Lait"],
     available: true,
     promo: true,
@@ -59,7 +61,7 @@ export const products: ProductItem[] = [
     name: "Salade César",
     description: "Poulet grillé, parmesan, croûtons, sauce césar",
     categoryId: "entrees",
-    price: "13,50 €",
+    price: 13.5,
     allergens: ["Œuf", "Lait"],
     available: true,
     promo: false,
@@ -74,7 +76,7 @@ export const products: ProductItem[] = [
     name: "Frites Maison",
     description: "Frites fraîches",
     categoryId: "plats",
-    price: "4,50 €",
+    price: 4.5,
     allergens: ["Vegan"],
     available: true,
     promo: false,
@@ -89,7 +91,7 @@ export const products: ProductItem[] = [
     name: "Limonade",
     description: "Citron, menthe fraîche",
     categoryId: "boissons",
-    price: "3,50 €",
+    price: 3.5,
     allergens: ["Sans"],
     available: true,
     promo: false,
@@ -104,7 +106,7 @@ export const products: ProductItem[] = [
     name: "Tiramisu",
     description: "Mascarpone, café, biscuits, cacao",
     categoryId: "desserts",
-    price: "6,50 €",
+    price: 6.5,
     allergens: ["Gluten", "Lait", "Œuf"],
     available: true,
     promo: true,
@@ -119,7 +121,7 @@ export const products: ProductItem[] = [
     name: "Café gourmand",
     description: "Assortiment de mini desserts et un café",
     categoryId: "desserts",
-    price: "7,50 €",
+    price: 7.5,
     allergens: ["Gluten", "Lait"],
     available: false,
     promo: false,

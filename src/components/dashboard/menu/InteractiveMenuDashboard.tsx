@@ -1,8 +1,9 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { DashboardHeader } from "@/components/dashboard";
+import { formatEuro, parseEuroInput } from "@/lib/formatters";
 
 import { CategoryList } from "./CategoryList";
 import { MenuSummaryCard } from "./MenuSummaryCard";
@@ -80,6 +81,28 @@ export function InteractiveMenuDashboard() {
 
   const showMessage = (message: string) => setSuccessMessage(message);
 
+  useEffect(() => {
+    if (!successMessage) return;
+
+    const timeoutId = window.setTimeout(() => setSuccessMessage(""), 3000);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [successMessage]);
+
+  const normalizeDraftPrice = (draft: ProductDraft, fallbackPrice: number | string | null | undefined) => {
+    const parsedPrice = parseEuroInput(draft.price);
+    const fallbackParsedPrice = parseEuroInput(fallbackPrice);
+
+    if (parsedPrice === null && fallbackParsedPrice === null) {
+      return draft;
+    }
+
+    return {
+      ...draft,
+      price: formatEuro(parsedPrice ?? fallbackParsedPrice),
+    };
+  };
+
   const closeRowActions = useCallback(() => setRowAction(null), []);
 
   const openRowActions = useCallback((productId: string, buttonRect: DOMRect) => {
@@ -112,16 +135,18 @@ export function InteractiveMenuDashboard() {
   const saveEditedProduct = () => {
     if (!selectedProductId || !editingProduct) return;
 
+    const normalizedDraft = normalizeDraftPrice(editingProduct, selectedProduct?.price);
+    const parsedPrice = parseEuroInput(normalizedDraft.price) ?? selectedProduct?.price ?? 0;
     const savedDraft = {
-      ...editingProduct,
-      name: editingProduct.name.trim(),
-      description: editingProduct.description.trim(),
-      price: editingProduct.price.trim(),
-      allergens: editingProduct.allergens.map((allergen) => allergen.trim()).filter(Boolean),
-      imageUrl: editingProduct.imageUrl ?? null,
+      ...normalizedDraft,
+      name: normalizedDraft.name.trim(),
+      description: normalizedDraft.description.trim(),
+      allergens: normalizedDraft.allergens.map((allergen) => allergen.trim()).filter(Boolean),
+      imageUrl: normalizedDraft.imageUrl ?? null,
     };
+    const savedProductPatch = { ...savedDraft, price: parsedPrice };
 
-    setProducts((currentProducts) => currentProducts.map((product) => product.id === selectedProductId ? { ...product, ...savedDraft } : product));
+    setProducts((currentProducts) => currentProducts.map((product) => product.id === selectedProductId ? { ...product, ...savedProductPatch } : product));
     setSelectedProductId(selectedProductId);
     setEditingProduct(savedDraft);
     showMessage("Modification enregistrée dans la maquette.");
@@ -180,18 +205,21 @@ export function InteractiveMenuDashboard() {
   };
 
   const addProduct = () => {
-    if (!newProductDraft.name.trim() || !newProductDraft.price.trim()) {
-      showMessage("Renseignez au minimum le nom et le prix du produit.");
+    const parsedPrice = parseEuroInput(newProductDraft.price);
+
+    if (!newProductDraft.name.trim() || parsedPrice === null) {
+      showMessage("Renseignez au minimum le nom et un prix valide pour le produit.");
       return;
     }
 
+    const normalizedDraft = normalizeDraftPrice(newProductDraft, parsedPrice);
     const product: ProductItem = {
-      ...newProductDraft,
+      ...normalizedDraft,
       id: createId(`${newProductDraft.name}-${Date.now()}`),
       imageTone: imageTones[products.length % imageTones.length],
-      name: newProductDraft.name.trim(),
-      description: newProductDraft.description.trim(),
-      price: newProductDraft.price.trim(),
+      name: normalizedDraft.name.trim(),
+      description: normalizedDraft.description.trim(),
+      price: parsedPrice,
     };
 
     setProducts((currentProducts) => [product, ...currentProducts]);
@@ -235,13 +263,9 @@ export function InteractiveMenuDashboard() {
         </button>
       </DashboardHeader>
 
-      <main className="flex-1 space-y-7 p-5 lg:p-8">
-        {successMessage ? (
-          <div className="rounded-3xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm font-black text-emerald-800" role="status">
-            {successMessage}
-          </div>
-        ) : null}
+      {successMessage ? <Toast message={successMessage} onClose={() => setSuccessMessage("")} /> : null}
 
+      <main className="flex-1 space-y-7 p-5 lg:p-8">
         <RestaurantSelectorCard onClick={() => showMessage("Le changement de restaurant est désactivé dans cette maquette locale.")} />
 
         <section className="grid gap-4 sm:grid-cols-2 2xl:grid-cols-4">
@@ -278,7 +302,7 @@ export function InteractiveMenuDashboard() {
 
           <div className="space-y-7">
             <div ref={editPanelRef}>
-              <ProductEditPanel categories={categories} draft={editingProduct} onCancel={cancelEditedProduct} onDraftChange={setEditingProduct} onSave={saveEditedProduct} product={selectedProduct} />
+              <ProductEditPanel categories={categories} draft={editingProduct} onCancel={cancelEditedProduct} onDraftChange={setEditingProduct} onNormalizePrice={() => setEditingProduct((currentDraft) => currentDraft ? normalizeDraftPrice(currentDraft, selectedProduct?.price) : currentDraft)} onSave={saveEditedProduct} product={selectedProduct} />
             </div>
             <PublicMenuPreview categories={categories} products={products} selectedCategoryId={selectedCategoryId} onCartClick={() => showMessage("Le panier public est simulé dans cette maquette.")} />
           </div>
@@ -287,7 +311,7 @@ export function InteractiveMenuDashboard() {
 
       {isAddProductOpen ? (
         <Modal title="Ajouter un produit" onClose={() => setIsAddProductOpen(false)}>
-          <ProductForm categories={categories} draft={newProductDraft} onChange={setNewProductDraft} />
+          <ProductForm categories={categories} draft={newProductDraft} onChange={setNewProductDraft} onNormalizePrice={() => setNewProductDraft((currentDraft) => normalizeDraftPrice(currentDraft, undefined))} />
           <ModalActions onCancel={() => setIsAddProductOpen(false)} onSave={addProduct} saveLabel="Ajouter" />
         </Modal>
       ) : null}
@@ -311,7 +335,17 @@ export function InteractiveMenuDashboard() {
   );
 }
 
-function ProductForm({ categories, draft, onChange }: { categories: CategoryItem[]; draft: ProductDraft; onChange: (draft: ProductDraft) => void }) {
+function Toast({ message, onClose }: { message: string; onClose: () => void }) {
+  return (
+    <div className="fixed right-4 top-4 z-[120] flex w-[min(calc(100vw-2rem),28rem)] items-start gap-3 rounded-3xl border border-emerald-200 bg-white px-5 py-4 text-sm font-black text-emerald-900 shadow-2xl shadow-slate-950/20 ring-1 ring-emerald-100 sm:right-6 sm:top-6" role="status">
+      <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-700 text-xs text-white">✓</span>
+      <span className="min-w-0 flex-1 leading-6">{message}</span>
+      <button aria-label="Fermer la notification" className="rounded-full px-2 text-lg leading-none text-slate-400 transition hover:bg-slate-100 hover:text-slate-700" onClick={onClose} type="button">×</button>
+    </div>
+  );
+}
+
+function ProductForm({ categories, draft, onChange, onNormalizePrice }: { categories: CategoryItem[]; draft: ProductDraft; onChange: (draft: ProductDraft) => void; onNormalizePrice: () => void }) {
   const updateDraft = (patch: Partial<ProductDraft>) => onChange({ ...draft, ...patch });
 
   return (
@@ -323,20 +357,20 @@ function ProductForm({ categories, draft, onChange }: { categories: CategoryItem
           {categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
         </select>
       </label>
-      <FormField label="Prix" value={draft.price} onChange={(value) => updateDraft({ price: value })} />
+      <FormField label="Prix" value={draft.price} onBlur={onNormalizePrice} onChange={(value) => updateDraft({ price: value })} />
       <FormField label="Description" value={draft.description} onChange={(value) => updateDraft({ description: value })} multiline />
     </div>
   );
 }
 
-function FormField({ label, value, onChange, multiline = false }: { label: string; value: string; onChange: (value: string) => void; multiline?: boolean }) {
+function FormField({ label, value, onChange, onBlur, multiline = false }: { label: string; value: string; onChange: (value: string) => void; onBlur?: () => void; multiline?: boolean }) {
   return (
     <label className="block">
       <span className="text-sm font-black text-slate-700">{label}</span>
       {multiline ? (
-        <textarea className="mt-2 min-h-24 w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700 outline-none focus:border-emerald-300 focus:bg-white focus:ring-4 focus:ring-emerald-100" onChange={(event) => onChange(event.target.value)} value={value} />
+        <textarea className="mt-2 min-h-24 w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700 outline-none focus:border-emerald-300 focus:bg-white focus:ring-4 focus:ring-emerald-100" onBlur={onBlur} onChange={(event) => onChange(event.target.value)} value={value} />
       ) : (
-        <input className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700 outline-none focus:border-emerald-300 focus:bg-white focus:ring-4 focus:ring-emerald-100" onChange={(event) => onChange(event.target.value)} value={value} />
+        <input className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700 outline-none focus:border-emerald-300 focus:bg-white focus:ring-4 focus:ring-emerald-100" onBlur={onBlur} onChange={(event) => onChange(event.target.value)} value={value} />
       )}
     </label>
   );
@@ -375,7 +409,7 @@ function productToDraft(product: ProductItem | null | undefined): ProductDraft |
     name: product.name,
     description: product.description,
     categoryId: product.categoryId,
-    price: product.price,
+    price: formatEuro(product.price),
     allergens: [...product.allergens],
     available: product.available,
     promo: product.promo,

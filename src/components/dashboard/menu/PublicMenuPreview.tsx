@@ -1,3 +1,5 @@
+import { formatEuro } from "@/lib/formatters";
+
 import type { CategoryItem, ProductItem } from "./menuData";
 
 type PublicMenuPreviewProps = {
@@ -75,7 +77,7 @@ function PreviewRow({ product }: { product: ProductItem }) {
           {product.promo ? <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-black text-amber-700">{product.promoValue || "Promo"}</span> : null}
         </span>
         <span className="mt-1 block text-xs font-semibold leading-5 text-slate-500">{product.description}</span>
-        <span className="mt-2 block text-sm font-black text-emerald-700">{product.price}</span>
+        <span className="mt-2 block text-sm font-black text-emerald-700">{formatEuro(product.price)}</span>
         {!product.available ? <span className="mt-1 block text-xs font-black text-rose-600">En rupture</span> : null}
       </span>
     </article>
