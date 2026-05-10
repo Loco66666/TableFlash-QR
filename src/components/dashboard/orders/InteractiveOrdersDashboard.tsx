@@ -14,7 +14,7 @@ import { PaymentReminderCard } from "./PaymentReminderCard";
 import { PreparationTimeWidget } from "./PreparationTimeWidget";
 import { SelectedOrderPanel } from "./SelectedOrderPanel";
 import { TopProductsWidget } from "./TopProductsWidget";
-import { filterStatusMap, getOrderActions, orders as initialOrders } from "./ordersData";
+import { getOrderActions, orders as initialOrders } from "./ordersData";
 import type { Order, OrderAction, OrderFilter, OrderStatus, PaymentStatus, SummaryTone } from "./ordersData";
 
 type SummaryCard = {
@@ -270,10 +270,9 @@ export function InteractiveOrdersDashboard() {
 
 function filterOrders(orders: Order[], activeFilter: OrderFilter, searchQuery: string) {
   const normalizedQuery = searchQuery.trim().toLowerCase();
-  const filterStatus = filterStatusMap[activeFilter];
 
   return orders.filter((order) => {
-    const matchesStatus = !filterStatus || order.status === filterStatus;
+    const matchesStatus = matchesOrderFilter(order, activeFilter);
     const searchableContent = [
       order.orderNumber,
       order.table,
@@ -284,6 +283,35 @@ function filterOrders(orders: Order[], activeFilter: OrderFilter, searchQuery: s
 
     return matchesStatus && matchesSearch;
   });
+}
+
+function matchesOrderFilter(order: Order, activeFilter: OrderFilter) {
+  switch (activeFilter) {
+    case "Toutes":
+      return true;
+    case "Nouvelles":
+      return order.status === "Nouvelle";
+    case "En cours":
+      return ["Acceptée", "À payer", "Payée", "En préparation"].includes(order.status);
+    case "Prêtes":
+      return order.status === "Prête";
+    case "Terminées":
+      return ["Servie", "Refusée", "Annulée"].includes(order.status);
+    case "Acceptées":
+      return order.status === "Acceptée";
+    case "À payer":
+      return order.status === "À payer" || order.paymentStatus === "À payer";
+    case "Payées":
+      return order.paymentStatus === "Payée";
+    case "En préparation":
+      return order.status === "En préparation";
+    case "Servies":
+      return order.status === "Servie";
+    case "Refusées":
+      return order.status === "Refusée";
+    case "Annulées":
+      return order.status === "Annulée";
+  }
 }
 
 function isCompletedStatus(status: OrderStatus) {

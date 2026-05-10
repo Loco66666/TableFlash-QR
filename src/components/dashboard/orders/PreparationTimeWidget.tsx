@@ -5,7 +5,7 @@ export function PreparationTimeWidget() {
         <div>
           <h2 className="text-xl font-black tracking-tight text-slate-950">Temps moyen de préparation</h2>
           <p className="mt-4 text-5xl font-black tracking-tight text-slate-950">12 min</p>
-          <p className="mt-2 text-sm font-black text-emerald-700">-3 min vs hier</p>
+          <p className="mt-2 text-sm font-black text-emerald-700">3 min gagnées vs hier</p>
         </div>
         <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100" aria-hidden="true">
           <ClockIcon />
