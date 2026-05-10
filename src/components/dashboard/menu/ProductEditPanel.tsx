@@ -69,6 +69,7 @@ export function ProductEditPanel({ product, draft, categories, onDraftChange, on
         <label className="block">
           <span className="text-sm font-black text-slate-700">Catégorie</span>
           <select className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700 outline-none" onChange={(event) => updateDraft({ categoryId: event.target.value })} value={draft.categoryId}>
+            {categories.length === 0 ? <option value={draft.categoryId}>Sans catégorie</option> : null}
             {categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
           </select>
         </label>

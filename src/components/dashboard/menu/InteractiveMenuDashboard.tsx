@@ -27,6 +27,8 @@ const blankProductDraft = (categoryId: string): ProductDraft => ({
   promoEndDate: "",
 });
 
+const UNCATEGORIZED_CATEGORY_ID = "sans-categorie";
+
 const imageTones = [
   "from-amber-200 via-orange-100 to-emerald-100",
   "from-lime-200 via-emerald-100 to-stone-100",
@@ -60,12 +62,14 @@ export function InteractiveMenuDashboard() {
     return counts;
   }, {}), [products]);
 
+  const categoryCount = useMemo(() => categories.filter((category) => category.id !== "all" && category.name.toLocaleLowerCase("fr-FR") !== "toutes").length, [categories]);
+
   const summaryItems = useMemo<SummaryItem[]>(() => [
-    { value: String(categories.length), label: "Catégories", helper: "Toutes vos catégories", tone: "emerald" },
+    { value: String(categoryCount), label: "Catégories", helper: "Toutes vos catégories", tone: "emerald" },
     { value: String(products.filter((product) => product.available && product.visible).length), label: "Produits actifs", helper: "Disponibles à la vente", tone: "sky" },
     { value: String(products.filter((product) => !product.available).length), label: "Produit en rupture", helper: "Non disponible", tone: "rose" },
     { value: String(products.filter((product) => product.promo).length), label: "Promotions actives", helper: "En cours", tone: "amber" },
-  ], [categories.length, products]);
+  ], [categoryCount, products]);
 
   const filteredProducts = useMemo(() => {
     const normalizedSearch = searchQuery.trim().toLocaleLowerCase("fr-FR");
@@ -80,6 +84,79 @@ export function InteractiveMenuDashboard() {
   }, [activeFilter, products, searchQuery, selectedCategoryId]);
 
   const showMessage = (message: string) => setSuccessMessage(message);
+
+  const updateSelectionAfterProductsChange = (nextProducts: ProductItem[]) => {
+    const nextSelected = selectedProductId ? nextProducts.find((product) => product.id === selectedProductId) : null;
+    const fallbackSelected = nextSelected ?? nextProducts.find((product) => product.available && product.visible) ?? nextProducts[0] ?? null;
+
+    setSelectedProductId(fallbackSelected?.id ?? null);
+    setEditingProduct(productToDraft(fallbackSelected));
+  };
+
+  const deleteAllCategories = () => {
+    if (!window.confirm("Voulez-vous vraiment supprimer toutes les catégories de cette maquette ? Les produits seront conservés mais repassés sans catégorie.")) return;
+
+    setCategories((currentCategories) => currentCategories.filter((category) => category.id === "all" || category.name.toLocaleLowerCase("fr-FR") === "toutes"));
+    const nextProducts = products.map((product) => ({ ...product, categoryId: UNCATEGORIZED_CATEGORY_ID }));
+    setProducts(nextProducts);
+    updateSelectionAfterProductsChange(nextProducts);
+    setSelectedCategoryId("all");
+    setNewProductDraft((currentDraft) => ({ ...currentDraft, categoryId: UNCATEGORIZED_CATEGORY_ID }));
+    setRowAction(null);
+    showMessage("Catégories supprimées de la maquette. Action appliquée localement dans la maquette.");
+  };
+
+  const deleteActiveProducts = () => {
+    if (!window.confirm("Voulez-vous vraiment supprimer tous les produits actifs de cette maquette ?")) return;
+
+    const nextProducts = products.filter((product) => !(product.available && product.visible));
+    setProducts(nextProducts);
+    updateSelectionAfterProductsChange(nextProducts);
+    setRowAction(null);
+    showMessage("Produits actifs supprimés de la maquette. Action appliquée localement dans la maquette.");
+  };
+
+  const deleteUnavailableProducts = () => {
+    if (!window.confirm("Voulez-vous vraiment supprimer tous les produits en rupture de cette maquette ?")) return;
+
+    const nextProducts = products.filter((product) => product.available);
+    setProducts(nextProducts);
+    updateSelectionAfterProductsChange(nextProducts);
+    setRowAction(null);
+    showMessage("Produits en rupture supprimés de la maquette. Action appliquée localement dans la maquette.");
+  };
+
+  const removePromotions = () => {
+    if (!window.confirm("Voulez-vous vraiment retirer toutes les promotions actives de cette maquette ?")) return;
+
+    const nextProducts = products.map((product) => ({ ...product, promo: false, promoValue: "", promoEndDate: "" }));
+    setProducts(nextProducts);
+    updateSelectionAfterProductsChange(nextProducts);
+    setEditingProduct((currentDraft) => currentDraft ? { ...currentDraft, promo: false, promoValue: "", promoEndDate: "" } : currentDraft);
+    setRowAction(null);
+    showMessage("Promotions retirées de la maquette. Action appliquée localement dans la maquette.");
+  };
+
+  const moveCategory = (categoryId: string, direction: "up" | "down") => {
+    setCategories((currentCategories) => {
+      const fromIndex = currentCategories.findIndex((category) => category.id === categoryId);
+      if (fromIndex === -1) return currentCategories;
+
+      const toIndex = direction === "up" ? fromIndex - 1 : fromIndex + 1;
+      if (toIndex < 0 || toIndex >= currentCategories.length) return currentCategories;
+
+      const nextCategories = [...currentCategories];
+      [nextCategories[fromIndex], nextCategories[toIndex]] = [nextCategories[toIndex], nextCategories[fromIndex]];
+      return nextCategories;
+    });
+  };
+
+  const summaryActions: Record<string, () => void> = {
+    "Catégories": deleteAllCategories,
+    "Produits actifs": deleteActiveProducts,
+    "Produit en rupture": deleteUnavailableProducts,
+    "Promotions actives": removePromotions,
+  };
 
   useEffect(() => {
     if (!successMessage) return;
@@ -202,7 +279,7 @@ export function InteractiveMenuDashboard() {
   };
 
   const openAddProduct = () => {
-    setNewProductDraft(blankProductDraft(selectedCategoryId === "all" ? categories[0]?.id ?? "general" : selectedCategoryId));
+    setNewProductDraft(blankProductDraft(selectedCategoryId === "all" ? categories[0]?.id ?? UNCATEGORIZED_CATEGORY_ID : selectedCategoryId));
     setIsAddProductOpen(true);
   };
 
@@ -272,13 +349,13 @@ export function InteractiveMenuDashboard() {
 
         <section className="grid gap-4 sm:grid-cols-2 2xl:grid-cols-4">
           {summaryItems.map((item) => (
-            <MenuSummaryCard key={item.label} {...item} />
+            <MenuSummaryCard key={item.label} {...item} onAction={summaryActions[item.label]} />
           ))}
         </section>
 
         <section className="grid gap-7 2xl:grid-cols-[300px_minmax(0,1fr)_380px]">
           <div className="space-y-7">
-            <CategoryList categories={categories} productCounts={productCounts} selectedCategoryId={selectedCategoryId} onSelectCategory={setSelectedCategoryId} />
+            <CategoryList categories={categories} productCounts={productCounts} selectedCategoryId={selectedCategoryId} onMoveCategory={moveCategory} onReorderUpdated={() => showMessage("Ordre des catégories mis à jour dans la maquette.")} onSelectCategory={setSelectedCategoryId} />
           </div>
 
           <div className="min-w-0">
@@ -356,6 +433,7 @@ function ProductForm({ categories, draft, onChange, onNormalizePrice }: { catego
       <label className="block">
         <span className="text-sm font-black text-slate-700">Catégorie</span>
         <select className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700 outline-none" onChange={(event) => updateDraft({ categoryId: event.target.value })} value={draft.categoryId}>
+          {categories.length === 0 ? <option value={draft.categoryId}>Sans catégorie</option> : null}
           {categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
         </select>
       </label>
