@@ -20,6 +20,7 @@ export function MenuSummaryCard({ value, label, helper, tone, actionLabel, onAct
           <p className="text-sm font-bold text-slate-500">{label}</p>
           <p className="mt-3 text-4xl font-black tracking-tight text-slate-950">{value}</p>
         </div>
+
         <button
           aria-label={actionLabel}
           className={`flex h-11 w-11 items-center justify-center rounded-2xl ring-1 transition focus:outline-none focus:ring-4 focus:ring-emerald-100 ${toneClasses[tone]}`}
@@ -33,6 +34,7 @@ export function MenuSummaryCard({ value, label, helper, tone, actionLabel, onAct
           <SummaryIcon />
         </button>
       </div>
+
       <p className="mt-4 text-sm font-semibold text-slate-500">{helper}</p>
     </article>
   );
@@ -40,7 +42,16 @@ export function MenuSummaryCard({ value, label, helper, tone, actionLabel, onAct
 
 function SummaryIcon() {
   return (
-    <svg aria-hidden="true" className="h-5 w-5" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24">
+    <svg
+      aria-hidden="true"
+      className="h-5 w-5"
+      fill="none"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="2"
+      viewBox="0 0 24 24"
+    >
       <path d="M4 7h16" />
       <path d="M6 7l1 13h10l1-13" />
       <path d="M9 7a3 3 0 0 1 6 0" />

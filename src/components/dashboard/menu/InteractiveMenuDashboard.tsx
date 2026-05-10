@@ -51,6 +51,7 @@ export function InteractiveMenuDashboard() {
   const [newCategoryName, setNewCategoryName] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [rowAction, setRowAction] = useState<RowActionState | null>(null);
+  const [reorderMode, setReorderMode] = useState(false);
   const editPanelRef = useRef<HTMLDivElement>(null);
 
   const selectedProduct = products.find((product) => product.id === selectedProductId) ?? null;
@@ -154,6 +155,13 @@ export function InteractiveMenuDashboard() {
     showMessage("Modification enregistrée dans la maquette.");
   };
 
+  const selectNextProductAfterBulkChange = (nextProducts: ProductItem[]) => {
+    const nextSelected = nextProducts.find((product) => product.available && product.visible) ?? nextProducts[0] ?? null;
+
+    setSelectedProductId(nextSelected?.id ?? null);
+    setEditingProduct(productToDraft(nextSelected));
+  };
+
   const cancelEditedProduct = () => {
     if (!selectedProduct) return;
 
@@ -247,6 +255,95 @@ export function InteractiveMenuDashboard() {
     showMessage("Catégorie ajoutée dans la maquette.");
   };
 
+  const handleDeleteAllCategories = () => {
+    const confirmed = window.confirm("Voulez-vous vraiment supprimer toutes les catégories de cette maquette ? Les produits seront conservés mais repassés sans catégorie.");
+    if (!confirmed) return;
+
+    setCategories([]);
+    setSelectedCategoryId("all");
+    setProducts((currentProducts) => currentProducts.map((product) => ({ ...product, categoryId: "uncategorized" })));
+    setEditingProduct((currentDraft) => currentDraft ? { ...currentDraft, categoryId: "uncategorized" } : currentDraft);
+    showMessage("Catégories supprimées de la maquette.");
+  };
+
+  const handleDeleteActiveProducts = () => {
+    const confirmed = window.confirm("Voulez-vous vraiment supprimer tous les produits actifs de cette maquette ?");
+    if (!confirmed) return;
+
+    const nextProducts = products.filter((product) => !(product.available && product.visible));
+    setProducts(nextProducts);
+    selectNextProductAfterBulkChange(nextProducts);
+    showMessage("Produits actifs supprimés de la maquette.");
+  };
+
+  const handleDeleteUnavailableProducts = () => {
+    const confirmed = window.confirm("Voulez-vous vraiment supprimer tous les produits en rupture de cette maquette ?");
+    if (!confirmed) return;
+
+    const nextProducts = products.filter((product) => product.available);
+    setProducts(nextProducts);
+    selectNextProductAfterBulkChange(nextProducts);
+    showMessage("Produits en rupture supprimés de la maquette.");
+  };
+
+  const handleRemoveAllPromotions = () => {
+    const confirmed = window.confirm("Voulez-vous vraiment retirer toutes les promotions actives de cette maquette ?");
+    if (!confirmed) return;
+
+    setProducts((currentProducts) => currentProducts.map((product) => ({ ...product, promo: false, promoValue: "" })));
+    setEditingProduct((currentDraft) => currentDraft ? { ...currentDraft, promo: false, promoValue: "" } : currentDraft);
+    showMessage("Promotions retirées de la maquette.");
+  };
+
+  const handleToggleReorderMode = () => {
+    setReorderMode((isActive) => !isActive);
+  };
+
+  const handleMoveCategoryUp = (categoryId: string) => {
+    setCategories((currentCategories) => {
+      const index = currentCategories.findIndex((category) => category.id === categoryId);
+      if (index <= 0) return currentCategories;
+
+      const nextCategories = [...currentCategories];
+      [nextCategories[index - 1], nextCategories[index]] = [nextCategories[index], nextCategories[index - 1]];
+      return nextCategories;
+    });
+
+    showMessage("Ordre des catégories mis à jour dans la maquette.");
+  };
+
+  const handleMoveCategoryDown = (categoryId: string) => {
+    setCategories((currentCategories) => {
+      const index = currentCategories.findIndex((category) => category.id === categoryId);
+      if (index === -1 || index >= currentCategories.length - 1) return currentCategories;
+
+      const nextCategories = [...currentCategories];
+      [nextCategories[index], nextCategories[index + 1]] = [nextCategories[index + 1], nextCategories[index]];
+      return nextCategories;
+    });
+
+    showMessage("Ordre des catégories mis à jour dans la maquette.");
+  };
+
+  const summaryActions: Record<string, { actionLabel: string; onAction: () => void }> = {
+    "Catégories": {
+      actionLabel: "Supprimer toutes les catégories de la maquette",
+      onAction: handleDeleteAllCategories,
+    },
+    "Produits actifs": {
+      actionLabel: "Supprimer tous les produits actifs de la maquette",
+      onAction: handleDeleteActiveProducts,
+    },
+    "Produit en rupture": {
+      actionLabel: "Supprimer tous les produits en rupture de la maquette",
+      onAction: handleDeleteUnavailableProducts,
+    },
+    "Promotions actives": {
+      actionLabel: "Retirer toutes les promotions actives de la maquette",
+      onAction: handleRemoveAllPromotions,
+    },
+  };
+
   return (
     <>
       <DashboardHeader
@@ -272,13 +369,22 @@ export function InteractiveMenuDashboard() {
 
         <section className="grid gap-4 sm:grid-cols-2 2xl:grid-cols-4">
           {summaryItems.map((item) => (
-            <MenuSummaryCard key={item.label} {...item} />
+            <MenuSummaryCard key={item.label} {...item} {...summaryActions[item.label]} />
           ))}
         </section>
 
         <section className="grid gap-7 2xl:grid-cols-[300px_minmax(0,1fr)_380px]">
           <div className="space-y-7">
-            <CategoryList categories={categories} productCounts={productCounts} selectedCategoryId={selectedCategoryId} onSelectCategory={setSelectedCategoryId} />
+            <CategoryList
+              categories={categories}
+              productCounts={productCounts}
+              reorderMode={reorderMode}
+              selectedCategoryId={selectedCategoryId}
+              onMoveCategoryDown={handleMoveCategoryDown}
+              onMoveCategoryUp={handleMoveCategoryUp}
+              onSelectCategory={setSelectedCategoryId}
+              onToggleReorderMode={handleToggleReorderMode}
+            />
           </div>
 
           <div className="min-w-0">
