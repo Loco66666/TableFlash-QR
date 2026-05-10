@@ -15,9 +15,17 @@ export function PublicCartItem({ item, onIncrease, onDecrease, onRemove, onNoteC
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="font-black text-slate-950">{item.name}</p>
-          <p className="mt-1 text-sm font-bold text-emerald-800">
-            {item.quantity} × {formatEuro(item.price)} · {formatEuro(item.price * item.quantity)}
-          </p>
+          {item.quantity === 1 ? (
+            <p className="mt-1 text-sm font-bold text-emerald-800">{formatEuro(item.price)}</p>
+          ) : (
+            <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-bold text-emerald-800">
+              <span>{item.quantity} × {formatEuro(item.price)}</span>
+              <span className="text-slate-300" aria-hidden="true">
+                =
+              </span>
+              <span>{formatEuro(item.price * item.quantity)}</span>
+            </div>
+          )}
           {item.note ? <p className="mt-2 rounded-2xl bg-slate-50 px-3 py-2 text-sm text-slate-600">Note : {item.note}</p> : null}
         </div>
         <div className="flex items-center gap-2">
