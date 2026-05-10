@@ -187,7 +187,7 @@ export function getOrderActions(status: OrderStatus): OrderAction[] {
     case "Nouvelle":
       return ["Accepter", "Refuser"];
     case "Acceptée":
-      return ["Marquer à payer", "En préparation"];
+      return ["Marquer à payer"];
     case "À payer":
       return ["Marquer payée"];
     case "Payée":
