@@ -27,49 +27,54 @@ type TrackingStep = {
   statuses: LocalOrderStatus[];
 };
 
-const customerStatusLabels: Record<LocalOrderStatus, string> = {
-  Nouvelle: "Commande envoyée",
-  Acceptée: "Acceptée",
-  "À payer": "À régler",
-  Payée: "Règlement confirmé",
-  "En préparation": "En préparation",
-  Prête: "Prête",
-  Servie: "Servie",
-  Refusée: "Commande refusée",
-  Annulée: "Commande annulée",
+type CustomerStatusContent = {
+  title: string;
+  message: string;
 };
 
-const customerStatusGuidance: Record<LocalOrderStatus, string> = {
-  Nouvelle: "Le restaurant va prendre en charge votre commande.",
-  Acceptée: "Votre commande a été acceptée par le restaurant.",
-  "À payer": "Le règlement se fera à la caisse ou auprès du serveur.",
-  Payée: "Votre règlement est confirmé. La commande va être préparée.",
-  "En préparation": "L’équipe prépare votre commande.",
-  Prête: "Votre commande est prête à être servie.",
-  Servie: "Bon appétit.",
-  Refusée: "La commande n’a pas pu être prise en charge.",
-  Annulée: "La commande a été annulée.",
-};
-
-const customerPaymentLabels: Record<LocalOrderStatus, string> = {
-  Nouvelle: "En attente de prise en charge",
-  Acceptée: "En attente de prise en charge",
-  "À payer": "À régler sur place",
-  Payée: "Règlement confirmé",
-  "En préparation": "Règlement confirmé",
-  Prête: "Règlement confirmé",
-  Servie: "Règlement confirmé",
-  Refusée: "Commande interrompue",
-  Annulée: "Commande interrompue",
+const customerStatusContent: Record<LocalOrderStatus, CustomerStatusContent> = {
+  Nouvelle: {
+    title: "Commande envoyée",
+    message: "Votre commande a bien été transmise au restaurant.",
+  },
+  Acceptée: {
+    title: "Commande acceptée",
+    message: "Le restaurant a pris en charge votre commande.",
+  },
+  "À payer": {
+    title: "Règlement sur place",
+    message: "Vous pouvez régler à la caisse ou auprès du serveur.",
+  },
+  Payée: {
+    title: "Règlement confirmé",
+    message: "Votre règlement est confirmé. La préparation peut commencer.",
+  },
+  "En préparation": {
+    title: "En préparation",
+    message: "L’équipe prépare votre commande.",
+  },
+  Prête: {
+    title: "Commande prête",
+    message: "Votre commande est prête à être servie.",
+  },
+  Servie: {
+    title: "Commande servie",
+    message: "Merci pour votre commande. Nous espérons que vous avez passé un agréable moment.",
+  },
+  Refusée: {
+    title: "Commande non prise en charge",
+    message: "La commande n’a pas pu être prise en charge par le restaurant.",
+  },
+  Annulée: {
+    title: "Commande annulée",
+    message: "Cette commande a été annulée.",
+  },
 };
 
 const trackingSteps: TrackingStep[] = [
   { label: "Commande envoyée", statuses: ["Nouvelle"] },
-  { label: "Acceptée", statuses: ["Acceptée"] },
-  { label: "À régler", statuses: ["À payer"] },
-  { label: "Règlement confirmé", statuses: ["Payée"] },
-  { label: "En préparation", statuses: ["En préparation"] },
-  { label: "Prête", statuses: ["Prête"] },
+  { label: "Validation", statuses: ["Acceptée", "À payer", "Payée"] },
+  { label: "Préparation", statuses: ["En préparation", "Prête"] },
   { label: "Servie", statuses: ["Servie"] },
 ];
 
@@ -83,6 +88,18 @@ function getActiveStepIndex(status: LocalOrderStatus) {
 
 function isStoppedStatus(status: LocalOrderStatus) {
   return status === "Refusée" || status === "Annulée";
+}
+
+function getPaymentBadgeLabel(status: LocalOrderStatus) {
+  if (status === "À payer") {
+    return "À régler sur place";
+  }
+
+  if (["Payée", "En préparation", "Prête", "Servie"].includes(status)) {
+    return "Règlement confirmé";
+  }
+
+  return null;
 }
 
 export function PublicOrderConfirmation({ order, paymentNote, onBackToMenu, onNewOrder }: PublicOrderConfirmationProps) {
@@ -129,6 +146,8 @@ export function PublicOrderConfirmation({ order, paymentNote, onBackToMenu, onNe
   const latestOrderForCurrentConfirmation = order && latestOrder?.orderNumber === order.orderNumber ? latestOrder : null;
   const currentStatus = latestOrderForCurrentConfirmation?.status ?? "Nouvelle";
   const activeStepIndex = useMemo(() => getActiveStepIndex(currentStatus), [currentStatus]);
+  const currentStatusContent = customerStatusContent[currentStatus];
+  const paymentBadgeLabel = getPaymentBadgeLabel(currentStatus);
 
   if (!order) {
     return null;
@@ -191,9 +210,9 @@ export function PublicOrderConfirmation({ order, paymentNote, onBackToMenu, onNe
         <section className="mt-4 rounded-[1.75rem] border border-emerald-100 bg-gradient-to-br from-emerald-50 via-white to-white p-4 shadow-sm shadow-emerald-950/5" aria-labelledby="order-tracking-title">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="text-xs font-black uppercase tracking-[0.18em] text-emerald-700">En direct</p>
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-emerald-700">Suivi en direct</p>
               <h3 id="order-tracking-title" className="mt-1 text-xl font-black tracking-[-0.04em] text-slate-950">
-                Suivi de votre commande
+                Votre commande au restaurant
               </h3>
             </div>
             <button
@@ -205,18 +224,20 @@ export function PublicOrderConfirmation({ order, paymentNote, onBackToMenu, onNe
             </button>
           </div>
 
-          <div className="mt-4 rounded-3xl border border-white bg-white/90 p-4 shadow-sm shadow-emerald-950/5">
+          <div className="mt-4 rounded-3xl border border-white bg-white/95 p-4 shadow-sm shadow-emerald-950/5">
             <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-400">Étape actuelle</p>
-                <p className="mt-1 text-sm font-black text-emerald-800">{customerStatusLabels[currentStatus]}</p>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-black uppercase tracking-[0.16em] text-emerald-700">Suivi en direct</p>
+                <p className="mt-2 text-xl font-black tracking-[-0.04em] text-slate-950">{currentStatusContent.title}</p>
               </div>
-              <div className="rounded-2xl border border-emerald-100 bg-emerald-50 px-3 py-2 text-right">
-                <p className="text-[0.65rem] font-black uppercase tracking-[0.14em] text-emerald-700">Règlement</p>
-                <p className="mt-0.5 text-sm font-black text-emerald-950">{customerPaymentLabels[currentStatus]}</p>
-              </div>
+              {paymentBadgeLabel ? (
+                <div className="rounded-2xl border border-emerald-100 bg-emerald-50 px-3 py-2 text-right">
+                  <p className="text-[0.65rem] font-black uppercase tracking-[0.14em] text-emerald-700">Règlement</p>
+                  <p className="mt-0.5 text-sm font-black text-emerald-950">{paymentBadgeLabel}</p>
+                </div>
+              ) : null}
             </div>
-            <p className="mt-3 text-sm leading-6 text-slate-600">{customerStatusGuidance[currentStatus]}</p>
+            <p className="mt-3 text-sm leading-6 text-slate-600">{currentStatusContent.message}</p>
           </div>
 
           {isStoppedStatus(currentStatus) ? (
@@ -225,7 +246,7 @@ export function PublicOrderConfirmation({ order, paymentNote, onBackToMenu, onNe
               <p className="mt-1">Vous pouvez vous rapprocher de l’équipe en salle pour toute question.</p>
             </div>
           ) : (
-            <ol className="mt-4 grid grid-cols-7 gap-1" aria-label="Progression de la commande">
+            <ol className="mt-5 grid grid-cols-4 gap-3" aria-label="Progression de la commande">
               {trackingSteps.map((step, index) => {
                 const isCompleted = activeStepIndex >= 0 && index < activeStepIndex;
                 const isCurrent = index === activeStepIndex;
@@ -234,14 +255,14 @@ export function PublicOrderConfirmation({ order, paymentNote, onBackToMenu, onNe
                 return (
                   <li key={step.label} className="min-w-0">
                     <div
-                      className={`mx-auto grid h-7 w-7 place-items-center rounded-full text-[0.68rem] font-black transition ${
+                      className={`mx-auto grid h-9 w-9 place-items-center rounded-full text-sm font-black transition ${
                         isHighlighted ? "bg-emerald-700 text-white shadow-lg shadow-emerald-700/20" : "bg-slate-100 text-slate-400"
                       }`}
                       aria-current={isCurrent ? "step" : undefined}
                     >
                       {isCompleted ? "✓" : index + 1}
                     </div>
-                    <p className={`mt-2 text-center text-[0.56rem] font-black leading-[0.7rem] ${isHighlighted ? "text-slate-900" : "text-slate-400"}`}>
+                    <p className={`mt-2 text-center text-[0.72rem] font-black leading-4 ${isHighlighted ? "text-slate-900" : "text-slate-400"}`}>
                       {step.label}
                     </p>
                   </li>
@@ -249,6 +270,14 @@ export function PublicOrderConfirmation({ order, paymentNote, onBackToMenu, onNe
               })}
             </ol>
           )}
+
+          {currentStatus === "Servie" ? (
+            <div className="mt-4 rounded-3xl border border-emerald-100 bg-emerald-800 p-5 text-white shadow-lg shadow-emerald-800/15">
+              <p className="text-lg font-black tracking-[-0.03em]">Merci pour votre visite</p>
+              <p className="mt-2 text-sm leading-6 text-emerald-50">Votre commande est terminée. Nous espérons vous revoir très bientôt.</p>
+              <p className="mt-3 text-xs font-bold uppercase tracking-[0.14em] text-emerald-100">L’équipe du restaurant vous souhaite une excellente dégustation.</p>
+            </div>
+          ) : null}
         </section>
 
         <div className="mt-4 rounded-3xl border border-emerald-100 bg-emerald-50 p-4 text-sm leading-6 text-emerald-900">
