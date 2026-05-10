@@ -1,5 +1,6 @@
-import type { Order, OrderAction } from "./ordersData";
 import { OrderStatusBadge } from "./OrderStatusBadge";
+import { OrderTimingBadge } from "./OrderTimingBadge";
+import { getOrderTimingStatus, type Order, type OrderAction } from "./ordersData";
 import { PaymentStatusBadge } from "./PaymentStatusBadge";
 
 const actionClasses: Record<"default" | "danger" | "neutral", string> = {
@@ -20,6 +21,8 @@ export function SelectedOrderPanel({ actions, order, onAction, onClose }: Select
     return <EmptySelectedOrderPanel />;
   }
 
+  const timingStatus = getOrderTimingStatus(order);
+  const showDetailedTiming = timingStatus !== "Commande clôturée";
   const actionGridClasses = actions.length === 2
     ? "mt-2 grid grid-cols-2 gap-2"
     : "mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2";
@@ -56,6 +59,22 @@ export function SelectedOrderPanel({ actions, order, onAction, onClose }: Select
             <PaymentStatusBadge status={order.paymentStatus} />
           </div>
           <p className="mt-2 text-sm font-bold leading-5 text-orange-950">Paiement à la caisse ou auprès du serveur</p>
+        </div>
+
+        <div className="mt-3 rounded-3xl border border-emerald-100 bg-emerald-50 p-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-xs font-black uppercase tracking-[0.14em] text-emerald-700">Suivi préparation</p>
+            <OrderTimingBadge status={timingStatus} />
+          </div>
+          {showDetailedTiming ? (
+            <div className="mt-3 grid grid-cols-1 gap-2 text-sm font-bold text-emerald-950 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
+              <TimingMeta label="Temps estimé" value={`${order.estimatedPrepMinutes} min`} />
+              <TimingMeta label="Temps écoulé" value={`${order.mockElapsedMinutes} min`} />
+              <TimingMeta label="Statut" value={timingStatus} />
+            </div>
+          ) : (
+            <p className="mt-2 text-sm font-bold leading-5 text-emerald-950">Commande terminée, suivi conservé pour l’historique local.</p>
+          )}
         </div>
       </div>
 
@@ -134,6 +153,15 @@ function DetailMeta({ label, value }: { label: string; value: string }) {
     <div>
       <p className="text-xs font-black uppercase tracking-[0.14em] text-slate-400">{label}</p>
       <p className="mt-1 font-black text-slate-900">{value}</p>
+    </div>
+  );
+}
+
+function TimingMeta({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-2xl bg-white/70 px-3 py-2 ring-1 ring-emerald-100">
+      <p className="text-[0.68rem] font-black uppercase tracking-[0.12em] text-emerald-700">{label}</p>
+      <p className="mt-1 font-black text-slate-950">{value}</p>
     </div>
   );
 }

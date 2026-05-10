@@ -5,6 +5,7 @@ export { OrdersDashboard } from "./OrdersDashboard";
 export { OrdersFilterBar } from "./OrdersFilterBar";
 export { OrderStatusBadge } from "./OrderStatusBadge";
 export { OrderSummaryCard } from "./OrderSummaryCard";
+export { OrderTimingBadge } from "./OrderTimingBadge";
 export { PaymentReminderCard } from "./PaymentReminderCard";
 export { PaymentStatusBadge } from "./PaymentStatusBadge";
 export { PreparationTimeWidget } from "./PreparationTimeWidget";
