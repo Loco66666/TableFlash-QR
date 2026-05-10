@@ -73,7 +73,7 @@ export function InteractiveTablesDashboard() {
   }
 
   function handleHeaderPrint() {
-    const tablesToPrint = selectedTable ? [selectedTable] : tables.filter((table) => table.isActive);
+    const tablesToPrint = isPreviewOpen && selectedTable ? [selectedTable] : tables.filter((table) => table.isActive);
 
     if (tablesToPrint.length === 0) {
       showToast("Sélectionnez un QR puis cliquez sur Imprimer dans l’aperçu.");
