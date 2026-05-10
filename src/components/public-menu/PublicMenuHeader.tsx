@@ -36,7 +36,7 @@ export function PublicMenuHeader({ restaurant, tableName }: PublicMenuHeaderProp
           {restaurant.name}
         </h1>
         <p className="mt-3 max-w-xs text-sm leading-6 text-emerald-50/85">
-          Une carte courte, lisible et préparée par l’équipe du restaurant.
+          Commandez simplement depuis votre table, nous nous occupons du reste.
         </p>
       </div>
 

@@ -1,7 +1,6 @@
 import { formatEuro } from "@/lib/formatters";
 import { PublicCartItem } from "./PublicCartItem";
 import { PublicEmptyState } from "./PublicEmptyState";
-import { PublicPaymentNotice } from "./PublicPaymentNotice";
 import type { PublicCartItem as CartItem } from "./types";
 
 type PublicCartDrawerProps = {
@@ -54,7 +53,7 @@ export function PublicCartDrawer({
               Votre commande
             </h2>
             <p className="mt-1 text-sm font-semibold text-slate-500">
-              {tableName} · Paiement à la caisse ou auprès du serveur
+              {tableName} · {paymentNote}
             </p>
           </div>
           <button
@@ -85,13 +84,13 @@ export function PublicCartDrawer({
         </div>
 
         <label className="mt-5 block text-sm font-extrabold text-slate-950" htmlFor="global-order-note">
-          Une précision pour la cuisine ?
+          Une demande particulière ?
         </label>
         <textarea
           id="global-order-note"
           value={globalNote}
           onChange={(event) => onGlobalNoteChange(event.target.value)}
-          placeholder="Ex : servir les boissons avant les plats, allergie à préciser..."
+          placeholder="Ex : sans oignons, sauce à part, servir les boissons avant les plats..."
           className="mt-3 min-h-24 w-full rounded-3xl border border-slate-200 bg-white p-4 text-base outline-none ring-emerald-600/20 placeholder:text-slate-400 focus:ring-4"
         />
 
@@ -106,8 +105,9 @@ export function PublicCartDrawer({
           </div>
         </div>
 
-        <div className="mt-4">
-          <PublicPaymentNotice note={paymentNote} />
+        <div className="mt-4 rounded-3xl border border-emerald-100 bg-emerald-50 p-4 text-sm leading-6 text-emerald-900">
+          <p className="font-black">Règlement sur place</p>
+          <p className="mt-1">Le règlement se fera à la caisse ou auprès du serveur.</p>
         </div>
 
         <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -115,7 +115,7 @@ export function PublicCartDrawer({
             Continuer le menu
           </button>
           <button type="button" onClick={onValidateOrder} className="min-h-12 rounded-2xl bg-emerald-800 px-4 text-sm font-black text-white shadow-lg shadow-emerald-800/20">
-            Valider la commande
+            Confirmer la commande
           </button>
         </div>
       </div>
