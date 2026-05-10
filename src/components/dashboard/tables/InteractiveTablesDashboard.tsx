@@ -239,26 +239,26 @@ export function InteractiveTablesDashboard() {
         </button>
       </DashboardHeader>
 
-      <main className="flex-1 space-y-6 p-5 lg:p-8">
-        <section className="overflow-hidden rounded-[2rem] border border-emerald-200 bg-gradient-to-br from-emerald-950 via-emerald-900 to-slate-950 p-6 text-white shadow-2xl shadow-emerald-950/15">
-          <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+      <main className="flex-1 space-y-5 p-5 lg:p-8">
+        <section className="overflow-hidden rounded-[1.75rem] border border-emerald-200 bg-gradient-to-br from-emerald-950 via-emerald-900 to-slate-950 p-5 text-white shadow-xl shadow-emerald-950/10">
+          <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
             <div>
               <p className="text-sm font-black uppercase tracking-[0.22em] text-emerald-200">Flux client</p>
               <h2 className="mt-3 text-2xl font-black tracking-tight md:text-3xl">Un QR unique pour chaque table</h2>
-              <p className="mt-3 max-w-3xl text-base font-semibold leading-7 text-emerald-50/85">Chaque QR code ouvre le menu public avec la table déjà associée. Le client commande sans paiement en ligne, puis règle à la caisse ou auprès du serveur.</p>
+              <p className="mt-2 max-w-3xl text-sm font-semibold leading-6 text-emerald-50/85">Chaque QR code ouvre le menu public avec la table déjà associée. Le client commande sans paiement en ligne, puis règle à la caisse ou auprès du serveur.</p>
             </div>
             <div className="grid gap-2 sm:grid-cols-4 lg:min-w-[540px]">
               {["QR scanné", "Menu public", "Panier validé", "Commande reçue"].map((step, index) => (
-                <div className="rounded-2xl bg-white/10 p-4 text-center ring-1 ring-white/15" key={step}>
+                <div className="rounded-2xl bg-white/10 p-3 text-center ring-1 ring-white/15" key={step}>
                   <p className="mx-auto flex h-8 w-8 items-center justify-center rounded-full bg-emerald-300 text-sm font-black text-emerald-950">{index + 1}</p>
-                  <p className="mt-3 text-sm font-black text-white">{step}</p>
+                  <p className="mt-2 text-xs font-black text-white">{step}</p>
                 </div>
               ))}
             </div>
           </div>
         </section>
 
-        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {summaryCards.map((card) => (
             <TableSummaryCard key={card.label} {...card} />
           ))}
@@ -278,17 +278,17 @@ export function InteractiveTablesDashboard() {
           sortMode={sortMode}
         />
 
-        <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
+        <section className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
           <div className="space-y-4">
             <div className="flex items-center justify-between gap-4">
               <div>
-                <h2 className="text-2xl font-black tracking-tight text-slate-950">QR configurés</h2>
+                <h2 className="text-xl font-black tracking-tight text-slate-950">QR configurés</h2>
                 <p className="mt-1 text-sm font-semibold text-slate-500">{visibleTables.length} table{visibleTables.length > 1 ? "s" : ""} affichée{visibleTables.length > 1 ? "s" : ""} dans cette maquette locale.</p>
               </div>
             </div>
 
             {visibleTables.length > 0 ? (
-              <div className="grid gap-4 lg:grid-cols-2">
+              <div className="grid gap-3 lg:grid-cols-2">
                 {visibleTables.map((table) => {
                   const customIndex = tables.findIndex((currentTable) => currentTable.id === table.id);
                   return (
