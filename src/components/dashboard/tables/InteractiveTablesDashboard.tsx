@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { flushSync } from "react-dom";
 
 import { DashboardHeader } from "@/components/dashboard";
 
 import { EmptyTablesState } from "./EmptyTablesState";
 import { TableFormModal } from "./TableFormModal";
 import { TableQrCard } from "./TableQrCard";
+import { PrintableQrCard } from "./PrintableQrCard";
 import { TableQrPreviewPanel } from "./TableQrPreviewPanel";
 import { TableSummaryCard } from "./TableSummaryCard";
 import { TablesToolbar } from "./TablesToolbar";
@@ -36,6 +38,7 @@ export function InteractiveTablesDashboard() {
   const [successMessage, setSuccessMessage] = useState<ToastState | null>(null);
   const [sortMode, setSortMode] = useState<TableSortMode>("custom");
   const [isReorderMode, setIsReorderMode] = useState(false);
+  const [printTargetTables, setPrintTargetTables] = useState<RestaurantTable[]>([]);
 
   useEffect(() => {
     if (!successMessage) {
@@ -45,6 +48,15 @@ export function InteractiveTablesDashboard() {
     const timeoutId = window.setTimeout(() => setSuccessMessage(null), 3000);
     return () => window.clearTimeout(timeoutId);
   }, [successMessage]);
+
+  useEffect(() => {
+    function clearPrintTargets() {
+      setPrintTargetTables([]);
+    }
+
+    window.addEventListener("afterprint", clearPrintTargets);
+    return () => window.removeEventListener("afterprint", clearPrintTargets);
+  }, []);
 
   const selectedTable = selectedTableId ? tables.find((table) => table.id === selectedTableId) ?? null : null;
   const visibleTables = useMemo(() => filterAndSortTables(tables, searchQuery, activeZoneFilter, activeStatusFilter, sortMode), [activeStatusFilter, activeZoneFilter, searchQuery, sortMode, tables]);
@@ -60,8 +72,14 @@ export function InteractiveTablesDashboard() {
   }
 
   function handleHeaderPrint() {
-    showToast("Préparation de l’impression des QR.");
-    window.print();
+    const tablesToPrint = isPreviewOpen && selectedTable ? [selectedTable] : tables.filter((table) => table.isActive);
+
+    if (tablesToPrint.length === 0) {
+      showToast("Sélectionnez un QR puis cliquez sur Imprimer dans l’aperçu.");
+      return;
+    }
+
+    printTables(tablesToPrint);
   }
 
   async function handleCopy(table: RestaurantTable) {
@@ -95,7 +113,14 @@ export function InteractiveTablesDashboard() {
 
   function handlePrintTable(table: RestaurantTable) {
     setSelectedTableId(table.id);
-    showToast("Préparation de l’impression des QR.");
+    printTables([table]);
+  }
+
+  function printTables(tablesToPrint: RestaurantTable[]) {
+    flushSync(() => {
+      setPrintTargetTables(tablesToPrint);
+      setSuccessMessage({ id: Date.now(), message: "Préparation de l’impression des QR." });
+    });
     window.print();
   }
 
@@ -237,23 +262,32 @@ export function InteractiveTablesDashboard() {
 
   return (
     <>
-      <DashboardHeader
-        eyebrow="Le Bistrot des Halles"
-        title="QR par table"
-        subtitle="Générez, organisez et imprimez les QR codes que vos clients scannent depuis leur table."
-      >
-        <button className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-black text-slate-700 shadow-sm transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-800" onClick={() => showToast("Export des QR simulé dans la maquette.")} type="button">
-          Exporter les QR
-        </button>
-        <button className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-black text-slate-700 shadow-sm transition hover:border-amber-200 hover:bg-amber-50 hover:text-amber-800" onClick={handleHeaderPrint} type="button">
-          Imprimer la sélection
-        </button>
-        <button className="rounded-2xl bg-emerald-600 px-5 py-3 text-sm font-black text-white shadow-lg shadow-emerald-900/15 transition hover:bg-emerald-700" onClick={() => setIsAddTableOpen(true)} type="button">
-          Ajouter une table
-        </button>
-      </DashboardHeader>
+      <section aria-label="QR à imprimer" className="tableflash-print-area" data-print-ready={printTargetTables.length > 0 ? "true" : "false"}>
+        <div className="tableflash-print-grid">
+          {printTargetTables.map((table) => (
+            <PrintableQrCard key={table.id} table={table} />
+          ))}
+        </div>
+      </section>
 
-      <main className="flex-1 space-y-5 p-5 lg:p-8">
+      <div className="tableflash-dashboard-screen">
+        <DashboardHeader
+          eyebrow="Le Bistrot des Halles"
+          title="QR par table"
+          subtitle="Générez, organisez et imprimez les QR codes que vos clients scannent depuis leur table."
+        >
+          <button className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-black text-slate-700 shadow-sm transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-800" onClick={() => showToast("Export des QR simulé dans la maquette.")} type="button">
+            Exporter les QR
+          </button>
+          <button className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-black text-slate-700 shadow-sm transition hover:border-amber-200 hover:bg-amber-50 hover:text-amber-800" onClick={handleHeaderPrint} type="button">
+            Imprimer la sélection
+          </button>
+          <button className="rounded-2xl bg-emerald-600 px-5 py-3 text-sm font-black text-white shadow-lg shadow-emerald-900/15 transition hover:bg-emerald-700" onClick={() => setIsAddTableOpen(true)} type="button">
+            Ajouter une table
+          </button>
+        </DashboardHeader>
+
+        <main className="flex-1 space-y-5 p-5 lg:p-8">
         <section className="overflow-hidden rounded-[1.75rem] border border-emerald-200 bg-gradient-to-br from-emerald-950 via-emerald-900 to-slate-950 p-5 text-white shadow-xl shadow-emerald-950/10">
           <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
             <div>
@@ -339,8 +373,9 @@ export function InteractiveTablesDashboard() {
               table={selectedTable}
             />
           ) : null}
-        </section>
-      </main>
+          </section>
+        </main>
+      </div>
 
       {isAddTableOpen ? <TableFormModal mode="add" onClose={() => setIsAddTableOpen(false)} onSave={handleAddTable} /> : null}
       {isEditTableOpen ? <TableFormModal mode="edit" onClose={() => setIsEditTableOpen(false)} onSave={handleEditTable} table={selectedTable} /> : null}
