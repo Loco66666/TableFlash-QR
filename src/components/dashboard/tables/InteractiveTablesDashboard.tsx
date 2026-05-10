@@ -278,8 +278,8 @@ export function InteractiveTablesDashboard() {
           sortMode={sortMode}
         />
 
-        <section className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
-          <div className="space-y-4">
+        <section className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
+          <div className="space-y-3">
             <div className="flex items-center justify-between gap-4">
               <div>
                 <h2 className="text-xl font-black tracking-tight text-slate-950">QR configurés</h2>
