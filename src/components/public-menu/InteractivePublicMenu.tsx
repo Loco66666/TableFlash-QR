@@ -45,6 +45,24 @@ export function InteractivePublicMenu({ restaurantSlug, tableName }: Interactive
   const restaurant = publicRestaurant.slug === restaurantSlug ? publicRestaurant : publicRestaurant;
   const orderingDisabled = restaurant.serviceStatus !== "open";
 
+  const categoryCounts = useMemo(
+    () =>
+      publicMenuCategories.reduce<Record<PublicMenuCategory, number>>((counts, category) => {
+        counts[category] = publicMenuProducts.filter((product) => product.category === category).length;
+        return counts;
+      }, {} as Record<PublicMenuCategory, number>),
+    [],
+  );
+
+  const cartQuantitiesByProduct = useMemo(
+    () =>
+      cartItems.reduce<Record<string, number>>((quantities, item) => {
+        quantities[item.productId] = (quantities[item.productId] ?? 0) + item.quantity;
+        return quantities;
+      }, {}),
+    [cartItems],
+  );
+
   const visibleProducts = useMemo(
     () => publicMenuProducts.filter((product) => product.category === selectedCategory),
     [selectedCategory],
@@ -160,6 +178,13 @@ export function InteractivePublicMenu({ restaurantSlug, tableName }: Interactive
     });
   }
 
+  function handleRemove(productId: string, note?: string) {
+    setCartItems((currentItems) =>
+      currentItems.filter((item) => !(item.productId === productId && item.note === note)),
+    );
+    showToast("Produit retiré du panier.");
+  }
+
   function handleItemNoteChange(productId: string, note: string | undefined, nextNote: string) {
     setCartItems((currentItems) =>
       currentItems.map((item) =>
@@ -200,17 +225,24 @@ export function InteractivePublicMenu({ restaurantSlug, tableName }: Interactive
   }
 
   return (
-    <main className="min-h-screen bg-[#F9FAFB] text-slate-950">
-      <div className="mx-auto min-h-screen max-w-[520px] bg-[#F9FAFB] shadow-2xl shadow-slate-950/10">
+    <main className="min-h-screen bg-[radial-gradient(circle_at_top,#D1FAE5_0,#F8FAFC_36%,#F1F5F9_100%)] text-slate-950 md:px-6 md:py-8">
+      <div className="mx-auto min-h-screen w-full max-w-[460px] overflow-hidden bg-[#F8FAF7] shadow-none ring-0 md:min-h-[calc(100vh-4rem)] md:rounded-[2.25rem] md:shadow-2xl md:shadow-emerald-950/20 md:ring-1 md:ring-white/80">
         <PublicMenuHeader restaurant={restaurant} tableName={tableName} />
 
-        <div className="px-4 pb-28 pt-5">
-          <section className="rounded-[2rem] border border-emerald-100 bg-white p-5 shadow-sm shadow-emerald-900/5">
-            <p className="text-xs font-black uppercase tracking-[0.22em] text-emerald-700">Bienvenue</p>
-            <h2 className="mt-2 text-2xl font-black tracking-[-0.04em] text-slate-950">Commandez depuis votre table</h2>
-            <p className="mt-3 text-sm leading-6 text-slate-600">
-              Ajoutez vos plats au panier, validez votre commande, puis réglez à la caisse ou auprès du serveur.
+        <div className="px-4 pb-36 pt-5">
+          <section className="rounded-[1.75rem] border border-white bg-white/95 p-5 shadow-lg shadow-emerald-950/5">
+            <p className="text-xs font-black uppercase tracking-[0.22em] text-emerald-700">Bienvenue à table</p>
+            <h2 className="mt-2 text-[1.7rem] font-black tracking-[-0.05em] text-slate-950">Commandez à votre rythme</h2>
+            <p className="mt-3 text-[0.95rem] leading-6 text-slate-600">
+              Choisissez vos produits, ajoutez une note si besoin, puis validez votre commande. Le règlement se fait ensuite à la caisse ou auprès du serveur.
             </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {['Menu à table', 'Sans paiement en ligne', 'Préparation en cuisine'].map((label) => (
+                <span key={label} className="rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1.5 text-xs font-extrabold text-emerald-800">
+                  {label}
+                </span>
+              ))}
+            </div>
           </section>
 
           {orderingDisabled ? (
@@ -220,28 +252,34 @@ export function InteractivePublicMenu({ restaurantSlug, tableName }: Interactive
           ) : null}
 
           <div className="mt-5">
-            <PublicMenuCategoryTabs categories={publicMenuCategories} selectedCategory={selectedCategory} onSelectCategory={setSelectedCategory} />
+            <PublicMenuCategoryTabs
+              categories={publicMenuCategories}
+              categoryCounts={categoryCounts}
+              selectedCategory={selectedCategory}
+              onSelectCategory={setSelectedCategory}
+            />
           </div>
 
           <section className="mt-5" aria-labelledby="products-heading">
-            <div className="mb-4 flex items-end justify-between gap-3">
+            <div className="mb-4 flex items-end justify-between gap-3 px-1">
               <div>
-                <p className="text-sm font-bold text-emerald-700">Menu</p>
-                <h2 id="products-heading" className="text-2xl font-black tracking-[-0.04em] text-slate-950">
+                <p className="text-sm font-black uppercase tracking-[0.18em] text-emerald-700">La carte</p>
+                <h2 id="products-heading" className="mt-1 text-2xl font-black tracking-[-0.04em] text-slate-950">
                   {selectedCategory}
                 </h2>
               </div>
-              <p className="text-sm font-bold text-slate-400">{visibleProducts.length} choix</p>
+              <p className="rounded-full bg-white px-3 py-1.5 text-xs font-black text-slate-500 shadow-sm">{visibleProducts.length} choix</p>
             </div>
 
             {visibleProducts.length === 0 ? (
               <PublicEmptyState title="Aucun produit disponible." text="Choisissez une autre catégorie du menu." />
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-3.5">
                 {visibleProducts.map((product) => (
                   <PublicProductCard
                     key={product.id}
                     product={product}
+                    quantityInCart={cartQuantitiesByProduct[product.id] ?? 0}
                     orderingDisabled={orderingDisabled}
                     onOpenProduct={handleOpenProduct}
                     onQuickAdd={(quickProduct) => addProductToCart(quickProduct)}
@@ -259,7 +297,7 @@ export function InteractivePublicMenu({ restaurantSlug, tableName }: Interactive
 
       {toast ? (
         <div className="fixed inset-x-0 top-3 z-[70] flex justify-center px-3" role="status" aria-live="polite">
-          <div className="w-full max-w-[520px] rounded-2xl bg-slate-950 px-4 py-3 text-sm font-bold text-white shadow-2xl shadow-slate-950/20">
+          <div className="w-full max-w-[460px] rounded-2xl bg-slate-950 px-4 py-3 text-sm font-bold text-white shadow-2xl shadow-slate-950/20">
             {toast.message}
           </div>
         </div>
@@ -285,6 +323,7 @@ export function InteractivePublicMenu({ restaurantSlug, tableName }: Interactive
         total={cartTotal}
         onIncrease={handleIncrease}
         onDecrease={handleDecrease}
+        onRemove={handleRemove}
         onItemNoteChange={handleItemNoteChange}
         onGlobalNoteChange={setGlobalNote}
         onClose={() => setIsCartOpen(false)}
