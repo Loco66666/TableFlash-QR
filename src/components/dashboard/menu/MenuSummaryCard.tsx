@@ -1,15 +1,18 @@
 import type { SummaryItem } from "./menuData";
 
-type MenuSummaryCardProps = SummaryItem;
-
-const toneClasses: Record<SummaryItem["tone"], string> = {
-  emerald: "bg-emerald-50 text-emerald-700 ring-emerald-100",
-  amber: "bg-amber-50 text-amber-700 ring-amber-100",
-  rose: "bg-rose-50 text-rose-700 ring-rose-100",
-  sky: "bg-sky-50 text-sky-700 ring-sky-100",
+type MenuSummaryCardProps = SummaryItem & {
+  actionLabel: string;
+  onAction: () => void;
 };
 
-export function MenuSummaryCard({ value, label, helper, tone }: MenuSummaryCardProps) {
+const toneClasses: Record<SummaryItem["tone"], string> = {
+  emerald: "bg-emerald-50 text-emerald-700 ring-emerald-100 hover:bg-emerald-100",
+  amber: "bg-amber-50 text-amber-700 ring-amber-100 hover:bg-amber-100",
+  rose: "bg-rose-50 text-rose-700 ring-rose-100 hover:bg-rose-100",
+  sky: "bg-sky-50 text-sky-700 ring-sky-100 hover:bg-sky-100",
+};
+
+export function MenuSummaryCard({ value, label, helper, tone, actionLabel, onAction }: MenuSummaryCardProps) {
   return (
     <article className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/70">
       <div className="flex items-start justify-between gap-4">
@@ -17,9 +20,18 @@ export function MenuSummaryCard({ value, label, helper, tone }: MenuSummaryCardP
           <p className="text-sm font-bold text-slate-500">{label}</p>
           <p className="mt-3 text-4xl font-black tracking-tight text-slate-950">{value}</p>
         </div>
-        <span className={`flex h-11 w-11 items-center justify-center rounded-2xl ring-1 ${toneClasses[tone]}`}>
+        <button
+          aria-label={actionLabel}
+          className={`flex h-11 w-11 items-center justify-center rounded-2xl ring-1 transition focus:outline-none focus:ring-4 focus:ring-emerald-100 ${toneClasses[tone]}`}
+          onClick={(event) => {
+            event.stopPropagation();
+            onAction();
+          }}
+          title={actionLabel}
+          type="button"
+        >
           <SummaryIcon />
-        </span>
+        </button>
       </div>
       <p className="mt-4 text-sm font-semibold text-slate-500">{helper}</p>
     </article>
