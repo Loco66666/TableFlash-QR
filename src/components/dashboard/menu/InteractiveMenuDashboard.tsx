@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { DashboardHeader } from "@/components/dashboard";
-import { formatEuro, parseEuroInput } from "@/lib/formatters";
+import { formatEuro, formatPromotionValue, parseEuroInput } from "@/lib/formatters";
 
 import { CategoryList } from "./CategoryList";
 import { MenuSummaryCard } from "./MenuSummaryCard";
@@ -136,12 +136,14 @@ export function InteractiveMenuDashboard() {
     if (!selectedProductId || !editingProduct) return;
 
     const normalizedDraft = normalizeDraftPrice(editingProduct, selectedProduct?.price);
+    const normalizedPromoValue = formatPromotionValue(editingProduct.promoValue, editingProduct.promoType);
     const parsedPrice = parseEuroInput(normalizedDraft.price) ?? selectedProduct?.price ?? 0;
     const savedDraft = {
       ...normalizedDraft,
       name: normalizedDraft.name.trim(),
       description: normalizedDraft.description.trim(),
       allergens: normalizedDraft.allergens.map((allergen) => allergen.trim()).filter(Boolean),
+      promoValue: normalizedPromoValue,
       imageUrl: normalizedDraft.imageUrl ?? null,
     };
     const savedProductPatch = { ...savedDraft, price: parsedPrice };
