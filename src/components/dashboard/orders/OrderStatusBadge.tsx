@@ -7,6 +7,7 @@ type OrderStatusBadgeProps = {
 const statusClasses: Record<OrderStatus, string> = {
   Nouvelle: "border-emerald-200 bg-emerald-50 text-emerald-700",
   Acceptée: "border-sky-200 bg-sky-50 text-sky-700",
+  "À payer": "border-orange-200 bg-orange-50 text-orange-700",
   Payée: "border-green-200 bg-green-50 text-green-700",
   "En préparation": "border-amber-200 bg-amber-50 text-amber-700",
   Prête: "border-indigo-200 bg-indigo-50 text-indigo-700",

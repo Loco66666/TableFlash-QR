@@ -1,5 +1,5 @@
-import { OrdersDashboard } from "@/components/dashboard/orders";
+import { InteractiveOrdersDashboard } from "@/components/dashboard/orders/InteractiveOrdersDashboard";
 
 export default function Page() {
-  return <OrdersDashboard />;
+  return <InteractiveOrdersDashboard />;
 }

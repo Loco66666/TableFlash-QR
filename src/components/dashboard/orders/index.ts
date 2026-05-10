@@ -1,3 +1,4 @@
+export { InteractiveOrdersDashboard } from "./InteractiveOrdersDashboard";
 export { EmptyOrdersState } from "./EmptyOrdersState";
 export { OrderCard } from "./OrderCard";
 export { OrdersDashboard } from "./OrdersDashboard";
