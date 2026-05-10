@@ -26,6 +26,7 @@ export type ProductItem = {
   promoValue: string;
   promoEndDate: string;
   imageTone: string;
+  imageUrl?: string | null;
 };
 
 export type ProductDraft = Omit<ProductItem, "id" | "imageTone">;

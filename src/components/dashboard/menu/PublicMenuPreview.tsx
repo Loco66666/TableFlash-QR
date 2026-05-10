@@ -45,7 +45,7 @@ export function MobilePreview({ categories, products, selectedCategoryId, onCart
             </div>
 
             {products.length > 0 ? products.slice(0, 4).map((product) => (
-              <PreviewRow key={product.id} name={product.name} description={product.description} price={product.price} promo={product.promo} promoValue={product.promoValue} available={product.available} />
+              <PreviewRow key={product.id} product={product} />
             )) : (
               <p className="rounded-3xl bg-white p-4 text-center text-sm font-bold text-slate-500">Aucun produit visible dans cette sélection.</p>
             )}
@@ -60,27 +60,23 @@ export function MobilePreview({ categories, products, selectedCategoryId, onCart
   );
 }
 
-type PreviewRowProps = {
-  name: string;
-  description: string;
-  price: string;
-  promo?: boolean;
-  promoValue?: string;
-  available?: boolean;
-};
-
-function PreviewRow({ name, description, price, promo = false, promoValue = "Promo", available = true }: PreviewRowProps) {
+function PreviewRow({ product }: { product: ProductItem }) {
   return (
-    <article className={`flex gap-3 rounded-3xl bg-white p-3 shadow-sm shadow-slate-200/70 ${available ? "" : "opacity-60"}`}>
-      <span className="h-16 w-16 shrink-0 rounded-2xl bg-gradient-to-br from-amber-200 via-orange-100 to-emerald-100" />
+    <article className={`flex gap-3 rounded-3xl bg-white p-3 shadow-sm shadow-slate-200/70 ${product.available ? "" : "opacity-60"}`}>
+      <span className={`flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl ${product.imageUrl ? "bg-slate-100" : `bg-gradient-to-br ${product.imageTone}`}`}>
+        {product.imageUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img alt="" className="h-full w-full object-cover" src={product.imageUrl} />
+        ) : null}
+      </span>
       <span className="min-w-0 flex-1">
         <span className="flex items-start justify-between gap-2">
-          <span className="font-black text-slate-950">{name}</span>
-          {promo ? <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-black text-amber-700">{promoValue || "Promo"}</span> : null}
+          <span className="font-black text-slate-950">{product.name}</span>
+          {product.promo ? <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-black text-amber-700">{product.promoValue || "Promo"}</span> : null}
         </span>
-        <span className="mt-1 block text-xs font-semibold leading-5 text-slate-500">{description}</span>
-        <span className="mt-2 block text-sm font-black text-emerald-700">{price}</span>
-        {!available ? <span className="mt-1 block text-xs font-black text-rose-600">En rupture</span> : null}
+        <span className="mt-1 block text-xs font-semibold leading-5 text-slate-500">{product.description}</span>
+        <span className="mt-2 block text-sm font-black text-emerald-700">{product.price}</span>
+        {!product.available ? <span className="mt-1 block text-xs font-black text-rose-600">En rupture</span> : null}
       </span>
     </article>
   );

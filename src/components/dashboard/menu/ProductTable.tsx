@@ -1,8 +1,18 @@
+"use client";
+
+import { useEffect, useMemo, useRef, type ReactNode, type RefObject } from "react";
+
 import { StatusBadge } from "@/components/dashboard";
 
 import type { ProductItem } from "./menuData";
 
 export type ActiveMenuFilter = "all" | "available" | "unavailable" | "promo";
+
+export type RowActionState = {
+  productId: string;
+  top: number;
+  left: number;
+};
 
 type ProductTableProps = {
   products: ProductItem[];
@@ -10,15 +20,16 @@ type ProductTableProps = {
   searchQuery: string;
   activeFilter: ActiveMenuFilter;
   isFilterOpen: boolean;
-  rowActionProductId: string | null;
+  rowAction: RowActionState | null;
   onSearchChange: (value: string) => void;
   onToggleFilter: () => void;
   onSelectFilter: (filter: ActiveMenuFilter) => void;
   onSelectProduct: (productId: string) => void;
-  onToggleVisibility: (productId: string) => void;
-  onToggleRowActions: (productId: string) => void;
+  onOpenRowActions: (productId: string, buttonRect: DOMRect) => void;
+  onCloseRowActions: () => void;
   onEditProduct: (productId: string) => void;
   onDuplicateProduct: (productId: string) => void;
+  onToggleVisibility: (productId: string) => void;
   onDeleteProduct: (productId: string) => void;
 };
 
@@ -37,17 +48,71 @@ export function ProductTable({
   searchQuery,
   activeFilter,
   isFilterOpen,
-  rowActionProductId,
+  rowAction,
   onSearchChange,
   onToggleFilter,
   onSelectFilter,
   onSelectProduct,
-  onToggleVisibility,
-  onToggleRowActions,
+  onOpenRowActions,
+  onCloseRowActions,
   onEditProduct,
   onDuplicateProduct,
+  onToggleVisibility,
   onDeleteProduct,
 }: ProductTableProps) {
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const buttonRefs = useRef(new Map<string, HTMLButtonElement>());
+  const activeActionProduct = useMemo(() => products.find((product) => product.id === rowAction?.productId) ?? null, [products, rowAction?.productId]);
+
+  useEffect(() => {
+    if (!rowAction) return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target;
+      if (!(target instanceof Node)) return;
+
+      const clickedDropdown = dropdownRef.current?.contains(target) ?? false;
+      const clickedButton = buttonRefs.current.get(rowAction.productId)?.contains(target) ?? false;
+
+      if (!clickedDropdown && !clickedButton) {
+        onCloseRowActions();
+      }
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onCloseRowActions();
+    };
+
+    const handleScroll = () => onCloseRowActions();
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("scroll", handleScroll, true);
+
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("scroll", handleScroll, true);
+    };
+  }, [onCloseRowActions, rowAction]);
+
+  const handleActionButtonClick = (productId: string, button: HTMLButtonElement) => {
+    if (rowAction?.productId === productId) {
+      onCloseRowActions();
+      return;
+    }
+
+    onOpenRowActions(productId, button.getBoundingClientRect());
+  };
+
+  const registerButton = (productId: string, node: HTMLButtonElement | null) => {
+    if (node) {
+      buttonRefs.current.set(productId, node);
+    } else {
+      buttonRefs.current.delete(productId);
+    }
+  };
+
   return (
     <section className="rounded-[2rem] border border-slate-200 bg-white shadow-sm shadow-slate-200/70">
       <div className="border-b border-slate-100 p-5 lg:p-6">
@@ -104,16 +169,16 @@ export function ProductTable({
       {products.length > 0 ? (
         <div className="divide-y divide-slate-100 lg:hidden">
           {products.map((product) => (
-            <article className={`p-5 transition ${selectedProductId === product.id ? "bg-emerald-50/70" : "bg-white"}`} key={product.id} onClick={() => onSelectProduct(product.id)}>
+            <article className={`p-5 transition ${rowClassName(product, selectedProductId)}`} key={product.id} onClick={() => onSelectProduct(product.id)}>
               <div className="flex items-start gap-4">
                 <ProductThumbnail product={product} />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <h3 className="font-black text-slate-950">{product.name}</h3>
+                      <h3 className={`font-black ${product.visible ? "text-slate-950" : "text-slate-400"}`}>{product.name}</h3>
                       <p className="mt-1 text-sm font-medium leading-5 text-slate-500">{product.description}</p>
                     </div>
-                    <ActionsButton product={product} rowActionProductId={rowActionProductId} onDeleteProduct={onDeleteProduct} onDuplicateProduct={onDuplicateProduct} onEditProduct={onEditProduct} onToggleRowActions={onToggleRowActions} onToggleVisibility={onToggleVisibility} />
+                    <ActionsButton onButtonClick={handleActionButtonClick} product={product} registerButton={registerButton} />
                   </div>
                   <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
                     <MobileMeta label="Prix" value={product.price} strong />
@@ -161,12 +226,12 @@ export function ProductTable({
             </thead>
             <tbody>
               {products.map((product) => (
-                <tr className={`group cursor-pointer border-t border-slate-100 transition ${selectedProductId === product.id ? "bg-emerald-50/70" : "hover:bg-slate-50"}`} key={product.id} onClick={() => onSelectProduct(product.id)}>
+                <tr className={`group cursor-pointer border-t border-slate-100 transition ${rowClassName(product, selectedProductId)}`} key={product.id} onClick={() => onSelectProduct(product.id)}>
                   <td className="border-t border-slate-100 px-5 py-4 lg:px-6">
                     <div className="flex items-center gap-4">
                       <ProductThumbnail product={product} />
                       <span>
-                        <span className="block font-black text-slate-950">{product.name}</span>
+                        <span className={`block font-black ${product.visible ? "text-slate-950" : "text-slate-400 line-through decoration-slate-300"}`}>{product.name}</span>
                         <span className="mt-1 block max-w-xs text-sm font-medium text-slate-500">{product.description}</span>
                       </span>
                     </div>
@@ -190,8 +255,8 @@ export function ProductTable({
                       <VisibilityIcon visible={product.visible} />
                     </button>
                   </td>
-                  <td className="relative border-t border-slate-100 px-5 py-4 text-right lg:px-6">
-                    <ActionsButton product={product} rowActionProductId={rowActionProductId} onDeleteProduct={onDeleteProduct} onDuplicateProduct={onDuplicateProduct} onEditProduct={onEditProduct} onToggleRowActions={onToggleRowActions} onToggleVisibility={onToggleVisibility} />
+                  <td className="border-t border-slate-100 px-5 py-4 text-right lg:px-6">
+                    <ActionsButton onButtonClick={handleActionButtonClick} product={product} registerButton={registerButton} />
                   </td>
                 </tr>
               ))}
@@ -199,40 +264,73 @@ export function ProductTable({
           </table>
         </div>
       ) : null}
+
+      {rowAction && activeActionProduct ? (
+        <RowActionDropdown
+          onDeleteProduct={onDeleteProduct}
+          onDuplicateProduct={onDuplicateProduct}
+          onEditProduct={onEditProduct}
+          onToggleVisibility={onToggleVisibility}
+          position={{ left: rowAction.left, top: rowAction.top }}
+          product={activeActionProduct}
+          refObject={dropdownRef}
+        />
+      ) : null}
     </section>
   );
 }
 
-function ActionsButton({ product, rowActionProductId, onToggleRowActions, onEditProduct, onDuplicateProduct, onToggleVisibility, onDeleteProduct }: {
+function rowClassName(product: ProductItem, selectedProductId: string | null) {
+  if (selectedProductId === product.id) return product.visible ? "bg-emerald-50/70" : "bg-slate-100/80";
+  return product.visible ? "bg-white hover:bg-slate-50" : "bg-slate-50/80 opacity-70 hover:bg-slate-100";
+}
+
+function ActionsButton({ product, onButtonClick, registerButton }: {
   product: ProductItem;
-  rowActionProductId: string | null;
-  onToggleRowActions: (productId: string) => void;
+  onButtonClick: (productId: string, button: HTMLButtonElement) => void;
+  registerButton: (productId: string, node: HTMLButtonElement | null) => void;
+}) {
+  return (
+    <span className="inline-flex" onClick={(event) => event.stopPropagation()}>
+      <button
+        className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+        type="button"
+        aria-label={`Actions pour ${product.name}`}
+        onClick={(event) => onButtonClick(product.id, event.currentTarget)}
+        ref={(node) => registerButton(product.id, node)}
+      >
+        <DotsIcon />
+      </button>
+    </span>
+  );
+}
+
+function RowActionDropdown({ product, position, refObject, onEditProduct, onDuplicateProduct, onToggleVisibility, onDeleteProduct }: {
+  product: ProductItem;
+  position: { top: number; left: number };
+  refObject: RefObject<HTMLDivElement | null>;
   onEditProduct: (productId: string) => void;
   onDuplicateProduct: (productId: string) => void;
   onToggleVisibility: (productId: string) => void;
   onDeleteProduct: (productId: string) => void;
 }) {
-  const isOpen = rowActionProductId === product.id;
-
   return (
-    <span className="relative inline-flex" onClick={(event) => event.stopPropagation()}>
-      <button className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-700" type="button" aria-label={`Actions pour ${product.name}`} onClick={() => onToggleRowActions(product.id)}>
-        <DotsIcon />
-      </button>
-      {isOpen ? (
-        <span className="absolute right-0 top-11 z-30 w-48 rounded-3xl border border-slate-200 bg-white p-2 text-left shadow-2xl shadow-slate-900/10">
-          <ActionMenuButton onClick={() => onEditProduct(product.id)}>Modifier</ActionMenuButton>
-          <ActionMenuButton onClick={() => onDuplicateProduct(product.id)}>Dupliquer</ActionMenuButton>
-          <ActionMenuButton onClick={() => onToggleVisibility(product.id)}>{product.visible ? "Masquer" : "Afficher"}</ActionMenuButton>
-          <ActionMenuButton danger onClick={() => onDeleteProduct(product.id)}>Supprimer</ActionMenuButton>
-        </span>
-      ) : null}
-    </span>
+    <div
+      className="fixed z-[80] w-48 rounded-3xl border border-slate-200 bg-white p-2 text-left shadow-2xl shadow-slate-900/20"
+      ref={refObject}
+      role="menu"
+      style={{ left: position.left, top: position.top }}
+    >
+      <ActionMenuButton onClick={() => onEditProduct(product.id)}>Modifier</ActionMenuButton>
+      <ActionMenuButton onClick={() => onDuplicateProduct(product.id)}>Dupliquer</ActionMenuButton>
+      <ActionMenuButton onClick={() => onToggleVisibility(product.id)}>{product.visible ? "Masquer" : "Afficher"}</ActionMenuButton>
+      <ActionMenuButton danger onClick={() => onDeleteProduct(product.id)}>Supprimer</ActionMenuButton>
+    </div>
   );
 }
 
-function ActionMenuButton({ children, danger = false, onClick }: { children: React.ReactNode; danger?: boolean; onClick: () => void }) {
-  return <button className={`block w-full rounded-2xl px-4 py-2.5 text-left text-sm font-black transition ${danger ? "text-rose-700 hover:bg-rose-50" : "text-slate-700 hover:bg-emerald-50 hover:text-emerald-800"}`} onClick={onClick} type="button">{children}</button>;
+function ActionMenuButton({ children, danger = false, onClick }: { children: ReactNode; danger?: boolean; onClick: () => void }) {
+  return <button className={`block w-full rounded-2xl px-4 py-2.5 text-left text-sm font-black transition ${danger ? "text-rose-700 hover:bg-rose-50" : "text-slate-700 hover:bg-emerald-50 hover:text-emerald-800"}`} onClick={onClick} role="menuitem" type="button">{children}</button>;
 }
 
 function EmptyProductsState() {
@@ -247,50 +345,46 @@ function EmptyProductsState() {
 
 function ProductThumbnail({ product }: { product: ProductItem }) {
   return (
-    <span className={`relative flex h-14 w-14 shrink-0 overflow-hidden rounded-2xl bg-gradient-to-br ${product.imageTone}`}>
-      <span className="absolute inset-x-3 bottom-2 h-5 rounded-full bg-white/55 blur-sm" />
-      <span className="m-auto h-7 w-7 rounded-full bg-white/50 ring-1 ring-white/60" />
+    <span className={`flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl ${product.imageUrl ? "bg-slate-100" : `bg-gradient-to-br ${product.imageTone}`} text-xs font-black text-emerald-900`}>
+      {product.imageUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img alt="" className="h-full w-full object-cover" src={product.imageUrl} />
+      ) : (
+        product.name.split(" ").map((word) => word[0]).join("").slice(0, 2)
+      )}
     </span>
   );
 }
 
 function AllergenBadge({ allergen }: { allergen: string }) {
-  return <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-600">{allergen}</span>;
-}
-
-function VisibilityIcon({ visible }: { visible: boolean }) {
-  return (
-    <span className={`inline-flex h-9 w-9 items-center justify-center rounded-full ${visible ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-400"}`} title={visible ? "Visible" : "Masqué"}>
-      {visible ? <EyeIcon /> : <EyeOffIcon />}
-    </span>
-  );
+  return <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-black text-slate-500">{allergen}</span>;
 }
 
 function MobileMeta({ label, value, strong = false }: { label: string; value: string; strong?: boolean }) {
   return (
     <div>
       <p className="text-xs font-black uppercase tracking-[0.14em] text-slate-400">{label}</p>
-      <p className={`mt-2 ${strong ? "font-black text-slate-950" : "font-bold text-slate-600"}`}>{value}</p>
+      <p className={`mt-2 text-sm ${strong ? "font-black text-slate-950" : "font-bold text-slate-500"}`}>{value}</p>
     </div>
   );
 }
 
 function SearchIcon() {
-  return <svg aria-hidden="true" className="pointer-events-none h-4 w-4 text-slate-400 [:where(label)_&]:absolute [:where(label)_&]:left-4 [:where(label)_&]:top-1/2 [:where(label)_&]:-translate-y-1/2" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg>;
+  return <svg aria-hidden="true" className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="m21 21-4.35-4.35M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z" /></svg>;
 }
 
 function FilterIcon() {
-  return <svg aria-hidden="true" className="h-4 w-4" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24"><path d="M3 5h18" /><path d="M6 12h12" /><path d="M10 19h4" /></svg>;
-}
-
-function EyeIcon() {
-  return <svg aria-hidden="true" className="h-4 w-4" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="3" /></svg>;
-}
-
-function EyeOffIcon() {
-  return <svg aria-hidden="true" className="h-4 w-4" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24"><path d="m3 3 18 18" /><path d="M10.6 10.6a2 2 0 0 0 2.8 2.8" /><path d="M9.9 5.3A10.5 10.5 0 0 1 12 5c6.5 0 10 7 10 7a18 18 0 0 1-2.4 3.3" /><path d="M6.6 6.6C3.6 8.6 2 12 2 12s3.5 7 10 7a10 10 0 0 0 4.7-1.2" /></svg>;
+  return <svg aria-hidden="true" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M3 6h18M6 12h12M10 18h4" /></svg>;
 }
 
 function DotsIcon() {
-  return <svg aria-hidden="true" className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24"><circle cx="5" cy="12" r="2" /><circle cx="12" cy="12" r="2" /><circle cx="19" cy="12" r="2" /></svg>;
+  return <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.5h.01M12 12h.01M12 17.5h.01" /></svg>;
+}
+
+function VisibilityIcon({ visible }: { visible: boolean }) {
+  return visible ? (
+    <svg aria-hidden="true" className="h-5 w-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12s3.75-6.75 9.75-6.75S21.75 12 21.75 12 18 18.75 12 18.75 2.25 12 2.25 12Z" /><path strokeLinecap="round" strokeLinejoin="round" d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" /></svg>
+  ) : (
+    <svg aria-hidden="true" className="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="m3 3 18 18M10.58 10.58A2 2 0 0 0 12 14a2 2 0 0 0 1.42-.58M9.88 4.24A9.45 9.45 0 0 1 12 4c6 0 9.75 8 9.75 8a16.38 16.38 0 0 1-2.45 3.66M6.12 6.12C3.7 7.82 2.25 12 2.25 12s3.75 8 9.75 8c1.26 0 2.42-.25 3.47-.68" /></svg>
+  );
 }
