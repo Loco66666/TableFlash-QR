@@ -29,31 +29,45 @@ type TrackingStep = {
 
 const customerStatusLabels: Record<LocalOrderStatus, string> = {
   Nouvelle: "Commande envoyée",
-  Acceptée: "Acceptée par le restaurant",
-  "À payer": "À régler sur place",
+  Acceptée: "Acceptée",
+  "À payer": "À régler",
   Payée: "Règlement confirmé",
   "En préparation": "En préparation",
-  Prête: "Prête à être servie",
-  Servie: "Commande servie",
+  Prête: "Prête",
+  Servie: "Servie",
   Refusée: "Commande refusée",
   Annulée: "Commande annulée",
 };
 
 const customerStatusGuidance: Record<LocalOrderStatus, string> = {
   Nouvelle: "Le restaurant va prendre en charge votre commande.",
-  Acceptée: "Votre commande a été acceptée.",
+  Acceptée: "Votre commande a été acceptée par le restaurant.",
   "À payer": "Le règlement se fera à la caisse ou auprès du serveur.",
-  Payée: "Votre règlement est confirmé.",
+  Payée: "Votre règlement est confirmé. La commande va être préparée.",
   "En préparation": "L’équipe prépare votre commande.",
-  Prête: "Votre commande est prête.",
+  Prête: "Votre commande est prête à être servie.",
   Servie: "Bon appétit.",
   Refusée: "La commande n’a pas pu être prise en charge.",
   Annulée: "La commande a été annulée.",
 };
 
+const customerPaymentLabels: Record<LocalOrderStatus, string> = {
+  Nouvelle: "En attente de prise en charge",
+  Acceptée: "En attente de prise en charge",
+  "À payer": "À régler sur place",
+  Payée: "Règlement confirmé",
+  "En préparation": "Règlement confirmé",
+  Prête: "Règlement confirmé",
+  Servie: "Règlement confirmé",
+  Refusée: "Commande interrompue",
+  Annulée: "Commande interrompue",
+};
+
 const trackingSteps: TrackingStep[] = [
   { label: "Commande envoyée", statuses: ["Nouvelle"] },
-  { label: "Acceptée", statuses: ["Acceptée", "À payer", "Payée"] },
+  { label: "Acceptée", statuses: ["Acceptée"] },
+  { label: "À régler", statuses: ["À payer"] },
+  { label: "Règlement confirmé", statuses: ["Payée"] },
   { label: "En préparation", statuses: ["En préparation"] },
   { label: "Prête", statuses: ["Prête"] },
   { label: "Servie", statuses: ["Servie"] },
@@ -191,9 +205,18 @@ export function PublicOrderConfirmation({ order, paymentNote, onBackToMenu, onNe
             </button>
           </div>
 
-          <div className="mt-4 rounded-3xl border border-white bg-white/90 p-4">
-            <p className="text-sm font-black text-emerald-800">{customerStatusLabels[currentStatus]}</p>
-            <p className="mt-2 text-sm leading-6 text-slate-600">{customerStatusGuidance[currentStatus]}</p>
+          <div className="mt-4 rounded-3xl border border-white bg-white/90 p-4 shadow-sm shadow-emerald-950/5">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-400">Étape actuelle</p>
+                <p className="mt-1 text-sm font-black text-emerald-800">{customerStatusLabels[currentStatus]}</p>
+              </div>
+              <div className="rounded-2xl border border-emerald-100 bg-emerald-50 px-3 py-2 text-right">
+                <p className="text-[0.65rem] font-black uppercase tracking-[0.14em] text-emerald-700">Règlement</p>
+                <p className="mt-0.5 text-sm font-black text-emerald-950">{customerPaymentLabels[currentStatus]}</p>
+              </div>
+            </div>
+            <p className="mt-3 text-sm leading-6 text-slate-600">{customerStatusGuidance[currentStatus]}</p>
           </div>
 
           {isStoppedStatus(currentStatus) ? (
@@ -202,7 +225,7 @@ export function PublicOrderConfirmation({ order, paymentNote, onBackToMenu, onNe
               <p className="mt-1">Vous pouvez vous rapprocher de l’équipe en salle pour toute question.</p>
             </div>
           ) : (
-            <ol className="mt-4 grid grid-cols-5 gap-2" aria-label="Progression de la commande">
+            <ol className="mt-4 grid grid-cols-7 gap-1" aria-label="Progression de la commande">
               {trackingSteps.map((step, index) => {
                 const isCompleted = activeStepIndex >= 0 && index < activeStepIndex;
                 const isCurrent = index === activeStepIndex;
@@ -211,14 +234,14 @@ export function PublicOrderConfirmation({ order, paymentNote, onBackToMenu, onNe
                 return (
                   <li key={step.label} className="min-w-0">
                     <div
-                      className={`mx-auto grid h-8 w-8 place-items-center rounded-full text-xs font-black transition ${
+                      className={`mx-auto grid h-7 w-7 place-items-center rounded-full text-[0.68rem] font-black transition ${
                         isHighlighted ? "bg-emerald-700 text-white shadow-lg shadow-emerald-700/20" : "bg-slate-100 text-slate-400"
                       }`}
                       aria-current={isCurrent ? "step" : undefined}
                     >
                       {isCompleted ? "✓" : index + 1}
                     </div>
-                    <p className={`mt-2 text-center text-[0.68rem] font-black leading-3 ${isHighlighted ? "text-slate-900" : "text-slate-400"}`}>
+                    <p className={`mt-2 text-center text-[0.56rem] font-black leading-[0.7rem] ${isHighlighted ? "text-slate-900" : "text-slate-400"}`}>
                       {step.label}
                     </p>
                   </li>

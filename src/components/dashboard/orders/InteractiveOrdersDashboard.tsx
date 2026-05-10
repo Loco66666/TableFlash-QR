@@ -424,7 +424,7 @@ function getNextState(action: OrderAction): { paymentStatus?: PaymentStatus; sta
     case "Marquer payée":
       return { status: "Payée", paymentStatus: "Payée" };
     case "En préparation":
-      return { status: "En préparation" };
+      return { status: "En préparation", paymentStatus: "Payée" };
     case "Prête":
       return { status: "Prête" };
     case "Servie":
