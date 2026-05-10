@@ -9,7 +9,7 @@ export function DashboardMobileNav() {
   const pathname = usePathname();
 
   return (
-    <div className="border-b border-emerald-100 bg-white px-4 py-4 lg:hidden">
+    <div className="tableflash-dashboard-mobile-nav border-b border-emerald-100 bg-white px-4 py-4 lg:hidden">
       <div className="flex items-center justify-between gap-3">
         <Link href="/dashboard" className="flex items-center gap-2" aria-label="TableFlash dashboard">
           <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-700 text-white shadow-lg shadow-emerald-900/15">

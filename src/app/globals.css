@@ -27,3 +27,66 @@ a,
 summary {
   -webkit-tap-highlight-color: transparent;
 }
+
+.tableflash-print-area {
+  display: none;
+}
+
+@media print {
+  @page {
+    margin: 14mm;
+    size: A4;
+  }
+
+  html,
+  body {
+    background: #ffffff !important;
+    color: #111827 !important;
+  }
+
+  body * {
+    visibility: hidden !important;
+  }
+
+  .tableflash-print-area,
+  .tableflash-print-area * {
+    visibility: visible !important;
+  }
+
+  .tableflash-dashboard-screen,
+  .tableflash-dashboard-sidebar,
+  .tableflash-dashboard-mobile-nav {
+    display: none !important;
+  }
+
+  .tableflash-print-area {
+    display: block !important;
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    background: #ffffff !important;
+  }
+
+  .tableflash-print-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12mm;
+    width: 100%;
+  }
+
+  .tableflash-print-card {
+    box-shadow: none !important;
+    page-break-inside: avoid;
+    break-inside: avoid;
+    max-width: 150mm;
+    min-height: 240mm;
+    margin: 0 auto;
+    border-color: #d1d5db !important;
+    background: #ffffff !important;
+  }
+
+  .tableflash-print-card * {
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+}

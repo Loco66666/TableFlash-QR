@@ -23,7 +23,7 @@ export function DashboardSidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="hidden min-h-screen w-80 shrink-0 flex-col bg-[#063F2A] p-5 text-white shadow-2xl shadow-emerald-950/20 lg:flex">
+    <aside className="tableflash-dashboard-sidebar hidden min-h-screen w-80 shrink-0 flex-col bg-[#063F2A] p-5 text-white shadow-2xl shadow-emerald-950/20 lg:flex">
       <div className="flex h-full flex-col rounded-[2rem] border border-white/10 bg-white/[0.04] p-4">
         <Link href="/dashboard" className="flex items-center gap-3 px-2 py-3" aria-label="TableFlash dashboard">
           <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-400 text-emerald-950 shadow-lg shadow-emerald-950/25">
