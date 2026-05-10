@@ -32,7 +32,7 @@ export function QrMockCode({ compact = false, label, large = false, muted = fals
 
   return (
     <div className={`flex flex-col items-center ${wrapperGapClass}`}>
-      <div className={`${sizeClass} ${outerRadiusClass} border border-slate-200/80 bg-white ${outerPaddingClass} shadow-inner shadow-emerald-950/[0.04] ${muted ? "opacity-55 grayscale" : ""}`} aria-label={`QR code de démonstration pour ${label}`} role="img">
+      <div className={`${sizeClass} ${outerRadiusClass} border border-slate-200/80 bg-white ${outerPaddingClass} shadow-inner shadow-emerald-950/[0.04] ${muted ? "opacity-55 grayscale" : ""}`} aria-label={`QR code pour ${label}`} role="img">
         <div className={`relative grid h-full w-full grid-cols-12 gap-1 ${innerRadiusClass} bg-emerald-50/40 p-1.5`}>
           {Array.from({ length: 144 }, (_, index) => {
             const isFinder = isFinderCell(index);
