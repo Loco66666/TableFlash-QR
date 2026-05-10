@@ -22,13 +22,13 @@ const activeCells = new Set([
 ]);
 
 export function QrMockCode({ compact = false, label, large = false, muted = false }: QrMockCodeProps) {
-  const sizeClass = large ? "h-56 w-56" : compact ? "h-24 w-24" : "h-32 w-32";
+  const sizeClass = large ? "h-48 w-48" : compact ? "h-20 w-20" : "h-32 w-32";
   const cellClass = large ? "rounded-[3px]" : "rounded-[2px]";
   const wrapperGapClass = compact ? "gap-0" : "gap-3";
   const outerRadiusClass = compact ? "rounded-[1.25rem]" : "rounded-[2rem]";
-  const outerPaddingClass = large ? "p-4" : compact ? "p-2.5" : "p-3";
+  const outerPaddingClass = large ? "p-3" : compact ? "p-2" : "p-3";
   const innerRadiusClass = compact ? "rounded-xl" : "rounded-2xl";
-  const logoSizeClass = large ? "h-12 w-12 rounded-2xl border-4 text-xl" : compact ? "h-8 w-8 rounded-xl border-[3px] text-sm" : "h-10 w-10 rounded-2xl border-4 text-base";
+  const logoSizeClass = large ? "h-11 w-11 rounded-2xl border-4 text-lg" : compact ? "h-7 w-7 rounded-xl border-[3px] text-xs" : "h-10 w-10 rounded-2xl border-4 text-base";
 
   return (
     <div className={`flex flex-col items-center ${wrapperGapClass}`}>
