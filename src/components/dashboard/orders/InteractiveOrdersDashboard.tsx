@@ -99,6 +99,9 @@ export function InteractiveOrdersDashboard() {
         ...order,
         status: nextStatus,
         paymentStatus: nextPaymentStatus ?? order.paymentStatus,
+        acceptedAt: nextStatus === "Acceptée" ? order.acceptedAt ?? new Date().toISOString() : order.acceptedAt,
+        preparationStartedAt: nextStatus === "En préparation" ? order.preparationStartedAt ?? new Date().toISOString() : order.preparationStartedAt,
+        mockElapsedMinutes: nextStatus === "En préparation" ? Math.max(order.mockElapsedMinutes, 1) : order.mockElapsedMinutes,
       };
     });
 
@@ -164,6 +167,9 @@ export function InteractiveOrdersDashboard() {
       time: new Intl.DateTimeFormat("fr-FR", { hour: "2-digit", minute: "2-digit" }).format(new Date()),
       status: "Nouvelle",
       paymentStatus: "À payer",
+      createdAt: new Date().toISOString(),
+      estimatedPrepMinutes: 12,
+      mockElapsedMinutes: 0,
       total: "21,50 €",
       items: [
         { quantity: 1, name: "Burger Classique", price: "18,00 €" },
@@ -243,7 +249,7 @@ export function InteractiveOrdersDashboard() {
           <div className="space-y-6">
             <SelectedOrderPanel actions={selectedActions} onAction={handleAction} onClose={handleCloseSelectedOrder} order={selectedOrder} />
             <TopProductsWidget products={topProducts} />
-            <PreparationTimeWidget />
+            <PreparationTimeWidget orders={orders} />
             <PaymentReminderCard />
           </div>
         </section>

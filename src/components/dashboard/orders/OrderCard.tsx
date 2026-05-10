@@ -1,5 +1,6 @@
-import type { Order, OrderAction } from "./ordersData";
 import { OrderStatusBadge } from "./OrderStatusBadge";
+import { OrderTimingBadge } from "./OrderTimingBadge";
+import { getOrderTimingStatus, type Order, type OrderAction } from "./ordersData";
 import { PaymentStatusBadge } from "./PaymentStatusBadge";
 
 const actionClasses: Record<"default" | "danger" | "neutral", string> = {
@@ -17,6 +18,8 @@ type OrderCardProps = {
 };
 
 export function OrderCard({ actions, order, selected = false, onAction, onSelect }: OrderCardProps) {
+  const timingStatus = getOrderTimingStatus(order);
+
   return (
     <article
       className={`rounded-[2rem] border bg-white p-5 text-left shadow-sm shadow-slate-200/70 transition hover:-translate-y-0.5 hover:shadow-xl hover:shadow-emerald-950/5 focus:outline-none focus:ring-4 focus:ring-emerald-100 ${selected ? "border-emerald-300 ring-4 ring-emerald-100" : "border-slate-200"}`}
@@ -38,6 +41,7 @@ export function OrderCard({ actions, order, selected = false, onAction, onSelect
         <div className="flex flex-wrap justify-end gap-2">
           <OrderStatusBadge status={order.status} />
           <PaymentStatusBadge status={order.paymentStatus} />
+          <OrderTimingBadge status={timingStatus} />
         </div>
       </div>
 
