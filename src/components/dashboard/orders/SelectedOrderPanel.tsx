@@ -17,18 +17,7 @@ type SelectedOrderPanelProps = {
 
 export function SelectedOrderPanel({ actions, order, onAction, onClose }: SelectedOrderPanelProps) {
   if (!order) {
-    return (
-      <aside className="rounded-[2rem] border border-dashed border-slate-200 bg-white p-5 text-center shadow-sm shadow-slate-200/70 lg:sticky lg:top-6 lg:max-h-[calc(100vh-7rem)]">
-        <p className="text-sm font-black uppercase tracking-[0.18em] text-emerald-700">Détail commande</p>
-        <h2 className="mt-3 text-2xl font-black tracking-tight text-slate-950">Aucune commande sélectionnée</h2>
-        <p className="mt-3 text-sm font-semibold leading-6 text-slate-500">
-          Sélectionnez une commande dans la file pour afficher son détail et ses actions.
-        </p>
-        <p className="mt-3 rounded-3xl bg-slate-50 px-4 py-3 text-sm font-bold leading-6 text-slate-500">
-          Les commandes terminées disparaissent automatiquement du détail pour libérer l’espace de travail.
-        </p>
-      </aside>
-    );
+    return <EmptySelectedOrderPanel />;
   }
 
   const actionGridClasses = actions.length === 2
@@ -121,6 +110,21 @@ export function SelectedOrderPanel({ actions, order, onAction, onClose }: Select
           </p>
         )}
       </div>
+    </aside>
+  );
+}
+
+function EmptySelectedOrderPanel() {
+  return (
+    <aside className="rounded-[2rem] border border-dashed border-slate-200 bg-white p-5 text-center shadow-sm shadow-slate-200/70">
+      <p className="text-sm font-black uppercase tracking-[0.18em] text-emerald-700">Détail commande</p>
+      <h2 className="mt-3 text-2xl font-black tracking-tight text-slate-950">Aucune commande sélectionnée</h2>
+      <p className="mt-3 text-sm font-semibold leading-6 text-slate-500">
+        Sélectionnez une commande dans la file pour afficher son détail et ses actions.
+      </p>
+      <p className="mt-3 rounded-3xl bg-slate-50 px-4 py-3 text-sm font-bold leading-6 text-slate-500">
+        Les commandes terminées disparaissent automatiquement du détail pour libérer l’espace de travail.
+      </p>
     </aside>
   );
 }
