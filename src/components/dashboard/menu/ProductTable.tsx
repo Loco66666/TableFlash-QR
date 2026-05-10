@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, type ReactNode, type RefObject } from "react";
 
 import { StatusBadge } from "@/components/dashboard";
+import { formatEuro } from "@/lib/formatters";
 
 import type { ProductItem } from "./menuData";
 
@@ -181,7 +182,7 @@ export function ProductTable({
                     <ActionsButton onButtonClick={handleActionButtonClick} product={product} registerButton={registerButton} />
                   </div>
                   <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
-                    <MobileMeta label="Prix" value={product.price} strong />
+                    <MobileMeta label="Prix" value={formatEuro(product.price)} strong />
                     <div>
                       <p className="text-xs font-black uppercase tracking-[0.14em] text-slate-400">Disponibilité</p>
                       <div className="mt-2"><StatusBadge variant={product.available ? "success" : "danger"}>{product.available ? "Disponible" : "Rupture"}</StatusBadge></div>
@@ -236,7 +237,7 @@ export function ProductTable({
                       </span>
                     </div>
                   </td>
-                  <td className="border-t border-slate-100 px-4 py-4 text-sm font-black text-slate-950">{product.price}</td>
+                  <td className="border-t border-slate-100 px-4 py-4 text-sm font-black text-slate-950">{formatEuro(product.price)}</td>
                   <td className="border-t border-slate-100 px-4 py-4">
                     <div className="flex flex-wrap gap-1.5">
                       {product.allergens.map((allergen) => (

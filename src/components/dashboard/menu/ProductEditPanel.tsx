@@ -10,10 +10,11 @@ type ProductEditPanelProps = {
   categories: Array<{ id: string; name: string }>;
   onDraftChange: (draft: ProductDraft) => void;
   onCancel: () => void;
+  onNormalizePrice: () => void;
   onSave: () => void;
 };
 
-export function ProductEditPanel({ product, draft, categories, onDraftChange, onCancel, onSave }: ProductEditPanelProps) {
+export function ProductEditPanel({ product, draft, categories, onDraftChange, onCancel, onNormalizePrice, onSave }: ProductEditPanelProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (!product || !draft) {
@@ -63,7 +64,7 @@ export function ProductEditPanel({ product, draft, categories, onDraftChange, on
           </select>
         </label>
         <Field label="Description" value={draft.description} onChange={(value) => updateDraft({ description: value })} multiline />
-        <Field label="Prix" value={draft.price} onChange={(value) => updateDraft({ price: value })} />
+        <Field label="Prix" value={draft.price} onBlur={onNormalizePrice} onChange={(value) => updateDraft({ price: value })} />
         <Field label="Allergènes" value={draft.allergens.join(", ")} onChange={(value) => updateDraft({ allergens: value.split(",").map((allergen) => allergen.trim()).filter(Boolean) })} helper="Séparez les allergènes par des virgules." />
 
         <ToggleRow label="Disponible" checked={draft.available} onChange={() => updateDraft({ available: !draft.available })} />
@@ -123,20 +124,21 @@ type FieldProps = {
   label: string;
   value: string;
   onChange: (value: string) => void;
+  onBlur?: () => void;
   multiline?: boolean;
   compact?: boolean;
   helper?: string;
   type?: string;
 };
 
-function Field({ label, value, onChange, multiline = false, compact = false, helper, type = "text" }: FieldProps) {
+function Field({ label, value, onChange, onBlur, multiline = false, compact = false, helper, type = "text" }: FieldProps) {
   return (
     <label className="block">
       <span className="text-sm font-black text-slate-700">{label}</span>
       {multiline ? (
-        <textarea className="mt-2 min-h-24 w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold leading-6 text-slate-700 outline-none focus:border-emerald-300 focus:bg-white focus:ring-4 focus:ring-emerald-100" onChange={(event) => onChange(event.target.value)} value={value} />
+        <textarea className="mt-2 min-h-24 w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold leading-6 text-slate-700 outline-none focus:border-emerald-300 focus:bg-white focus:ring-4 focus:ring-emerald-100" onBlur={onBlur} onChange={(event) => onChange(event.target.value)} value={value} />
       ) : (
-        <input className={`mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 ${compact ? "py-2.5" : "py-3"} text-sm font-semibold text-slate-700 outline-none focus:border-emerald-300 focus:bg-white focus:ring-4 focus:ring-emerald-100`} onChange={(event) => onChange(event.target.value)} type={type} value={value} />
+        <input className={`mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 ${compact ? "py-2.5" : "py-3"} text-sm font-semibold text-slate-700 outline-none focus:border-emerald-300 focus:bg-white focus:ring-4 focus:ring-emerald-100`} onBlur={onBlur} onChange={(event) => onChange(event.target.value)} type={type} value={value} />
       )}
       {helper ? <span className="mt-1 block text-xs font-semibold text-slate-400">{helper}</span> : null}
     </label>
