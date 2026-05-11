@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { formatEuro } from "@/lib/formatters";
-import { addLocalReview, createLocalReview, getLocalReviews, type LocalReviewRating } from "@/lib/localReviews";
+import { addLocalReview, createLocalReview, hasLocalReviewForOrder, type LocalReviewRating } from "@/lib/localReviews";
 import {
   getLocalOrders,
   LOCAL_ORDER_CREATED_EVENT,
@@ -120,7 +120,7 @@ export function PublicOrderConfirmation({ order, paymentNote, onBackToMenu, onNe
     }
 
     setLatestOrder(findLatestOrder(order.orderNumber));
-    setHasSubmittedReview(getLocalReviews().some((review) => review.orderNumber === order.orderNumber));
+    setHasSubmittedReview(hasLocalReviewForOrder(order.orderNumber));
   }, [order]);
 
   useEffect(() => {
@@ -184,7 +184,7 @@ export function PublicOrderConfirmation({ order, paymentNote, onBackToMenu, onNe
       return;
     }
 
-    const alreadySubmitted = getLocalReviews().some((review) => review.orderNumber === confirmedOrder.orderNumber);
+    const alreadySubmitted = hasLocalReviewForOrder(confirmedOrder.orderNumber);
 
     if (alreadySubmitted) {
       setHasSubmittedReview(true);

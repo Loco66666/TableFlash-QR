@@ -188,6 +188,14 @@ export function createLocalReview(input: CreateLocalReviewInput): LocalSubmitted
   };
 }
 
+export function findLocalReviewByOrderNumber(orderNumber: string) {
+  return getLocalReviews().find((review) => review.orderNumber === orderNumber) ?? null;
+}
+
+export function hasLocalReviewForOrder(orderNumber: string) {
+  return Boolean(findLocalReviewByOrderNumber(orderNumber));
+}
+
 export function addLocalReview(review: LocalSubmittedReview) {
   const existingReviews = getLocalReviews();
   const nextReviews = [review, ...existingReviews.filter((existingReview) => existingReview.id !== review.id && existingReview.orderNumber !== review.orderNumber)];
