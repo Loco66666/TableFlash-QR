@@ -37,14 +37,18 @@ export function InteractiveReviewsDashboard() {
   const [respondingReviewId, setRespondingReviewId] = useState<string | null>(null);
   const [isRequestPanelOpen, setIsRequestPanelOpen] = useState(false);
   const [toast, setToast] = useState<ToastState | null>(null);
+  const [localReviewIds, setLocalReviewIds] = useState<Set<string>>(new Set());
 
-  const visibleReviews = useMemo(() => sortReviews(filterReviews(reviews, activeFilter, searchQuery), sort), [activeFilter, reviews, searchQuery, sort]);
+  const visibleReviews = useMemo(() => sortReviews(filterReviews(reviews, activeFilter, searchQuery), sort, localReviewIds), [activeFilter, localReviewIds, reviews, searchQuery, sort]);
   const selectedReview = selectedReviewId ? reviews.find((review) => review.id === selectedReviewId) ?? null : null;
   const summaryCards = useMemo(() => buildSummaryCards(reviews), [reviews]);
 
   useEffect(() => {
     function refreshLocalReviews() {
-      setReviews((currentReviews) => mergeReviews(getLocalReviews(), currentReviews.filter((review) => !isLocalReviewId(review.id))));
+      const localReviews = getLocalReviews();
+
+      setLocalReviewIds(new Set(localReviews.map((review) => review.id)));
+      setReviews((currentReviews) => mergeReviews(localReviews, currentReviews.filter((review) => !isLocalReviewId(review.id))));
     }
 
     function handleStorage(event: StorageEvent) {
@@ -139,6 +143,7 @@ export function InteractiveReviewsDashboard() {
     }
 
     clearLocalReviews();
+    setLocalReviewIds(new Set());
     setReviews(initialReviews);
     setSelectedReviewId(initialReviews[0]?.id ?? null);
     showToast("Avis locaux réinitialisés.");
@@ -272,12 +277,12 @@ function matchesReviewFilter(review: Review, activeFilter: ReviewFilter) {
   }
 }
 
-function sortReviews(reviews: Review[], sort: ReviewSort) {
+function sortReviews(reviews: Review[], sort: ReviewSort, localReviewIds: Set<string>) {
   const statusPriority: Record<Review["status"], number> = { "À traiter": 0, Nouveau: 1, Répondu: 2, Archivé: 3 };
 
   return [...reviews].sort((firstReview, secondReview) => {
-    const firstReviewIsLocal = isLocalReviewId(firstReview.id);
-    const secondReviewIsLocal = isLocalReviewId(secondReview.id);
+    const firstReviewIsLocal = localReviewIds.has(firstReview.id);
+    const secondReviewIsLocal = localReviewIds.has(secondReview.id);
 
     if (firstReviewIsLocal !== secondReviewIsLocal) {
       return firstReviewIsLocal ? -1 : 1;
