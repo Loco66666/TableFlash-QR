@@ -22,13 +22,13 @@ export function RevenueTrendCard({ points }: { points: TrendPoint[] }) {
         <div className="rounded-2xl bg-emerald-50 px-4 py-3 text-sm font-black text-emerald-800">Pic d’activité : {peak.hour} — {peak.orders} commandes</div>
       </div>
 
-      <div className="mt-8 grid grid-cols-4 gap-3 sm:gap-5">
+      <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-4 sm:gap-5">
         {points.map((point) => {
           const height = Math.max(28, Math.round((point.orders / maxOrders) * 160));
           const isPeak = point.hour === peak.hour;
 
           return (
-            <div key={point.hour} className="flex min-w-0 flex-col items-center justify-end gap-3">
+            <div key={point.hour} className="flex min-w-0 flex-col items-center justify-end gap-4">
               <div className="flex h-44 w-full items-end justify-center rounded-3xl bg-slate-50 px-2 py-3">
                 <div
                   className={`w-full max-w-16 rounded-2xl ${isPeak ? "bg-emerald-700 shadow-lg shadow-emerald-900/20" : "bg-emerald-200"}`}
@@ -36,10 +36,10 @@ export function RevenueTrendCard({ points }: { points: TrendPoint[] }) {
                   aria-label={`${point.orders} commandes à ${point.hour}`}
                 />
               </div>
-              <div className="text-center">
+              <div className="w-full rounded-2xl bg-white/80 px-2 py-3 text-center shadow-sm shadow-slate-100/80 ring-1 ring-slate-100">
                 <p className="text-sm font-black text-slate-950">{point.hour}</p>
-                <p className="text-xs font-bold text-slate-500">{point.orders} cmdes</p>
-                <p className="text-xs font-black text-emerald-700">{formatEuro(point.revenue)}</p>
+                <p className="mt-1 text-xs font-bold leading-5 text-slate-500">{point.orders} commandes</p>
+                <p className="mt-1 text-xs font-black tabular-nums text-emerald-700">{formatEuro(point.revenue)}</p>
               </div>
             </div>
           );

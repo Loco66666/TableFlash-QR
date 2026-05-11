@@ -69,6 +69,14 @@ function scale(value: number, multiplier: number) {
   return Math.max(0, Math.round(value * multiplier));
 }
 
+function formatOrderDelta(delta: number) {
+  if (delta <= 0) {
+    return "Activité stable par rapport à hier";
+  }
+
+  return `${delta} ${delta > 1 ? "commandes" : "commande"} de plus qu’hier`;
+}
+
 function mapLocalOrderToAnalytics(order: LocalSubmittedOrder): AnalyticsOrder {
   const hour = order.time.startsWith("11") ? "11h" : order.time.startsWith("13") ? "13h" : order.time.startsWith("14") ? "14h" : "12h";
 
@@ -309,7 +317,7 @@ export function InteractiveStatisticsDashboard() {
         ) : (
           <>
             <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-6">
-              <StatisticsSummaryCard label="Commandes QR" value={String(stats.orderCount)} helper={`+${activeOption.previousDelta} vs hier`} />
+              <StatisticsSummaryCard label="Commandes QR" value={String(stats.orderCount)} helper={formatOrderDelta(activeOption.previousDelta)} />
               <StatisticsSummaryCard label="Chiffre potentiel" value={formatEuro(stats.revenue)} helper="Paiement caisse / serveur" tone="sky" />
               <StatisticsSummaryCard label="Panier moyen" value={formatEuro(stats.averageBasket)} helper="Par commande QR" tone="slate" />
               <StatisticsSummaryCard label="Temps moyen préparation" value={`${stats.averagePrep} min`} helper={stats.delayedOrders > 0 ? `${stats.delayedOrders} commandes en retard` : "Service fluide"} tone={stats.delayedOrders > 0 ? "rose" : "emerald"} />
