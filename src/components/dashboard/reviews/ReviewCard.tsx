@@ -12,7 +12,7 @@ type ReviewCardProps = {
 };
 
 export function ReviewCard({ isSelected, onArchive, onGoogle, onRespond, onSelect, review }: ReviewCardProps) {
-  const canSuggestGoogle = review.rating >= 4 && review.source === "TableFlash";
+  const canSuggestGoogle = review.googleReviewSuggested && review.source === "TableFlash";
 
   return (
     <article className={`rounded-3xl border bg-white p-5 shadow-sm transition ${isSelected ? "border-emerald-300 ring-4 ring-emerald-100" : "border-slate-200 hover:border-emerald-200"}`}>
@@ -51,7 +51,9 @@ export function ReviewCard({ isSelected, onArchive, onGoogle, onRespond, onSelec
       <div className="mt-5 flex flex-wrap gap-2">
         <button className="rounded-2xl bg-slate-950 px-4 py-2 text-sm font-black text-white transition hover:bg-slate-800" onClick={() => onSelect(review.id)} type="button">Voir détail</button>
         <button className="rounded-2xl border border-emerald-200 bg-white px-4 py-2 text-sm font-black text-emerald-700 transition hover:bg-emerald-50" onClick={() => onRespond(review.id)} type="button">Répondre</button>
-        <button className="rounded-2xl border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-black text-blue-700 transition hover:bg-blue-100" onClick={() => onGoogle(review.id)} type="button">Suggérer Google</button>
+        {canSuggestGoogle ? (
+          <button className="rounded-2xl border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-black text-blue-700 transition hover:bg-blue-100" onClick={() => onGoogle(review.id)} type="button">Suggérer Google</button>
+        ) : null}
         <button className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-600 transition hover:bg-slate-50" onClick={() => onArchive(review.id)} type="button">Archiver</button>
       </div>
     </article>

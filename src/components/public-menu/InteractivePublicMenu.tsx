@@ -217,6 +217,9 @@ export function InteractivePublicMenu({ restaurantSlug, tableId, tableName }: In
 
     const order: ConfirmedOrder = {
       orderNumber: localOrder.orderNumber,
+      restaurantSlug: localOrder.restaurantSlug,
+      restaurantName: localOrder.restaurantName,
+      tableId: localOrder.tableId,
       tableName: localOrder.tableName,
       total: localOrder.total,
       items: cartItems,

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { formatEuro } from "@/lib/formatters";
+import { addLocalReview, createLocalReview, getLocalReviews, type LocalReviewRating } from "@/lib/localReviews";
 import {
   getLocalOrders,
   LOCAL_ORDER_CREATED_EVENT,
@@ -104,6 +105,13 @@ function getPaymentBadgeLabel(status: LocalOrderStatus) {
 
 export function PublicOrderConfirmation({ order, paymentNote, onBackToMenu, onNewOrder }: PublicOrderConfirmationProps) {
   const [latestOrder, setLatestOrder] = useState<LocalSubmittedOrder | null>(null);
+  const [isReviewFormOpen, setIsReviewFormOpen] = useState(false);
+  const [selectedRating, setSelectedRating] = useState<LocalReviewRating | null>(null);
+  const [reviewComment, setReviewComment] = useState("");
+  const [reviewCustomerName, setReviewCustomerName] = useState("");
+  const [reviewError, setReviewError] = useState<string | null>(null);
+  const [submittedReviewRating, setSubmittedReviewRating] = useState<LocalReviewRating | null>(null);
+  const [hasSubmittedReview, setHasSubmittedReview] = useState(false);
 
   const refreshOrderStatus = useCallback(() => {
     if (!order) {
@@ -112,6 +120,7 @@ export function PublicOrderConfirmation({ order, paymentNote, onBackToMenu, onNe
     }
 
     setLatestOrder(findLatestOrder(order.orderNumber));
+    setHasSubmittedReview(getLocalReviews().some((review) => review.orderNumber === order.orderNumber));
   }, [order]);
 
   useEffect(() => {
@@ -151,6 +160,52 @@ export function PublicOrderConfirmation({ order, paymentNote, onBackToMenu, onNe
 
   if (!order) {
     return null;
+  }
+
+  const confirmedOrder = order;
+  const reviewOrder = latestOrderForCurrentConfirmation ?? confirmedOrder;
+
+  function resetReviewForm() {
+    setIsReviewFormOpen(false);
+    setSelectedRating(null);
+    setReviewComment("");
+    setReviewCustomerName("");
+    setReviewError(null);
+  }
+
+  function handleOpenReviewForm() {
+    setReviewError(null);
+    setIsReviewFormOpen(true);
+  }
+
+  function handleSubmitReview() {
+    if (!selectedRating) {
+      setReviewError("Sélectionnez une note avant d’envoyer votre avis.");
+      return;
+    }
+
+    const alreadySubmitted = getLocalReviews().some((review) => review.orderNumber === confirmedOrder.orderNumber);
+
+    if (alreadySubmitted) {
+      setHasSubmittedReview(true);
+      resetReviewForm();
+      return;
+    }
+
+    const submittedReview = addLocalReview(createLocalReview({
+      customerName: reviewCustomerName,
+      rating: selectedRating,
+      comment: reviewComment,
+      restaurantSlug: "restaurantSlug" in reviewOrder ? reviewOrder.restaurantSlug : "le-bistrot-des-halles",
+      restaurantName: "restaurantName" in reviewOrder ? reviewOrder.restaurantName : "Le Bistrot des Halles",
+      tableId: "tableId" in reviewOrder ? reviewOrder.tableId : confirmedOrder.tableName.toLowerCase().replaceAll(" ", "-"),
+      tableName: reviewOrder.tableName,
+      orderNumber: reviewOrder.orderNumber,
+    }));
+
+    setSubmittedReviewRating(submittedReview.rating);
+    setHasSubmittedReview(true);
+    resetReviewForm();
   }
 
   return (
@@ -273,9 +328,25 @@ export function PublicOrderConfirmation({ order, paymentNote, onBackToMenu, onNe
 
           {currentStatus === "Servie" ? (
             <div className="mt-4 rounded-3xl border border-emerald-100 bg-emerald-800 p-5 text-white shadow-lg shadow-emerald-800/15">
-              <p className="text-lg font-black tracking-[-0.03em]">Merci pour votre visite</p>
-              <p className="mt-2 text-sm leading-6 text-emerald-50">Votre commande est terminée. Nous espérons vous revoir très bientôt.</p>
-              <p className="mt-3 text-xs font-bold uppercase tracking-[0.14em] text-emerald-100">L’équipe du restaurant vous souhaite une excellente dégustation.</p>
+              {hasSubmittedReview ? (
+                <>
+                  <p className="text-lg font-black tracking-[-0.03em]">Merci pour votre avis</p>
+                  <p className="mt-2 text-sm leading-6 text-emerald-50">Merci, votre avis a bien été transmis.</p>
+                </>
+              ) : (
+                <>
+                  <p className="text-lg font-black tracking-[-0.03em]">Merci pour votre visite</p>
+                  <p className="mt-2 text-sm leading-6 text-emerald-50">Quand vous aurez terminé, votre avis nous aide à améliorer l’expérience.</p>
+                  <p className="mt-1 text-sm leading-6 text-emerald-50">Cela ne prend que quelques secondes.</p>
+                  <button
+                    type="button"
+                    onClick={handleOpenReviewForm}
+                    className="mt-4 min-h-12 rounded-2xl bg-white px-5 text-sm font-black text-emerald-900 shadow-lg shadow-emerald-950/20 transition hover:bg-emerald-50"
+                  >
+                    Laisser un avis
+                  </button>
+                </>
+              )}
             </div>
           ) : null}
         </section>
@@ -284,6 +355,86 @@ export function PublicOrderConfirmation({ order, paymentNote, onBackToMenu, onNe
           <p className="font-black">Paiement au restaurant</p>
           <p className="mt-1">{paymentNote}</p>
         </div>
+
+        {submittedReviewRating ? (
+          <div className="mt-4 rounded-3xl border border-emerald-100 bg-white p-5 shadow-sm shadow-emerald-950/5">
+            <p className="text-xl font-black tracking-[-0.03em] text-slate-950">Merci pour votre avis</p>
+            <p className="mt-2 text-sm leading-6 text-slate-600">Votre retour a bien été transmis au restaurant.</p>
+            <p className="mt-3 rounded-2xl bg-emerald-50 p-3 text-sm font-bold leading-6 text-emerald-900">
+              {submittedReviewRating >= 4
+                ? "Votre expérience semble positive. Le restaurant pourra vous proposer de partager votre avis publiquement."
+                : "Merci pour votre retour. L’équipe pourra en tenir compte pour améliorer l’expérience."}
+            </p>
+            <button type="button" onClick={onBackToMenu} className="mt-4 min-h-12 w-full rounded-2xl bg-emerald-800 px-4 text-sm font-black text-white shadow-lg shadow-emerald-800/20">
+              Retour au menu
+            </button>
+          </div>
+        ) : null}
+
+        {isReviewFormOpen ? (
+          <div className="fixed inset-0 z-[70] flex items-end justify-center bg-slate-950/55 px-3 pb-3 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="customer-review-title">
+            <div className="w-full max-w-[460px] rounded-t-[2rem] bg-white p-5 shadow-2xl md:rounded-[2rem]">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-xs font-black uppercase tracking-[0.2em] text-emerald-700">Avis après repas</p>
+                  <h3 id="customer-review-title" className="mt-2 text-2xl font-black tracking-[-0.04em] text-slate-950">Comment s’est passée votre expérience ?</h3>
+                </div>
+                <button type="button" onClick={resetReviewForm} className="grid h-10 w-10 place-items-center rounded-full border border-slate-200 text-xl font-black text-slate-500" aria-label="Fermer le formulaire d’avis">×</button>
+              </div>
+
+              <div className="mt-5" aria-label="Choisir une note">
+                <p className="text-sm font-black text-slate-800">Votre note</p>
+                <div className="mt-3 grid grid-cols-5 gap-2">
+                  {[1, 2, 3, 4, 5].map((rating) => (
+                    <button
+                      key={rating}
+                      type="button"
+                      onClick={() => {
+                        setSelectedRating(rating as LocalReviewRating);
+                        setReviewError(null);
+                      }}
+                      className={`min-h-14 rounded-2xl border text-3xl font-black transition ${
+                        selectedRating && rating <= selectedRating ? "border-amber-200 bg-amber-100 text-amber-600 shadow-lg shadow-amber-500/10" : "border-slate-200 bg-slate-50 text-slate-300"
+                      }`}
+                      aria-label={`${rating} étoile${rating > 1 ? "s" : ""}`}
+                    >
+                      ★
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <label className="mt-5 block text-sm font-black text-slate-800" htmlFor="review-comment">
+                Votre retour
+              </label>
+              <textarea
+                id="review-comment"
+                value={reviewComment}
+                onChange={(event) => setReviewComment(event.target.value)}
+                placeholder="Partagez votre retour en quelques mots..."
+                className="mt-2 min-h-28 w-full rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 text-base font-semibold leading-6 text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-emerald-300 focus:bg-white focus:ring-4 focus:ring-emerald-100"
+              />
+
+              <label className="mt-4 block text-sm font-black text-slate-800" htmlFor="review-first-name">
+                Votre prénom <span className="font-semibold text-slate-400">(facultatif)</span>
+              </label>
+              <input
+                id="review-first-name"
+                value={reviewCustomerName}
+                onChange={(event) => setReviewCustomerName(event.target.value)}
+                placeholder="Ex : Camille"
+                className="mt-2 min-h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-base font-semibold text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-emerald-300 focus:bg-white focus:ring-4 focus:ring-emerald-100"
+              />
+
+              {reviewError ? <p className="mt-3 rounded-2xl bg-rose-50 p-3 text-sm font-bold text-rose-700">{reviewError}</p> : null}
+
+              <div className="mt-5 grid grid-cols-2 gap-3">
+                <button type="button" onClick={resetReviewForm} className="min-h-12 rounded-2xl border border-slate-200 px-4 text-sm font-black text-slate-700">Plus tard</button>
+                <button type="button" onClick={handleSubmitReview} className="min-h-12 rounded-2xl bg-emerald-800 px-4 text-sm font-black text-white shadow-lg shadow-emerald-800/20">Envoyer mon avis</button>
+              </div>
+            </div>
+          </div>
+        ) : null}
 
         <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
           <button type="button" onClick={onBackToMenu} className="min-h-12 rounded-2xl border border-slate-200 px-4 text-sm font-black text-slate-700">

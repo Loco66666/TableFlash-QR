@@ -3,6 +3,14 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { DashboardHeader } from "@/components/dashboard";
+import {
+  clearLocalReviews,
+  getLocalReviews,
+  LOCAL_REVIEW_CREATED_EVENT,
+  LOCAL_REVIEWS_RESET_EVENT,
+  LOCAL_REVIEWS_STORAGE_KEY,
+  updateLocalReview,
+} from "@/lib/localReviews";
 
 import { EmptyReviewsState } from "./EmptyReviewsState";
 import { ReviewCard } from "./ReviewCard";
@@ -35,6 +43,29 @@ export function InteractiveReviewsDashboard() {
   const summaryCards = useMemo(() => buildSummaryCards(reviews), [reviews]);
 
   useEffect(() => {
+    function refreshLocalReviews() {
+      setReviews((currentReviews) => mergeReviews(getLocalReviews(), currentReviews.filter((review) => !isLocalReviewId(review.id))));
+    }
+
+    function handleStorage(event: StorageEvent) {
+      if (event.key === LOCAL_REVIEWS_STORAGE_KEY) {
+        refreshLocalReviews();
+      }
+    }
+
+    refreshLocalReviews();
+    window.addEventListener("storage", handleStorage);
+    window.addEventListener(LOCAL_REVIEW_CREATED_EVENT, refreshLocalReviews);
+    window.addEventListener(LOCAL_REVIEWS_RESET_EVENT, refreshLocalReviews);
+
+    return () => {
+      window.removeEventListener("storage", handleStorage);
+      window.removeEventListener(LOCAL_REVIEW_CREATED_EVENT, refreshLocalReviews);
+      window.removeEventListener(LOCAL_REVIEWS_RESET_EVENT, refreshLocalReviews);
+    };
+  }, []);
+
+  useEffect(() => {
     if (!toast) {
       return;
     }
@@ -48,6 +79,14 @@ export function InteractiveReviewsDashboard() {
     setToast({ id: Date.now(), message });
   }
 
+  function applyReviewPatch(reviewId: string, patch: Partial<Review>) {
+    setReviews((currentReviews) => currentReviews.map((review) => (review.id === reviewId ? { ...review, ...patch } : review)));
+
+    if (isLocalReviewId(reviewId)) {
+      updateLocalReview(reviewId, patch as Parameters<typeof updateLocalReview>[1]);
+    }
+  }
+
   function handleSelectReview(reviewId: string) {
     setSelectedReviewId(reviewId);
   }
@@ -58,7 +97,7 @@ export function InteractiveReviewsDashboard() {
   }
 
   function handleSaveResponse(reviewId: string, response: string) {
-    setReviews((currentReviews) => currentReviews.map((review) => (review.id === reviewId ? { ...review, response: response.trim(), status: "Répondu" } : review)));
+    applyReviewPatch(reviewId, { response: response.trim(), status: "Répondu" });
     setRespondingReviewId(null);
     showToast("Réponse enregistrée dans la maquette.");
   }
@@ -70,12 +109,12 @@ export function InteractiveReviewsDashboard() {
       return;
     }
 
-    setReviews((currentReviews) => currentReviews.map((review) => (review.id === reviewId ? { ...review, status: "Archivé" } : review)));
+    applyReviewPatch(reviewId, { status: "Archivé" });
     showToast("Avis archivé.");
   }
 
   function handleMarkTreated(reviewId: string) {
-    setReviews((currentReviews) => currentReviews.map((review) => (review.id === reviewId ? { ...review, status: "Répondu" } : review)));
+    applyReviewPatch(reviewId, { status: "Répondu" });
     showToast("Avis marqué comme traité.");
   }
 
@@ -92,6 +131,19 @@ export function InteractiveReviewsDashboard() {
     showToast("Demande d’avis créée dans la maquette.");
   }
 
+  function handleResetLocalReviews() {
+    const confirmed = window.confirm("Voulez-vous vraiment supprimer les avis locaux de démonstration ?");
+
+    if (!confirmed) {
+      return;
+    }
+
+    clearLocalReviews();
+    setReviews(initialReviews);
+    setSelectedReviewId(initialReviews[0]?.id ?? null);
+    showToast("Avis locaux réinitialisés.");
+  }
+
   return (
     <>
       <DashboardHeader
@@ -102,6 +154,7 @@ export function InteractiveReviewsDashboard() {
         <button className="rounded-2xl bg-emerald-600 px-5 py-3 text-sm font-black text-white shadow-lg shadow-emerald-900/15 transition hover:bg-emerald-700" onClick={() => setIsRequestPanelOpen(true)} type="button">Demander un avis</button>
         <button className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-black text-slate-700 shadow-sm transition hover:bg-slate-50" onClick={() => showToast("Export des avis simulé dans la maquette.")} type="button">Exporter les avis</button>
         <button className="rounded-2xl border border-blue-200 bg-blue-50 px-5 py-3 text-sm font-black text-blue-700 shadow-sm transition hover:bg-blue-100" onClick={() => showToast("Lien Google Avis copié dans la maquette.")} type="button">Lien Google Avis</button>
+        <button className="rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-xs font-black text-slate-500 shadow-sm transition hover:bg-slate-50" onClick={handleResetLocalReviews} type="button">Réinitialiser les avis locaux</button>
       </DashboardHeader>
 
       <main className="flex-1 space-y-6 p-5 lg:p-8">
@@ -223,6 +276,13 @@ function sortReviews(reviews: Review[], sort: ReviewSort) {
   const statusPriority: Record<Review["status"], number> = { "À traiter": 0, Nouveau: 1, Répondu: 2, Archivé: 3 };
 
   return [...reviews].sort((firstReview, secondReview) => {
+    const firstReviewIsLocal = isLocalReviewId(firstReview.id);
+    const secondReviewIsLocal = isLocalReviewId(secondReview.id);
+
+    if (firstReviewIsLocal !== secondReviewIsLocal) {
+      return firstReviewIsLocal ? -1 : 1;
+    }
+
     if (sort === "Meilleure note") {
       return secondReview.rating - firstReview.rating;
     }
@@ -250,4 +310,26 @@ function buildSummaryCards(reviews: Review[]) {
     { value: String(positiveCount), label: "Avis positifs", helper: "Clients satisfaits", tone: "amber" as const },
     { value: String(toHandleCount), label: "À traiter", helper: "Retours à prioriser", tone: "rose" as const },
   ];
+}
+
+function mergeReviews(localReviews: Review[], baseReviews: Review[]) {
+  const seenIds = new Set<string>();
+  const seenOrderNumbers = new Set<string>();
+  const mergedReviews: Review[] = [];
+
+  [...localReviews, ...baseReviews].forEach((review) => {
+    if (seenIds.has(review.id) || seenOrderNumbers.has(review.orderNumber)) {
+      return;
+    }
+
+    seenIds.add(review.id);
+    seenOrderNumbers.add(review.orderNumber);
+    mergedReviews.push(review);
+  });
+
+  return mergedReviews;
+}
+
+function isLocalReviewId(reviewId: string) {
+  return getLocalReviews().some((review) => review.id === reviewId);
 }
