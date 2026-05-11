@@ -29,6 +29,9 @@ export type PublicCartItem = {
 
 export type ConfirmedOrder = {
   orderNumber: string;
+  restaurantSlug: string;
+  restaurantName: string;
+  tableId: string;
   tableName: string;
   total: number;
   items: PublicCartItem[];

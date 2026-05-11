@@ -69,7 +69,7 @@ export function ReviewDetailPanel({ isResponding, onArchive, onClose, onGoogle, 
         </div>
       ) : null}
 
-      {review.rating >= 4 && review.source === "TableFlash" ? (
+      {review.googleReviewSuggested && review.source === "TableFlash" ? (
         <div className="mt-5 rounded-3xl border border-blue-100 bg-blue-50 p-4">
           <p className="text-sm font-black text-blue-900">Client satisfait — avis Google recommandé</p>
           <p className="mt-1 text-sm font-semibold leading-6 text-blue-700">Lien Google simulé pour la maquette. Aucun avis n’est publié automatiquement.</p>
@@ -80,7 +80,9 @@ export function ReviewDetailPanel({ isResponding, onArchive, onClose, onGoogle, 
       <div className="mt-5 grid gap-2 sm:grid-cols-2">
         <button className="rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-black text-white transition hover:bg-emerald-700" onClick={() => onRespond(review.id)} type="button">Répondre</button>
         <button className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-black text-slate-700 transition hover:bg-slate-50" onClick={() => onMarkTreated(review.id)} type="button">Marquer comme traité</button>
-        <button className="rounded-2xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-black text-blue-700 transition hover:bg-blue-100" onClick={() => onGoogle(review.id)} type="button">Préparer demande Google</button>
+        {review.googleReviewSuggested && review.source === "TableFlash" ? (
+          <button className="rounded-2xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-black text-blue-700 transition hover:bg-blue-100" onClick={() => onGoogle(review.id)} type="button">Préparer demande Google</button>
+        ) : null}
         <button className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-black text-slate-600 transition hover:bg-slate-50" onClick={() => onArchive(review.id)} type="button">Archiver</button>
       </div>
     </aside>
