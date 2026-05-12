@@ -5,7 +5,18 @@ type ActiveTableRow = {
   conversion: number;
 };
 
-const activeTablesGridClass = "lg:grid-cols-[minmax(0,1fr)_90px_120px_120px]";
+const activeTablesGridClass = "lg:grid-cols-[minmax(110px,1fr)_80px_120px_100px]";
+
+export function formatLocationLabelForStats(name: string) {
+  const normalizedName = name.trim().replace(/\s+/g, " ");
+  const tableMatch = normalizedName.match(/^Table (\d+)$/i);
+
+  if (tableMatch) {
+    return `T${tableMatch[1]}`;
+  }
+
+  return normalizedName;
+}
 
 export function ActiveTablesTable({ rows }: { rows: ActiveTableRow[] }) {
   return (
@@ -15,8 +26,8 @@ export function ActiveTablesTable({ rows }: { rows: ActiveTableRow[] }) {
         <h2 className="text-2xl font-black text-slate-950">Tables et emplacements actifs</h2>
       </div>
 
-      <div className={`mt-5 hidden gap-4 px-4 text-xs font-black uppercase tracking-[0.06em] text-slate-400 lg:grid ${activeTablesGridClass}`}>
-        <span>Table / emplacement</span>
+      <div className={`mt-5 hidden gap-5 px-4 text-xs font-black uppercase tracking-[0.08em] text-slate-400 lg:grid ${activeTablesGridClass}`}>
+        <span>Emplacement</span>
         <span className="text-right">Scans</span>
         <span className="text-right">Commandes</span>
         <span className="text-right">Conversion</span>
@@ -25,8 +36,8 @@ export function ActiveTablesTable({ rows }: { rows: ActiveTableRow[] }) {
       <div className="mt-3 space-y-3">
         {rows.map((row) => (
           <div key={row.name} className="rounded-3xl border border-slate-100 bg-slate-50/80 p-4 transition hover:border-emerald-100 hover:bg-white hover:shadow-sm hover:shadow-slate-200/70">
-            <div className={`grid gap-4 lg:items-center ${activeTablesGridClass}`}>
-              <p className="min-w-0 overflow-hidden [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] text-base font-black leading-6 text-slate-950">{row.name}</p>
+            <div className={`grid gap-4 lg:gap-5 lg:items-center ${activeTablesGridClass}`}>
+              <p className="min-w-[5.5rem] whitespace-nowrap text-base font-black leading-tight text-slate-950">{formatLocationLabelForStats(row.name)}</p>
 
               <div className="flex items-center justify-between gap-4 border-t border-slate-200/70 pt-3 lg:block lg:border-0 lg:pt-0 lg:text-right">
                 <span className="text-xs font-black uppercase tracking-[0.06em] text-slate-400 lg:hidden">Scans</span>

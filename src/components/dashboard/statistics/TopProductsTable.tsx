@@ -17,7 +17,7 @@ const badgeClasses: Record<TrendBadge, string> = {
   Stable: "bg-slate-100 text-slate-600 ring-slate-200",
 };
 
-const productGridClass = "lg:grid-cols-[minmax(0,1fr)_120px_130px_110px]";
+const productGridClass = "lg:grid-cols-[minmax(140px,1fr)_110px_120px_110px]";
 
 export function TopProductsTable({ products }: { products: ProductRow[] }) {
   return (
@@ -27,18 +27,18 @@ export function TopProductsTable({ products }: { products: ProductRow[] }) {
         <h2 className="text-2xl font-black text-slate-950">Produits les plus commandés</h2>
       </div>
 
-      <div className={`mt-5 hidden gap-4 px-4 text-xs font-black uppercase tracking-[0.06em] text-slate-400 lg:grid ${productGridClass}`}>
+      <div className={`mt-5 hidden gap-5 px-4 text-xs font-black uppercase tracking-[0.08em] text-slate-400 lg:grid ${productGridClass}`}>
         <span>Produit</span>
         <span className="text-right">Commandes</span>
-        <span className="text-right">Chiffre potentiel</span>
+        <span className="text-right">Chiffre</span>
         <span className="text-center">Tendance</span>
       </div>
 
       <div className="mt-3 space-y-3">
         {products.map((product) => (
           <div key={product.name} className="rounded-3xl border border-slate-100 bg-slate-50/80 p-4 transition hover:border-emerald-100 hover:bg-white hover:shadow-sm hover:shadow-slate-200/70">
-            <div className={`grid gap-4 lg:items-center ${productGridClass}`}>
-              <p className="min-w-0 overflow-hidden [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] text-base font-black leading-6 text-slate-950">
+            <div className={`grid gap-4 lg:gap-5 lg:items-center ${productGridClass}`}>
+              <p className="min-w-0 overflow-hidden [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] text-base font-black leading-tight text-slate-950">
                 {product.name}
               </p>
 
@@ -48,7 +48,7 @@ export function TopProductsTable({ products }: { products: ProductRow[] }) {
               </div>
 
               <div className="flex items-center justify-between gap-4 lg:block lg:text-right">
-                <span className="text-xs font-black uppercase tracking-[0.06em] text-slate-400 lg:hidden">Chiffre potentiel</span>
+                <span className="text-xs font-black uppercase tracking-[0.06em] text-slate-400 lg:hidden">Chiffre</span>
                 <span className="whitespace-nowrap text-sm font-black tabular-nums text-emerald-700">{formatEuro(product.revenue)}</span>
               </div>
 
