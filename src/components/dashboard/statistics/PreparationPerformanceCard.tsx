@@ -35,10 +35,10 @@ export function PreparationPerformanceCard({ averageMinutes, delayedOrders, watc
         ))}
       </div>
 
-      <div className="mt-5 grid gap-4 sm:grid-cols-3">
+      <div className="mt-5 grid gap-4 md:grid-cols-3">
         {segments.map((segment) => (
           <div key={segment.label} className="flex min-h-28 flex-col justify-between rounded-3xl border border-slate-100 bg-white p-4 shadow-sm shadow-slate-100/80">
-            <p className={`text-sm font-black leading-5 ${segment.textClassName}`}>{segment.label}</p>
+            <p className={`text-sm font-bold leading-5 ${segment.textClassName}`}>{segment.label}</p>
             <p className="mt-4 text-2xl font-black tabular-nums text-slate-950">{segment.value}</p>
           </div>
         ))}

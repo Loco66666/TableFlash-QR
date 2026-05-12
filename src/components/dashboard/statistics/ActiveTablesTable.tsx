@@ -5,15 +5,17 @@ type ActiveTableRow = {
   conversion: number;
 };
 
+const activeTablesGridClass = "lg:grid-cols-[minmax(0,1fr)_90px_120px_120px]";
+
 export function ActiveTablesTable({ rows }: { rows: ActiveTableRow[] }) {
   return (
-    <article className="rounded-[2rem] border border-slate-200/80 bg-white p-6 shadow-sm shadow-slate-200/60">
+    <article className="rounded-[2rem] border border-slate-200/80 bg-white p-5 shadow-sm shadow-slate-200/60 sm:p-6">
       <div className="flex flex-col gap-1">
-        <p className="text-sm font-black uppercase tracking-[0.18em] text-emerald-700">Activité par emplacement</p>
+        <p className="text-sm font-black uppercase tracking-[0.08em] text-emerald-700">Activité par emplacement</p>
         <h2 className="text-2xl font-black text-slate-950">Tables et emplacements actifs</h2>
       </div>
 
-      <div className="mt-5 hidden grid-cols-[minmax(0,1.5fr)_5.5rem_7.5rem_7rem] gap-4 px-4 text-xs font-black uppercase tracking-[0.14em] text-slate-400 sm:grid">
+      <div className={`mt-5 hidden gap-4 px-4 text-xs font-black uppercase tracking-[0.06em] text-slate-400 lg:grid ${activeTablesGridClass}`}>
         <span>Table / emplacement</span>
         <span className="text-right">Scans</span>
         <span className="text-right">Commandes</span>
@@ -23,22 +25,22 @@ export function ActiveTablesTable({ rows }: { rows: ActiveTableRow[] }) {
       <div className="mt-3 space-y-3">
         {rows.map((row) => (
           <div key={row.name} className="rounded-3xl border border-slate-100 bg-slate-50/80 p-4 transition hover:border-emerald-100 hover:bg-white hover:shadow-sm hover:shadow-slate-200/70">
-            <div className="grid gap-4 sm:grid-cols-[minmax(0,1.5fr)_5.5rem_7.5rem_7rem] sm:items-center">
-              <p className="min-w-0 font-black leading-6 text-slate-950">{row.name}</p>
+            <div className={`grid gap-4 lg:items-center ${activeTablesGridClass}`}>
+              <p className="min-w-0 overflow-hidden [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] text-base font-black leading-6 text-slate-950">{row.name}</p>
 
-              <div className="flex items-center justify-between gap-3 sm:block sm:text-right">
-                <span className="text-xs font-black uppercase tracking-[0.12em] text-slate-400 sm:hidden">Scans</span>
-                <span className="text-sm font-bold tabular-nums text-slate-700">{row.scans}</span>
+              <div className="flex items-center justify-between gap-4 border-t border-slate-200/70 pt-3 lg:block lg:border-0 lg:pt-0 lg:text-right">
+                <span className="text-xs font-black uppercase tracking-[0.06em] text-slate-400 lg:hidden">Scans</span>
+                <span className="whitespace-nowrap text-sm font-bold tabular-nums text-slate-700">{row.scans} scans</span>
               </div>
 
-              <div className="flex items-center justify-between gap-3 sm:block sm:text-right">
-                <span className="text-xs font-black uppercase tracking-[0.12em] text-slate-400 sm:hidden">Commandes</span>
-                <span className="text-sm font-bold tabular-nums text-slate-700">{row.orders} {row.orders > 1 ? "commandes" : "commande"}</span>
+              <div className="flex items-center justify-between gap-4 lg:block lg:text-right">
+                <span className="text-xs font-black uppercase tracking-[0.06em] text-slate-400 lg:hidden">Commandes</span>
+                <span className="whitespace-nowrap text-sm font-bold tabular-nums text-slate-700">{row.orders} {row.orders > 1 ? "commandes" : "commande"}</span>
               </div>
 
-              <div className="flex items-center justify-between gap-3 sm:block sm:text-right">
-                <span className="text-xs font-black uppercase tracking-[0.12em] text-slate-400 sm:hidden">Conversion</span>
-                <span className="text-sm font-black tabular-nums text-emerald-700">{row.conversion.toLocaleString("fr-FR", { maximumFractionDigits: 1 })} %</span>
+              <div className="flex items-center justify-between gap-4 lg:block lg:text-right">
+                <span className="text-xs font-black uppercase tracking-[0.06em] text-slate-400 lg:hidden">Conversion</span>
+                <span className="whitespace-nowrap text-sm font-black tabular-nums text-emerald-700">{row.conversion.toLocaleString("fr-FR", { maximumFractionDigits: 1 })} %</span>
               </div>
             </div>
           </div>
