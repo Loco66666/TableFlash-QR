@@ -303,9 +303,9 @@ export function InteractiveStatisticsDashboard() {
         </button>
       </DashboardHeader>
 
-      <main className="flex-1 space-y-6 bg-slate-50/70 p-5 lg:p-8">
+      <main className="min-w-0 flex-1 space-y-6 overflow-x-hidden bg-slate-50/70 p-4 sm:p-5 lg:p-8">
         {periodPanelOpen ? (
-          <section className="rounded-[2rem] border border-emerald-100 bg-emerald-50 p-5 text-sm font-semibold text-emerald-900 shadow-sm">
+          <section className="min-w-0 max-w-full break-words rounded-[2rem] border border-emerald-100 bg-emerald-50 p-5 text-sm font-semibold text-emerald-900 shadow-sm">
             La sélection de dates personnalisées sera connectée dans une prochaine étape. La maquette reste locale et sans API externe.
           </section>
         ) : null}
@@ -316,7 +316,7 @@ export function InteractiveStatisticsDashboard() {
           <StatisticsEmptyState onRefresh={handleRefresh} />
         ) : (
           <>
-            <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-6">
+            <section className="grid min-w-0 max-w-full gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
               <StatisticsSummaryCard label="Commandes QR" value={String(stats.orderCount)} helper={formatOrderDelta(activeOption.previousDelta)} />
               <StatisticsSummaryCard label="Chiffre potentiel" value={formatEuro(stats.revenue)} helper="Paiement caisse / serveur" tone="sky" />
               <StatisticsSummaryCard label="Panier moyen" value={formatEuro(stats.averageBasket)} helper="Par commande QR" tone="slate" />
@@ -325,17 +325,17 @@ export function InteractiveStatisticsDashboard() {
               <StatisticsSummaryCard label="Tables actives" value={String(stats.activeTables.length)} helper="Emplacements scannés" tone="emerald" />
             </section>
 
-            <section className="grid gap-6 xl:grid-cols-[1.35fr_0.65fr]">
+            <section className="grid min-w-0 max-w-full gap-6 2xl:grid-cols-[minmax(0,1.35fr)_minmax(0,0.65fr)]">
               <RevenueTrendCard points={trendPoints} />
               <ServiceHealthCard status={stats.serviceStatus} recommendation={stats.recommendation} />
             </section>
 
-            <section className="grid gap-6 xl:grid-cols-2">
+            <section className="grid min-w-0 max-w-full gap-6 2xl:grid-cols-2">
               <TopProductsTable products={stats.topProducts} />
               <ActiveTablesTable rows={stats.activeTables} />
             </section>
 
-            <section className="grid gap-6 xl:grid-cols-3">
+            <section className="grid min-w-0 max-w-full gap-6 xl:grid-cols-2 2xl:grid-cols-3">
               <PreparationPerformanceCard averageMinutes={stats.averagePrep} delayedOrders={stats.delayedOrders} watchOrders={stats.watchOrders} onTimeOrders={stats.onTimeOrders} />
               <ReviewsInsightCard averageRating={stats.averageRating} positiveReviews={stats.positiveReviews} reviewsToHandle={stats.reviewsToHandle} latestSentiment={stats.latestSentiment} />
               <PeakHoursChart hours={trendPoints.map((point) => ({ hour: point.hour, orders: point.orders }))} />

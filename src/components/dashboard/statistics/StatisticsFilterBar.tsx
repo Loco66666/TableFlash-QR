@@ -10,7 +10,7 @@ export function StatisticsFilterBar({
   onChange: (period: StatisticsPeriod) => void;
 }) {
   return (
-    <section className="rounded-[2rem] border border-emerald-100 bg-white/90 p-3 shadow-sm shadow-emerald-950/5">
+    <section className="min-w-0 max-w-full overflow-hidden rounded-[2rem] border border-emerald-100 bg-white/90 p-3 shadow-sm shadow-emerald-950/5">
       <div className="flex flex-wrap gap-2">
         {periods.map((period) => {
           const isActive = period.id === activePeriod;
