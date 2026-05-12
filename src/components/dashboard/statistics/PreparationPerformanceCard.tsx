@@ -14,9 +14,9 @@ export function PreparationPerformanceCard({ averageMinutes, delayedOrders, watc
   ];
 
   return (
-    <article className="rounded-[2rem] border border-slate-200/80 bg-white p-6 shadow-sm shadow-slate-200/60">
-      <h2 className="text-2xl font-black text-slate-950">Performance préparation</h2>
-      <p className="mt-2 text-sm leading-6 text-slate-500">{delayedOrders > 0 ? "Certaines commandes dépassent le délai estimé." : "Le service est fluide et les commandes restent dans les temps."}</p>
+    <article className="min-w-0 max-w-full overflow-hidden rounded-[2rem] border border-slate-200/80 bg-white p-6 shadow-sm shadow-slate-200/60">
+      <h2 className="break-words text-2xl font-black text-slate-950">Performance préparation</h2>
+      <p className="mt-2 break-words text-sm leading-6 text-slate-500">{delayedOrders > 0 ? "Certaines commandes dépassent le délai estimé." : "Le service est fluide et les commandes restent dans les temps."}</p>
 
       <div className="mt-6 grid gap-4 sm:grid-cols-2">
         <div className="rounded-3xl bg-emerald-50 p-5">

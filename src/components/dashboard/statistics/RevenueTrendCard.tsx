@@ -13,16 +13,16 @@ export function RevenueTrendCard({ points }: { points: TrendPoint[] }) {
   const peak = points.reduce((bestPoint, point) => (point.orders > bestPoint.orders ? point : bestPoint), points[0]);
 
   return (
-    <article className="rounded-[2rem] border border-slate-200/80 bg-white p-6 shadow-sm shadow-slate-200/60">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <p className="text-sm font-black uppercase tracking-[0.08em] text-emerald-700">Commandes & chiffre potentiel</p>
-          <h2 className="mt-2 text-2xl font-black text-slate-950">Évolution du service</h2>
+    <article className="min-w-0 max-w-full overflow-hidden rounded-[2rem] border border-slate-200/80 bg-white p-6 shadow-sm shadow-slate-200/60">
+      <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <p className="break-words text-sm font-black uppercase tracking-[0.08em] text-emerald-700">Commandes & chiffre potentiel</p>
+          <h2 className="mt-2 break-words text-2xl font-black text-slate-950">Évolution du service</h2>
         </div>
-        <div className="rounded-2xl bg-emerald-50 px-4 py-3 text-sm font-black text-emerald-800">Pic d’activité : {peak.hour} — {peak.orders} commandes</div>
+        <div className="max-w-full break-words rounded-2xl bg-emerald-50 px-4 py-3 text-sm font-black text-emerald-800">Pic d’activité : {peak.hour} — {peak.orders} commandes</div>
       </div>
 
-      <div className="mt-8 grid grid-cols-2 gap-5 sm:grid-cols-4 sm:gap-5">
+      <div className="mt-8 grid min-w-0 max-w-full grid-cols-2 gap-5 sm:grid-cols-4 sm:gap-5">
         {points.map((point) => {
           const height = Math.max(28, Math.round((point.orders / maxOrders) * 160));
           const isPeak = point.hour === peak.hour;

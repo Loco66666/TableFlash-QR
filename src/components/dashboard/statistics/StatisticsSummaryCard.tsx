@@ -15,15 +15,15 @@ const toneClasses = {
 
 export function StatisticsSummaryCard({ label, value, helper, tone = "emerald" }: StatisticsSummaryCardProps) {
   return (
-    <article className="flex h-full min-h-[11.25rem] flex-col rounded-[2rem] border border-slate-200/80 bg-white p-5 shadow-sm shadow-slate-200/60">
-      <div className="flex min-h-11 items-start justify-between gap-4">
-        <p className="max-w-[11rem] text-sm font-bold leading-5 text-slate-500">{label}</p>
+    <article className="flex h-full min-h-[11.25rem] min-w-0 max-w-full flex-col overflow-hidden rounded-[2rem] border border-slate-200/80 bg-white p-5 shadow-sm shadow-slate-200/60">
+      <div className="flex min-h-11 min-w-0 items-start justify-between gap-4">
+        <p className="min-w-0 max-w-[11rem] break-words text-sm font-bold leading-5 text-slate-500">{label}</p>
         <span className={`mt-1 h-3 w-3 shrink-0 rounded-full ring-4 ${toneClasses[tone]}`} />
       </div>
 
       <div className="flex flex-1 flex-col justify-end pt-4">
-        <p className="text-3xl font-black leading-none tracking-tight text-slate-950">{value}</p>
-        <p className="mt-3 min-h-10 text-sm font-semibold leading-5 text-slate-500">{helper}</p>
+        <p className="break-words text-3xl font-black leading-none tracking-tight text-slate-950">{value}</p>
+        <p className="mt-3 min-h-10 break-words text-sm font-semibold leading-5 text-slate-500">{helper}</p>
       </div>
     </article>
   );

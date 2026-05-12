@@ -1,6 +1,6 @@
 export function StatisticsEmptyState({ onRefresh }: { onRefresh: () => void }) {
   return (
-    <section className="rounded-[2rem] border border-dashed border-slate-300 bg-white p-8 text-center shadow-sm">
+    <section className="min-w-0 max-w-full overflow-hidden rounded-[2rem] border border-dashed border-slate-300 bg-white p-8 text-center shadow-sm">
       <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-3xl bg-emerald-50 text-2xl">📊</div>
       <h2 className="mt-5 text-2xl font-black text-slate-950">Aucune donnée pour cette période</h2>
       <p className="mx-auto mt-2 max-w-xl text-slate-500">Les statistiques apparaîtront dès que des commandes QR et des avis clients seront disponibles.</p>
