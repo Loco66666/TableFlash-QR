@@ -330,7 +330,7 @@ export function InteractiveStatisticsDashboard() {
               <ServiceHealthCard status={stats.serviceStatus} recommendation={stats.recommendation} />
             </section>
 
-            <section className="grid min-w-0 max-w-full grid-cols-1 gap-6 xl:grid-cols-2">
+            <section className="grid min-w-0 max-w-full grid-cols-1 items-stretch gap-6 xl:grid-cols-2">
               <TopProductsTable products={stats.topProducts} />
               <ActiveTablesTable rows={stats.activeTables} />
             </section>
