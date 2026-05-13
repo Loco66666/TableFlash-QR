@@ -17,7 +17,7 @@ const badgeClasses: Record<TrendBadge, string> = {
   Stable: "bg-slate-100 text-slate-600 ring-slate-200",
 };
 
-const productGridClass = "xl:grid-cols-[minmax(0,1fr)_3.25rem_5.75rem_5.75rem]";
+const productGridClass = "xl:grid-cols-[minmax(10rem,1fr)_6.5rem_8.5rem_7rem]";
 const cardClass = "flex h-full w-full min-w-0 max-w-full flex-col overflow-hidden rounded-[2rem] border border-slate-200/80 bg-white p-5 shadow-sm shadow-slate-200/60 sm:p-6";
 const sectionHeaderClass = "min-w-0 max-w-full break-words";
 const eyebrowClass = "text-sm font-black uppercase tracking-[0.08em] text-emerald-700";
@@ -39,8 +39,8 @@ export function TopProductsTable({ products }: { products: ProductRow[] }) {
 
       <div className={`${tableHeaderClass} ${productGridClass}`}>
         <span className="min-w-0">Produit</span>
-        <span className="text-right" title="Commandes" aria-label="Commandes">Cmd.</span>
-        <span className="text-right">Chiffre</span>
+        <span className="text-right">Commandes</span>
+        <span className="text-right">Ventes estimées</span>
         <span className="text-center">Tendance</span>
       </div>
 
@@ -48,23 +48,23 @@ export function TopProductsTable({ products }: { products: ProductRow[] }) {
         {products.map((product) => (
           <div key={product.name} className={rowClass}>
             <div className={`grid w-full min-w-0 max-w-full gap-3 xl:items-center ${productGridClass}`}>
-              <p className="line-clamp-2 min-w-0 max-w-[13rem] overflow-hidden text-base font-black leading-tight text-slate-950 xl:max-w-none" title={product.name}>
+              <p className="line-clamp-2 min-w-0 max-w-full overflow-hidden text-base font-black leading-tight text-slate-950 xl:max-w-none" title={product.name}>
                 {product.name}
               </p>
 
               <div className="flex min-w-0 items-center justify-between gap-3 border-t border-slate-200/70 pt-3 xl:block xl:border-0 xl:pt-0 xl:text-right">
-                <span className={mobileLabelClass} title="Commandes" aria-label="Commandes">Cmd.</span>
+                <span className={mobileLabelClass}>Commandes</span>
                 <span className={mutedValueClass}>{product.quantity}</span>
               </div>
 
               <div className="flex min-w-0 items-center justify-between gap-3 xl:block xl:text-right">
-                <span className={mobileLabelClass}>Chiffre</span>
+                <span className={mobileLabelClass}>Ventes estimées</span>
                 <span className={strongValueClass}>{formatEuro(product.revenue)}</span>
               </div>
 
               <div className="flex min-w-0 items-center justify-between gap-3 xl:justify-center">
                 <span className={mobileLabelClass}>Tendance</span>
-                <span className={`inline-flex max-w-full justify-center truncate rounded-full px-2.5 py-1 text-[0.7rem] font-black leading-none ring-1 sm:min-w-[5.5rem] ${badgeClasses[product.badge]}`}>{product.badge}</span>
+                <span className={`inline-flex max-w-full justify-center truncate rounded-full px-2.5 py-1 text-xs font-black leading-none ring-1 sm:min-w-[5.5rem] ${badgeClasses[product.badge]}`}>{product.badge}</span>
               </div>
             </div>
           </div>

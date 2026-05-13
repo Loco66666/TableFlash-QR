@@ -1,5 +1,5 @@
 export type StatisticsPeriod = "today" | "7d" | "30d" | "lunch" | "dinner";
-export type ServiceStatus = "Service fluide" | "Activité soutenue" | "Attention aux retards";
+export type ServiceStatus = "Service fluide" | "Attention aux retards";
 export type TrendBadge = "Top vente" | "En hausse" | "Stable";
 
 export type StatisticsPeriodOption = {

@@ -5,7 +5,7 @@ type ActiveTableRow = {
   conversion: number;
 };
 
-const activeTablesGridClass = "xl:grid-cols-[minmax(0,1fr)_3.25rem_3.25rem_4.75rem]";
+const activeTablesGridClass = "xl:grid-cols-[minmax(8rem,1fr)_5rem_6.5rem_6.5rem]";
 const cardClass = "flex h-full w-full min-w-0 max-w-full flex-col overflow-hidden rounded-[2rem] border border-slate-200/80 bg-white p-5 shadow-sm shadow-slate-200/60 sm:p-6";
 const sectionHeaderClass = "min-w-0 max-w-full break-words";
 const eyebrowClass = "text-sm font-black uppercase tracking-[0.08em] text-emerald-700";
@@ -33,14 +33,14 @@ export function ActiveTablesTable({ rows }: { rows: ActiveTableRow[] }) {
     <article className={cardClass}>
       <div className={sectionHeaderClass}>
         <p className={eyebrowClass}>Activité par emplacement</p>
-        <h2 className={titleClass}>Tables et emplacements actifs</h2>
+        <h2 className={titleClass}>Activité par emplacement</h2>
       </div>
 
       <div className={`${tableHeaderClass} ${activeTablesGridClass}`}>
-        <span className="min-w-0">Lieu</span>
+        <span className="min-w-0">Emplacement</span>
         <span className="text-right">Scans</span>
-        <span className="text-right" title="Commandes" aria-label="Commandes">Cmd.</span>
-        <span className="text-right" title="Conversion" aria-label="Conversion">Conv.</span>
+        <span className="text-right">Commandes</span>
+        <span className="text-right">Conversion</span>
       </div>
 
       <div className={rowsClass}>
@@ -55,12 +55,12 @@ export function ActiveTablesTable({ rows }: { rows: ActiveTableRow[] }) {
               </div>
 
               <div className="flex min-w-0 items-center justify-between gap-3 xl:block xl:text-right">
-                <span className={mobileLabelClass} title="Commandes" aria-label="Commandes">Cmd.</span>
+                <span className={mobileLabelClass}>Commandes</span>
                 <span className={mutedValueClass}>{row.orders}</span>
               </div>
 
               <div className="flex min-w-0 items-center justify-between gap-3 xl:block xl:text-right">
-                <span className={mobileLabelClass} title="Conversion" aria-label="Conversion">Conv.</span>
+                <span className={mobileLabelClass}>Conversion</span>
                 <span className={strongValueClass}>{row.conversion.toLocaleString("fr-FR", { maximumFractionDigits: 1 })} %</span>
               </div>
             </div>
