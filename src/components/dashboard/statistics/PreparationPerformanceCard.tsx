@@ -12,19 +12,22 @@ export function PreparationPerformanceCard({ averageMinutes, delayedOrders, watc
     { label: "À surveiller", value: watchOrders, className: "bg-amber-400", textClassName: "text-amber-700" },
     { label: "En retard", value: delayedOrders, className: "bg-rose-500", textClassName: "text-rose-700" },
   ];
+  const message = delayedOrders > 0 ? "Certaines commandes dépassent le délai estimé pendant les périodes chargées." : "La cuisine tient le rythme prévu.";
 
   return (
     <article className="min-w-0 max-w-full overflow-hidden rounded-[2rem] border border-slate-200/80 bg-white p-6 shadow-sm shadow-slate-200/60">
-      <h2 className="break-words text-2xl font-black text-slate-950">Performance préparation</h2>
-      <p className="mt-2 break-words text-sm leading-6 text-slate-500">{delayedOrders > 0 ? "Certaines commandes dépassent le délai estimé." : "Le service est fluide et les commandes restent dans les temps."}</p>
+      <p className="text-sm font-black uppercase tracking-[0.08em] text-emerald-700">Opérations cuisine</p>
+      <h2 className="mt-2 break-words text-2xl font-black text-slate-950">Opérations cuisine</h2>
+      <p className="mt-2 break-words text-sm font-semibold leading-6 text-slate-500">Suivez le rythme de préparation pendant le service.</p>
+      <p className="mt-5 rounded-3xl bg-emerald-50 p-4 text-sm font-semibold leading-6 text-emerald-900">{message}</p>
 
-      <div className="mt-6 grid gap-4 sm:grid-cols-2">
-        <div className="rounded-3xl bg-emerald-50 p-5">
-          <p className="text-sm font-bold text-emerald-700">Préparation moyenne</p>
+      <div className="mt-5 grid gap-4 sm:grid-cols-2">
+        <div className="rounded-3xl bg-slate-50 p-5">
+          <p className="text-sm font-bold text-slate-600">Préparation moyenne</p>
           <p className="mt-3 text-3xl font-black text-slate-950">{averageMinutes} min</p>
         </div>
         <div className="rounded-3xl bg-rose-50 p-5">
-          <p className="text-sm font-bold leading-5 text-rose-700">Commandes en retard</p>
+          <p className="text-sm font-bold leading-5 text-rose-700">En retard</p>
           <p className="mt-3 text-3xl font-black text-slate-950">{delayedOrders}</p>
         </div>
       </div>
@@ -35,9 +38,9 @@ export function PreparationPerformanceCard({ averageMinutes, delayedOrders, watc
         ))}
       </div>
 
-      <div className="mt-5 grid gap-4 sm:grid-cols-3">
+      <div className="mt-5 grid gap-3 sm:grid-cols-3">
         {segments.map((segment) => (
-          <div key={segment.label} className="flex min-h-28 min-w-0 flex-col justify-between rounded-3xl border border-slate-100 bg-white p-4 shadow-sm shadow-slate-100/80">
+          <div key={segment.label} className="flex min-h-24 min-w-0 flex-col justify-between rounded-3xl border border-slate-100 bg-white p-4 shadow-sm shadow-slate-100/80">
             <p className={`break-words text-sm font-bold leading-5 ${segment.textClassName}`}>{segment.label}</p>
             <p className="mt-4 text-2xl font-black tabular-nums text-slate-950">{segment.value}</p>
           </div>

@@ -16,8 +16,9 @@ export function RevenueTrendCard({ points }: { points: TrendPoint[] }) {
     <article className="min-w-0 max-w-full overflow-hidden rounded-[2rem] border border-slate-200/80 bg-white p-6 shadow-sm shadow-slate-200/60">
       <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
-          <p className="break-words text-sm font-black uppercase tracking-[0.08em] text-emerald-700">Commandes & ventes estimées</p>
+          <p className="break-words text-sm font-black uppercase tracking-[0.08em] text-emerald-700">Évolution du service</p>
           <h2 className="mt-2 break-words text-2xl font-black text-slate-950">Évolution du service</h2>
+          <p className="mt-2 break-words text-sm font-semibold leading-6 text-slate-500">Repérez les pics de commande et les créneaux les plus chargés.</p>
         </div>
         <div className="max-w-full break-words rounded-2xl bg-emerald-50 px-4 py-3 text-sm font-black text-emerald-800">Pic d’activité : {peak.hour} — {peak.orders} commandes</div>
       </div>
