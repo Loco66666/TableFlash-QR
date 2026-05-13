@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { formatEuro } from "@/lib/formatters";
 import {
@@ -29,8 +29,9 @@ type PublicOrderConfirmationProps = {
 
 type TrackingStep = {
   label: string;
-  statuses: LocalOrderStatus[];
 };
+
+type TrackingStepState = "completed" | "current" | "upcoming";
 
 type CustomerStatusContent = {
   title: string;
@@ -89,11 +90,11 @@ const customerStatusContent: Record<LocalOrderStatus, CustomerStatusContent> = {
 };
 
 const trackingSteps: TrackingStep[] = [
-  { label: "Commande", statuses: ["Nouvelle"] },
-  { label: "Validation", statuses: ["Acceptée"] },
-  { label: "Règlement", statuses: ["À payer", "Payée"] },
-  { label: "Préparation", statuses: ["En préparation", "Prête"] },
-  { label: "Service", statuses: ["Servie"] },
+  { label: "Commande" },
+  { label: "Validation" },
+  { label: "Règlement" },
+  { label: "Préparation" },
+  { label: "Service" },
 ];
 
 function findLatestOrder(orderNumber: string): LocalSubmittedOrder | null {
@@ -104,8 +105,39 @@ function findLatestOrder(orderNumber: string): LocalSubmittedOrder | null {
   );
 }
 
-function getActiveStepIndex(status: LocalOrderStatus) {
-  return trackingSteps.findIndex((step) => step.statuses.includes(status));
+function getTrackingStepState(
+  status: LocalOrderStatus,
+  index: number,
+): TrackingStepState {
+  const completedStepCountByStatus: Record<LocalOrderStatus, number> = {
+    Nouvelle: 0,
+    Acceptée: 1,
+    "À payer": 2,
+    Payée: 3,
+    "En préparation": 3,
+    Prête: 4,
+    Servie: 5,
+    Refusée: 0,
+    Annulée: 0,
+  };
+  const currentStepIndexByStatus: Partial<Record<LocalOrderStatus, number>> = {
+    Nouvelle: 0,
+    Acceptée: 1,
+    "À payer": 2,
+    "En préparation": 3,
+  };
+
+  const currentStepIndex = currentStepIndexByStatus[status];
+
+  if (currentStepIndex === index) {
+    return "current";
+  }
+
+  if (index < completedStepCountByStatus[status]) {
+    return "completed";
+  }
+
+  return "upcoming";
 }
 
 function isStoppedStatus(status: LocalOrderStatus) {
@@ -133,26 +165,6 @@ function isPaymentPending(status: LocalOrderStatus) {
     "Refusée",
     "Annulée",
   ].includes(status);
-}
-
-function getOperationalLabel(status: LocalOrderStatus) {
-  if (["Nouvelle", "Acceptée"].includes(status)) {
-    return "Validation en cours";
-  }
-
-  if (["À payer", "Payée"].includes(status)) {
-    return "Avant préparation";
-  }
-
-  if (["En préparation", "Prête"].includes(status)) {
-    return "En cuisine";
-  }
-
-  if (status === "Servie") {
-    return "Expérience terminée";
-  }
-
-  return "Suivi clôturé";
 }
 
 function DetailPill({ label, value }: { label: string; value: string }) {
@@ -191,8 +203,6 @@ export function PublicOrderConfirmation({
   const [reviewComment, setReviewComment] = useState("");
   const [reviewCustomerName, setReviewCustomerName] = useState("");
   const [reviewError, setReviewError] = useState<string | null>(null);
-  const [submittedReviewRating, setSubmittedReviewRating] =
-    useState<LocalReviewRating | null>(null);
   const [hasSubmittedReview, setHasSubmittedReview] = useState(false);
 
   const refreshOrderStatus = useCallback(() => {
@@ -239,14 +249,11 @@ export function PublicOrderConfirmation({
       ? latestOrder
       : null;
   const currentStatus = latestOrderForCurrentConfirmation?.status ?? "Nouvelle";
-  const activeStepIndex = useMemo(
-    () => getActiveStepIndex(currentStatus),
-    [currentStatus],
-  );
   const currentStatusContent = customerStatusContent[currentStatus];
   const paymentBadgeLabel = getPaymentBadgeLabel(currentStatus);
   const paymentIsPending = isPaymentPending(currentStatus);
-  const operationalLabel = getOperationalLabel(currentStatus);
+  const reviewIsAvailable = currentStatus === "Servie";
+  const reviewWasSubmitted = reviewIsAvailable && hasSubmittedReview;
 
   if (!order) {
     return null;
@@ -286,7 +293,7 @@ export function PublicOrderConfirmation({
       return;
     }
 
-    const submittedReview = addLocalReview(
+    addLocalReview(
       createLocalReview({
         customerName: reviewCustomerName,
         rating: selectedRating,
@@ -308,7 +315,6 @@ export function PublicOrderConfirmation({
       }),
     );
 
-    setSubmittedReviewRating(submittedReview.rating);
     setHasSubmittedReview(true);
     resetReviewForm();
   }
@@ -434,42 +440,26 @@ export function PublicOrderConfirmation({
           </div>
 
           <div className="mt-4 rounded-[1.45rem] bg-white/95 p-4 shadow-sm shadow-emerald-950/5 ring-1 ring-emerald-100/70">
-            <p className="text-sm leading-6 text-slate-600">
-              {currentStatusContent.message}
-            </p>
-
-            <div className="mt-4 grid gap-2.5 sm:grid-cols-2">
-              <div className="rounded-2xl border border-slate-100 bg-slate-50 px-3 py-3">
-                <p className="text-[0.65rem] font-black uppercase tracking-[0.14em] text-slate-500">
-                  État
-                </p>
-                <p className="mt-1 text-sm font-black text-slate-950">
-                  {operationalLabel}
-                </p>
-              </div>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <p className="text-sm leading-6 text-slate-600">
+                {currentStatusContent.message}
+              </p>
               {paymentBadgeLabel ? (
-                <div
-                  className={`rounded-2xl border px-3 py-3 ${paymentIsPending ? "border-amber-200 bg-amber-50" : "border-emerald-100 bg-emerald-50"}`}
+                <span
+                  className={`inline-flex shrink-0 items-center rounded-full px-3 py-2 text-xs font-black ${paymentIsPending ? "bg-amber-100 text-amber-900 ring-1 ring-amber-200" : "bg-emerald-100 text-emerald-900 ring-1 ring-emerald-200"}`}
                 >
-                  <p
-                    className={`text-[0.65rem] font-black uppercase tracking-[0.14em] ${paymentIsPending ? "text-amber-700" : "text-emerald-700"}`}
-                  >
-                    Règlement
-                  </p>
-                  <p
-                    className={`mt-1 text-sm font-black ${paymentIsPending ? "text-amber-950" : "text-emerald-950"}`}
-                  >
-                    {paymentBadgeLabel}
-                  </p>
-                </div>
+                  {paymentBadgeLabel}
+                </span>
               ) : null}
             </div>
 
-            {paymentIsPending ? (
-              <p className="mt-3 rounded-2xl bg-amber-50 px-3 py-2 text-sm font-black text-amber-900 ring-1 ring-amber-100">
-                Règlement à effectuer sur place.
-              </p>
-            ) : null}
+            <p
+              className={`mt-4 rounded-2xl px-3 py-2 text-sm font-black ${paymentIsPending ? "bg-amber-50 text-amber-900 ring-1 ring-amber-100" : "bg-emerald-50 text-emerald-900 ring-1 ring-emerald-100"}`}
+            >
+              {paymentIsPending
+                ? "Règlement à effectuer sur place."
+                : "Règlement confirmé."}
+            </p>
 
             <div
               className={`mt-4 rounded-2xl p-3 text-sm font-bold leading-6 ${paymentIsPending ? "bg-amber-50 text-amber-900" : "bg-emerald-50 text-emerald-900"}`}
@@ -495,12 +485,9 @@ export function PublicOrderConfirmation({
               aria-label="Progression de la commande"
             >
               {trackingSteps.map((step, index) => {
-                const isCompleted =
-                  currentStatus === "Servie"
-                    ? index <= activeStepIndex
-                    : activeStepIndex >= 0 && index < activeStepIndex;
-                const isCurrent =
-                  currentStatus !== "Servie" && index === activeStepIndex;
+                const stepState = getTrackingStepState(currentStatus, index);
+                const isCompleted = stepState === "completed";
+                const isCurrent = stepState === "current";
                 const isHighlighted = isCompleted || isCurrent;
 
                 return (
@@ -518,7 +505,7 @@ export function PublicOrderConfirmation({
                       {isCompleted ? "✓" : index + 1}
                     </div>
                     <p
-                      className={`mt-2 text-center text-[0.66rem] font-black leading-4 ${isHighlighted ? "text-slate-900" : "text-slate-400"}`}
+                      className={`mt-2 text-center text-[0.62rem] font-black leading-4 sm:text-[0.66rem] ${isHighlighted ? "text-slate-900" : "text-slate-400"}`}
                     >
                       {step.label}
                     </p>
@@ -528,9 +515,9 @@ export function PublicOrderConfirmation({
             </ol>
           )}
 
-          {currentStatus === "Servie" ? (
+          {reviewIsAvailable ? (
             <div className="mt-5 rounded-3xl border border-emerald-100 bg-emerald-800 p-5 text-white shadow-lg shadow-emerald-800/15">
-              {hasSubmittedReview ? (
+              {reviewWasSubmitted ? (
                 <>
                   <p className="text-lg font-black tracking-[-0.03em]">
                     Merci pour votre avis
@@ -538,6 +525,13 @@ export function PublicOrderConfirmation({
                   <p className="mt-2 text-sm leading-6 text-emerald-50">
                     Votre retour a bien été transmis au restaurant.
                   </p>
+                  <button
+                    type="button"
+                    onClick={onBackToMenu}
+                    className="mt-4 min-h-12 rounded-2xl bg-white px-5 text-sm font-black text-emerald-900 shadow-lg shadow-emerald-950/20 transition hover:bg-emerald-50"
+                  >
+                    Retour au menu
+                  </button>
                 </>
               ) : (
                 <>
@@ -563,24 +557,6 @@ export function PublicOrderConfirmation({
             </div>
           ) : null}
         </section>
-
-        {submittedReviewRating ? (
-          <div className="mt-4 rounded-3xl border border-emerald-100 bg-white p-5 shadow-sm shadow-emerald-950/5">
-            <p className="text-xl font-black tracking-[-0.03em] text-slate-950">
-              Merci pour votre avis
-            </p>
-            <p className="mt-2 text-sm leading-6 text-slate-600">
-              Votre retour a bien été transmis au restaurant.
-            </p>
-            <button
-              type="button"
-              onClick={onBackToMenu}
-              className="mt-4 min-h-12 w-full rounded-2xl bg-emerald-800 px-4 text-sm font-black text-white shadow-lg shadow-emerald-800/20"
-            >
-              Retour au menu
-            </button>
-          </div>
-        ) : null}
 
         {isReviewFormOpen ? (
           <div
