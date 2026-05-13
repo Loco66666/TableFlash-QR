@@ -7,6 +7,7 @@ type CategoryListProps = {
   selectedCategoryId: string | "all";
   onMoveCategoryDown: (categoryId: string) => void;
   onMoveCategoryUp: (categoryId: string) => void;
+  onDeleteCategory: (categoryId: string) => void;
   onSelectCategory: (categoryId: string | "all") => void;
   onToggleReorderMode: () => void;
 };
@@ -16,6 +17,7 @@ export function CategoryList({
   productCounts,
   reorderMode,
   selectedCategoryId,
+  onDeleteCategory,
   onMoveCategoryDown,
   onMoveCategoryUp,
   onSelectCategory,
@@ -102,6 +104,20 @@ export function CategoryList({
                     type="button"
                   >
                     Descendre
+                  </button>
+                </div>
+              ) : null}
+
+              {isRealCategory ? (
+                <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 px-4 pb-4 pt-3">
+                  <span className="text-xs font-bold text-slate-400">Actions catégorie</span>
+                  <button
+                    aria-label={`Supprimer la catégorie ${category.name}`}
+                    className="rounded-xl border border-rose-100 bg-rose-50 px-3 py-2 text-xs font-black text-rose-700 transition hover:border-rose-200 hover:bg-rose-100"
+                    onClick={() => onDeleteCategory(category.id)}
+                    type="button"
+                  >
+                    Supprimer
                   </button>
                 </div>
               ) : null}

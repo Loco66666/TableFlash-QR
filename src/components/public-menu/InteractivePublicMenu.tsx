@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { addLocalOrder, createLocalOrder } from "@/lib/localOrders";
-import { readLocalMenu, toPublicMenuProducts } from "@/lib/localMenu";
+import { getFallbackLocalMenu, readLocalMenu, toPublicMenuCategories, toPublicMenuProducts } from "@/lib/localMenu";
 import { PublicCartBar } from "./PublicCartBar";
 import { PublicCartDrawer } from "./PublicCartDrawer";
 import { PublicEmptyState } from "./PublicEmptyState";
@@ -12,7 +12,7 @@ import { PublicOrderConfirmation } from "./PublicOrderConfirmation";
 import { PublicPaymentNotice } from "./PublicPaymentNotice";
 import { PublicProductCard } from "./PublicProductCard";
 import { PublicProductDetailModal } from "./PublicProductDetailModal";
-import { publicMenuCategories, publicRestaurant } from "./publicMenuData";
+import { publicRestaurant } from "./publicMenuData";
 import type { ConfirmedOrder, PublicCartItem, PublicMenuCategory, PublicMenuProduct } from "./types";
 
 type InteractivePublicMenuProps = {
@@ -30,17 +30,16 @@ function makeCartKey(productId: string, note?: string) {
   return `${productId}::${note?.trim() ?? ""}`;
 }
 
-export function InteractivePublicMenu({ restaurantSlug, tableId, tableName }: InteractivePublicMenuProps) {
-  const [initialPublicMenu] = useState(() => {
-    const localMenu = readLocalMenu();
-    const categories = localMenu.categories.map((category) => category.name);
+function buildPublicMenuSnapshot(localMenu = getFallbackLocalMenu()) {
+  return {
+    categories: toPublicMenuCategories(localMenu.categories, localMenu.products),
+    products: toPublicMenuProducts(localMenu.products, localMenu.categories),
+  };
+}
 
-    return {
-      categories: categories.length > 0 ? categories : publicMenuCategories,
-      products: toPublicMenuProducts(localMenu.products, localMenu.categories),
-    };
-  });
-  const [selectedCategory, setSelectedCategory] = useState<PublicMenuCategory>(initialPublicMenu.categories[0] ?? "La carte");
+export function InteractivePublicMenu({ restaurantSlug, tableId, tableName }: InteractivePublicMenuProps) {
+  const [publicMenu, setPublicMenu] = useState(() => buildPublicMenuSnapshot());
+  const [selectedCategory, setSelectedCategory] = useState<PublicMenuCategory>(publicMenu.categories[0] ?? "La carte");
   const [cartItems, setCartItems] = useState<PublicCartItem[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<PublicMenuProduct | null>(null);
   const [productQuantity, setProductQuantity] = useState(1);
@@ -53,13 +52,23 @@ export function InteractivePublicMenu({ restaurantSlug, tableId, tableName }: In
   const restaurant = publicRestaurant.slug === restaurantSlug ? publicRestaurant : publicRestaurant;
   const orderingDisabled = restaurant.serviceStatus !== "open";
 
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      setPublicMenu(buildPublicMenuSnapshot(readLocalMenu()));
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
+  }, []);
+
+  const activeCategory = publicMenu.categories.includes(selectedCategory) ? selectedCategory : publicMenu.categories[0] ?? "La carte";
+
   const categoryCounts = useMemo(
     () =>
-      initialPublicMenu.categories.reduce<Record<PublicMenuCategory, number>>((counts, category) => {
-        counts[category] = initialPublicMenu.products.filter((product) => product.category === category).length;
+      publicMenu.categories.reduce<Record<PublicMenuCategory, number>>((counts, category) => {
+        counts[category] = publicMenu.products.filter((product) => product.category === category).length;
         return counts;
       }, {} as Record<PublicMenuCategory, number>),
-    [initialPublicMenu],
+    [publicMenu],
   );
 
   const cartQuantitiesByProduct = useMemo(
@@ -72,8 +81,8 @@ export function InteractivePublicMenu({ restaurantSlug, tableId, tableName }: In
   );
 
   const visibleProducts = useMemo(
-    () => initialPublicMenu.products.filter((product) => product.category === selectedCategory),
-    [initialPublicMenu, selectedCategory],
+    () => publicMenu.products.filter((product) => product.category === activeCategory),
+    [activeCategory, publicMenu.products],
   );
 
   const itemCount = useMemo(
@@ -249,7 +258,7 @@ export function InteractivePublicMenu({ restaurantSlug, tableId, tableName }: In
 
   function handleNewOrder() {
     setConfirmedOrder(null);
-    setSelectedCategory(initialPublicMenu.categories[0] ?? "La carte");
+    setSelectedCategory(publicMenu.categories[0] ?? "La carte");
   }
 
   return (
@@ -278,9 +287,9 @@ export function InteractivePublicMenu({ restaurantSlug, tableId, tableName }: In
 
           <div className="mt-5">
             <PublicMenuCategoryTabs
-              categories={initialPublicMenu.categories}
+              categories={publicMenu.categories}
               categoryCounts={categoryCounts}
-              selectedCategory={selectedCategory}
+              selectedCategory={activeCategory}
               onSelectCategory={setSelectedCategory}
             />
           </div>
@@ -290,7 +299,7 @@ export function InteractivePublicMenu({ restaurantSlug, tableId, tableName }: In
               <div>
                 <p className="text-sm font-black uppercase tracking-[0.18em] text-emerald-700">La carte</p>
                 <h2 id="products-heading" className="mt-1 text-2xl font-black tracking-[-0.04em] text-slate-950">
-                  {selectedCategory}
+                  {activeCategory}
                 </h2>
               </div>
               <p className="rounded-full bg-white px-3 py-1.5 text-xs font-black text-slate-500 shadow-sm">{visibleProducts.length} choix</p>
