@@ -29,16 +29,22 @@ type SectionId =
   | "orders"
   | "qr"
   | "reviews"
-  | "customerExperience"
-  | "appearance";
+  | "customerExperience";
 
 type OperationalStatus = {
   modeLabel: string;
-  stateLabel: string;
+  customerState: "Service ouvert" | "Commandes en pause" | "Service fermé";
+  customerHelper: string;
   activeSlot: string;
   nextSlot: string;
   isOpen: boolean;
   isPaused: boolean;
+};
+
+type ReadinessItem = {
+  label: string;
+  helper: string;
+  checked: boolean;
 };
 
 const openingModes: RestaurantSettings["serviceOpeningMode"][] = [
@@ -55,24 +61,21 @@ const primaryColors: RestaurantSettings["primaryColor"][] = [
   "Bleu nuit",
 ];
 
-const clientPromises = [
-  "Commandez à votre rythme",
-  "Votre commande est transmise à l’équipe",
-  "Règlement à la caisse ou auprès du serveur",
-];
-
-const settingsSections: Array<{ id: SectionId; label: string; helper: string }> = [
+const settingsSections: Array<{
+  id: SectionId;
+  label: string;
+  helper: string;
+}> = [
   { id: "establishment", label: "Établissement", helper: "Identité publique" },
   { id: "service", label: "Service", helper: "Ouverture & horaires" },
-  { id: "orders", label: "Commandes", helper: "Validation & règlement" },
-  { id: "qr", label: "QR", helper: "Emplacements & fiches" },
-  { id: "reviews", label: "Avis", helper: "Réputation locale" },
+  { id: "orders", label: "Commandes", helper: "Traitement & règlement" },
+  { id: "qr", label: "QR", helper: "Impression & zones" },
+  { id: "reviews", label: "Avis", helper: "Réputation" },
   {
     id: "customerExperience",
     label: "Expérience client",
-    helper: "Accueil & page publique",
+    helper: "Messages & identité visuelle",
   },
-  { id: "appearance", label: "Apparence", helper: "Marque publique" },
 ];
 
 const colorPreview: Record<RestaurantSettings["primaryColor"], string> = {
@@ -130,9 +133,13 @@ function getSlotLabel(hour: OpeningHour, period: "midi" | "soir") {
     : `${hour.day} soir · ${hour.dinnerStart}–${hour.dinnerEnd}`;
 }
 
-function computeAutomaticStatus(settings: RestaurantSettings, now = new Date()) {
-  const today = getTodayLabel(now);
-  const todayHour = settings.hours.find((hour) => hour.day === today);
+function computeAutomaticStatus(
+  settings: RestaurantSettings,
+  now = new Date(),
+) {
+  const todayHour = settings.hours.find(
+    (hour) => hour.day === getTodayLabel(now),
+  );
   const nowMinutes = now.getHours() * 60 + now.getMinutes();
 
   if (todayHour?.open) {
@@ -157,19 +164,21 @@ function findNextSlot(settings: RestaurantSettings, now = new Date()) {
     const hour = settings.hours.find((item) => item.day === dayName);
     if (!hour?.open) continue;
 
-    const slots: Array<{ period: "midi" | "soir"; start: string; label: string }> = [
-      { period: "midi", start: hour.lunchStart, label: getSlotLabel(hour, "midi") },
-      { period: "soir", start: hour.dinnerStart, label: getSlotLabel(hour, "soir") },
+    const slots: Array<{ period: "midi" | "soir"; start: string }> = [
+      { period: "midi", start: hour.lunchStart },
+      { period: "soir", start: hour.dinnerStart },
     ];
-
-    const next = slots.find((slot) => offset > 0 || toMinutes(slot.start) > nowMinutes);
+    const next = slots.find(
+      (slot) => offset > 0 || toMinutes(slot.start) > nowMinutes,
+    );
     if (!next) continue;
 
-    const prefix = offset === 0 ? "Aujourd’hui" : offset === 1 ? "Demain" : dayName;
-    return `${prefix} · ${next.period} ${next.start}`;
+    if (offset === 0) return `Aujourd’hui à ${next.start}`;
+    if (offset === 1) return `Demain à ${next.start}`;
+    return `${dayName} à ${next.start}`;
   }
 
-  return "Aucun prochain créneau configuré";
+  return "Aucun créneau prévu aujourd’hui";
 }
 
 function getOperationalStatus(settings: RestaurantSettings): OperationalStatus {
@@ -179,7 +188,8 @@ function getOperationalStatus(settings: RestaurantSettings): OperationalStatus {
   if (settings.serviceOpeningMode === "Forcer ouvert") {
     return {
       modeLabel: "Forcé ouvert",
-      stateLabel: "Ouvert actuellement",
+      customerState: "Service ouvert",
+      customerHelper: "Le client peut commander depuis sa table.",
       activeSlot: "Ouverture décidée par l’équipe",
       nextSlot,
       isOpen: true,
@@ -189,9 +199,11 @@ function getOperationalStatus(settings: RestaurantSettings): OperationalStatus {
 
   if (settings.serviceOpeningMode === "Mettre en pause") {
     return {
-      modeLabel: "Pause",
-      stateLabel: "Commandes en pause",
-      activeSlot: "QR accessibles, commandes bloquées",
+      modeLabel: "Pause décidée par l’équipe",
+      customerState: "Commandes en pause",
+      customerHelper:
+        "Le menu reste visible, mais les commandes sont suspendues.",
+      activeSlot: "QR accessibles, commandes suspendues",
       nextSlot,
       isOpen: false,
       isPaused: true,
@@ -200,8 +212,9 @@ function getOperationalStatus(settings: RestaurantSettings): OperationalStatus {
 
   if (settings.serviceOpeningMode === "Forcer fermé") {
     return {
-      modeLabel: "Fermé",
-      stateLabel: "Fermé actuellement",
+      modeLabel: "Forcé fermé",
+      customerState: "Service fermé",
+      customerHelper: "Le client voit que le service n’est pas ouvert.",
       activeSlot: "Prise de commandes fermée",
       nextSlot,
       isOpen: false,
@@ -210,8 +223,11 @@ function getOperationalStatus(settings: RestaurantSettings): OperationalStatus {
   }
 
   return {
-    modeLabel: "Automatique",
-    stateLabel: automatic.isOpen ? "Ouvert actuellement" : "Fermé actuellement",
+    modeLabel: "Automatique selon les horaires",
+    customerState: automatic.isOpen ? "Service ouvert" : "Service fermé",
+    customerHelper: automatic.isOpen
+      ? "Le client peut commander depuis sa table."
+      : "Le client voit que le service n’est pas ouvert.",
     activeSlot: automatic.activeSlot,
     nextSlot,
     isOpen: automatic.isOpen,
@@ -315,7 +331,9 @@ function TextField({
 }) {
   return (
     <label className="block min-w-0">
-      <span className="break-words text-sm font-bold text-slate-800">{label}</span>
+      <span className="break-words text-sm font-bold text-slate-800">
+        {label}
+      </span>
       <input
         type={type}
         value={value}
@@ -347,7 +365,9 @@ function TextAreaField({
 }) {
   return (
     <label className="block min-w-0">
-      <span className="break-words text-sm font-bold text-slate-800">{label}</span>
+      <span className="break-words text-sm font-bold text-slate-800">
+        {label}
+      </span>
       <textarea
         value={value}
         rows={rows}
@@ -407,13 +427,13 @@ function SegmentedControl<T extends string>({
             key={option}
             type="button"
             onClick={() => onChange(option)}
-            className={`min-h-11 flex-1 basis-[180px] rounded-xl px-4 py-2.5 text-sm font-black transition ${
+            className={`min-h-11 flex-1 basis-[190px] rounded-xl px-4 py-2.5 text-sm font-black transition ${
               value === option
                 ? "bg-emerald-700 text-white shadow-lg shadow-emerald-900/20"
                 : "text-slate-600 hover:bg-white hover:text-emerald-700"
             }`}
           >
-            <span className="whitespace-nowrap">{option}</span>
+            <span className="break-words">{option}</span>
           </button>
         ))}
       </div>
@@ -460,22 +480,50 @@ function ToggleRow({
   );
 }
 
-function ChecklistItem({ label, checked }: { label: string; checked: boolean }) {
+function ReadinessChecklistItem({ item }: { item: ReadinessItem }) {
   return (
-    <div className="flex min-w-0 items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3">
-      <span
-        className={`grid h-7 w-7 shrink-0 place-items-center rounded-full text-sm font-black ${checked ? "bg-emerald-700 text-white" : "bg-slate-100 text-slate-400"}`}
-      >
-        {checked ? "✓" : "·"}
-      </span>
-      <p className="min-w-0 break-words text-sm font-black text-slate-800">
-        {label}
-      </p>
+    <div className="min-w-0 rounded-2xl border border-slate-200 bg-white px-4 py-3">
+      <div className="flex min-w-0 items-start gap-3">
+        <span
+          className={`mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full text-sm font-black ${
+            item.checked
+              ? "bg-emerald-700 text-white"
+              : "bg-amber-100 text-amber-700"
+          }`}
+        >
+          {item.checked ? "✓" : "!"}
+        </span>
+        <div className="min-w-0">
+          <div className="flex min-w-0 flex-wrap items-center gap-2">
+            <p className="break-words text-sm font-black text-slate-900">
+              {item.label}
+            </p>
+            <span
+              className={`rounded-full px-2 py-1 text-[0.65rem] font-black uppercase tracking-[0.12em] ${
+                item.checked
+                  ? "bg-emerald-50 text-emerald-700"
+                  : "bg-amber-50 text-amber-700"
+              }`}
+            >
+              {item.checked ? "Prêt" : "À compléter"}
+            </span>
+          </div>
+          <p className="mt-1 break-words text-xs font-semibold leading-5 text-slate-500">
+            {item.helper}
+          </p>
+        </div>
+      </div>
     </div>
   );
 }
 
-function StatusPill({ children, tone = "slate" }: { children: ReactNode; tone?: "emerald" | "amber" | "slate" }) {
+function StatusPill({
+  children,
+  tone = "slate",
+}: {
+  children: ReactNode;
+  tone?: "emerald" | "amber" | "slate";
+}) {
   const toneClass =
     tone === "emerald"
       ? "bg-emerald-50 text-emerald-800 ring-emerald-100"
@@ -484,8 +532,10 @@ function StatusPill({ children, tone = "slate" }: { children: ReactNode; tone?: 
         : "bg-slate-100 text-slate-700 ring-slate-200";
 
   return (
-    <span className={`inline-flex min-h-8 max-w-full items-center rounded-full px-3 text-xs font-black ring-1 ${toneClass}`}>
-      <span className="truncate">{children}</span>
+    <span
+      className={`inline-flex min-h-8 max-w-full items-center rounded-full px-3 text-xs font-black ring-1 ${toneClass}`}
+    >
+      <span className="break-words">{children}</span>
     </span>
   );
 }
@@ -528,32 +578,30 @@ function SettingsNavigation({
 }
 
 function ReadinessOverview({
-  settings,
   score,
   checklist,
   saveState,
   operationalStatus,
 }: {
-  settings: RestaurantSettings;
   score: number;
-  checklist: Array<{ label: string; checked: boolean }>;
+  checklist: ReadinessItem[];
   saveState: SaveState;
   operationalStatus: OperationalStatus;
 }) {
   return (
-    <section className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1.05fr)_minmax(360px,0.95fr)]">
+    <section className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1.2fr)_minmax(340px,0.8fr)]">
       <div className="min-w-0 rounded-[2rem] border border-emerald-100 bg-gradient-to-br from-white to-emerald-50/70 p-5 shadow-sm shadow-emerald-950/5 md:p-6">
         <div className="flex min-w-0 flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
           <div className="min-w-0">
             <p className="break-words text-xs font-black uppercase tracking-[0.22em] text-emerald-700">
-              Configuration du restaurant
+              Avant le service
             </p>
             <h2 className="mt-2 break-words text-3xl font-black tracking-tight text-slate-950">
-              Configuration prête à {score} %
+              État de préparation
             </h2>
-            <p className="mt-2 max-w-2xl break-words text-sm font-semibold leading-6 text-slate-500">
-              Une vue premium pour vérifier l’identité, les horaires, les QR et
-              les messages essentiels avant l’ouverture opérationnelle.
+            <p className="mt-2 max-w-3xl break-words text-sm font-semibold leading-6 text-slate-500">
+              Vérifiez rapidement si votre restaurant est prêt à recevoir des
+              commandes par QR.
             </p>
           </div>
           <div className="grid h-28 w-28 shrink-0 place-items-center rounded-full bg-emerald-700 text-white shadow-xl shadow-emerald-900/20">
@@ -565,62 +613,66 @@ function ReadinessOverview({
             </div>
           </div>
         </div>
-        <div className="mt-5 grid min-w-0 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          {checklist.slice(0, 5).map((item) => (
-            <ChecklistItem key={item.label} {...item} />
+        <div className="mt-5 grid min-w-0 gap-3 md:grid-cols-2 xl:grid-cols-3">
+          {checklist.map((item) => (
+            <ReadinessChecklistItem key={item.label} item={item} />
           ))}
         </div>
         <p className="mt-4 break-words text-sm font-bold text-slate-500">
+          Dernière sauvegarde locale ·{" "}
           {saveState === "saved"
-            ? "Dernière version enregistrée localement."
-            : "Modifications locales non enregistrées."}
+            ? "Paramètres enregistrés localement"
+            : "Modifications non enregistrées"}
         </p>
       </div>
 
-      <OperationalStatusPanel
-        settings={settings}
-        operationalStatus={operationalStatus}
-      />
+      <CustomerStateCard operationalStatus={operationalStatus} />
     </section>
   );
 }
 
-function OperationalStatusPanel({
-  settings,
+function CustomerStateCard({
   operationalStatus,
 }: {
-  settings: RestaurantSettings;
   operationalStatus: OperationalStatus;
 }) {
   return (
     <section className="min-w-0 rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/70 md:p-6">
-      <div className="flex min-w-0 items-start justify-between gap-4">
+      <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <p className="break-words text-xs font-black uppercase tracking-[0.22em] text-emerald-700">
-            Statut opérationnel
+            Pilotage du service
           </p>
           <h2 className="mt-2 break-words text-2xl font-black tracking-tight text-slate-950">
-            État du service en direct
+            Ce que voit le client maintenant
           </h2>
         </div>
-        <StatusPill tone={operationalStatus.isOpen ? "emerald" : operationalStatus.isPaused ? "amber" : "slate"}>
-          {operationalStatus.stateLabel}
+        <StatusPill
+          tone={
+            operationalStatus.isOpen
+              ? "emerald"
+              : operationalStatus.isPaused
+                ? "amber"
+                : "slate"
+          }
+        >
+          {operationalStatus.customerState}
         </StatusPill>
       </div>
-      <div className="mt-5 grid min-w-0 gap-3 sm:grid-cols-2">
-        <StatusTile label="Mode d’ouverture" value={operationalStatus.modeLabel} />
-        <StatusTile label="État actuel" value={operationalStatus.stateLabel} />
-        <StatusTile label="Prochain créneau" value={operationalStatus.nextSlot} />
+      <div className="mt-5 rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5">
+        <p className="break-words text-2xl font-black text-slate-950">
+          {operationalStatus.customerState}
+        </p>
+        <p className="mt-2 break-words text-sm font-semibold leading-6 text-slate-500">
+          {operationalStatus.customerHelper}
+        </p>
+      </div>
+      <div className="mt-4 grid min-w-0 gap-3 sm:grid-cols-2">
+        <StatusTile label="Mode service" value={operationalStatus.modeLabel} />
         <StatusTile
-          label="Commandes"
-          value={settings.orderAutoAccept ? "Acceptation automatique" : "Acceptation manuelle"}
+          label="Prochain créneau"
+          value={operationalStatus.nextSlot}
         />
-        <div className="sm:col-span-2">
-          <StatusTile
-            label="Paiement"
-            value="Règlement physique avant préparation"
-          />
-        </div>
       </div>
     </section>
   );
@@ -628,7 +680,7 @@ function OperationalStatusPanel({
 
 function StatusTile({ label, value }: { label: string; value: string }) {
   return (
-    <div className="min-w-0 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+    <div className="min-w-0 rounded-2xl border border-slate-200 bg-white px-4 py-3">
       <p className="break-words text-xs font-black uppercase tracking-[0.16em] text-slate-400">
         {label}
       </p>
@@ -644,27 +696,31 @@ function TimeRangeEditor({
   hour,
   onChange,
 }: {
-  title: string;
+  title: "Service du midi" | "Service du soir";
   hour: OpeningHour;
   onChange: (patch: Partial<OpeningHour>) => void;
 }) {
-  const isLunch = title === "Midi";
+  const isLunch = title === "Service du midi";
 
   return (
     <div className="min-w-0 rounded-2xl border border-slate-200 bg-slate-50 p-3">
-      <p className="mb-3 whitespace-nowrap text-xs font-black uppercase tracking-[0.14em] text-slate-500">
+      <p className="mb-3 break-words text-xs font-black uppercase tracking-[0.14em] text-slate-500">
         {title}
       </p>
       <div className="flex min-w-0 flex-col gap-3 sm:flex-row">
         <TimeField
           label="Début"
           value={isLunch ? hour.lunchStart : hour.dinnerStart}
-          onChange={(value) => onChange(isLunch ? { lunchStart: value } : { dinnerStart: value })}
+          onChange={(value) =>
+            onChange(isLunch ? { lunchStart: value } : { dinnerStart: value })
+          }
         />
         <TimeField
           label="Fin"
           value={isLunch ? hour.lunchEnd : hour.dinnerEnd}
-          onChange={(value) => onChange(isLunch ? { lunchEnd: value } : { dinnerEnd: value })}
+          onChange={(value) =>
+            onChange(isLunch ? { lunchEnd: value } : { dinnerEnd: value })
+          }
         />
       </div>
     </div>
@@ -688,14 +744,12 @@ function QrPreview({ settings }: { settings: RestaurantSettings }) {
   return (
     <div className="min-w-0 rounded-[2rem] border border-slate-200 bg-slate-50 p-5">
       <p className="break-words text-xs font-black uppercase tracking-[0.18em] text-emerald-700">
-        Exemple de fiche QR
+        QR premium imprimé
       </p>
       <div className="mt-4 min-w-0 rounded-[1.75rem] border border-slate-200 bg-white p-5 text-center shadow-sm">
-        {settings.qrShowTableFlashMention ? (
-          <p className="mx-auto inline-flex rounded-full bg-emerald-50 px-3 py-1 text-xs font-black text-emerald-700">
-            TableFlash
-          </p>
-        ) : null}
+        <p className="mx-auto inline-flex rounded-full bg-emerald-50 px-3 py-1 text-xs font-black text-emerald-700">
+          TableFlash
+        </p>
         <p className="mt-4 break-words text-lg font-black text-slate-950">
           {settings.restaurantName}
         </p>
@@ -712,7 +766,7 @@ function QrPreview({ settings }: { settings: RestaurantSettings }) {
         </p>
         {settings.qrShowPublicLink ? (
           <p className="mt-4 break-all rounded-full bg-slate-100 px-3 py-2 text-xs font-black text-slate-600">
-            /r/{settings.publicSlug}
+            /r/{settings.publicSlug}/table/table-1
           </p>
         ) : null}
       </div>
@@ -737,41 +791,32 @@ function CustomerPreview({
         Aperçu client
       </p>
       <h3 className="mt-2 break-words text-2xl font-black text-slate-950">
-        Carte visible après scan
+        Expérience après scan
       </h3>
       <div className="mt-5 overflow-hidden rounded-[2rem] border border-slate-200 bg-slate-950 p-3 shadow-inner shadow-slate-950/20">
         <div className="min-w-0 rounded-[1.5rem] bg-white p-4">
-          <div className={`min-w-0 rounded-[1.25rem] bg-gradient-to-br p-4 ${colorPreview[settings.primaryColor]}`}>
+          <div
+            className={`min-w-0 rounded-[1.25rem] bg-gradient-to-br p-4 ${colorPreview[settings.primaryColor]}`}
+          >
             <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
               <span className="rounded-full bg-white/20 px-3 py-1 text-xs font-black tracking-[0.14em]">
-                {settings.showOpenServiceBadge ? "Service ouvert" : "Menu public"}
+                Service à table
               </span>
               <span className="rounded-full bg-white/20 px-3 py-1 text-xs font-black">
                 Table 1
               </span>
             </div>
-            <p className="mt-4 break-words text-sm font-black uppercase tracking-[0.14em] opacity-80">
-              {settings.clientPromise}
-            </p>
-            <h3 className="mt-2 break-words text-2xl font-black leading-tight">
+            <h3 className="mt-4 break-words text-2xl font-black leading-tight">
               {settings.restaurantName}
             </h3>
-            <p className="mt-2 break-all text-xs font-bold opacity-85">
-              /r/{settings.publicSlug}/table/table-1
+            <p className="mt-2 break-words text-sm font-semibold leading-6 opacity-90">
+              {settings.publicWelcomeMessage}
             </p>
           </div>
           <div className="mt-4 grid gap-3">
             <div className="rounded-2xl border border-slate-200 p-4">
               <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-400">
-                Message d’accueil
-              </p>
-              <p className="mt-2 break-words text-sm font-semibold leading-6 text-slate-700">
-                {settings.publicWelcomeMessage}
-              </p>
-            </div>
-            <div className="rounded-2xl border border-slate-200 p-4">
-              <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-400">
-                Règlement physique
+                Règlement sur place
               </p>
               <p className="mt-2 break-words text-sm font-semibold leading-6 text-slate-700">
                 {settings.paymentMessage}
@@ -779,12 +824,10 @@ function CustomerPreview({
             </div>
             <div className="rounded-2xl border border-dashed border-emerald-200 bg-emerald-50/70 p-4">
               <p className="text-xs font-black uppercase tracking-[0.18em] text-emerald-700">
-                Après repas
+                Instruction QR
               </p>
               <p className="mt-2 break-words text-sm font-bold leading-6 text-slate-900">
-                {settings.allowReviewsAfterMeal
-                  ? "Merci pour votre visite. Votre avis nous aide à progresser."
-                  : "Merci pour votre visite."}
+                {settings.qrInstruction}
               </p>
             </div>
           </div>
@@ -798,7 +841,8 @@ export function InteractiveSettingsDashboard() {
   const [settings, setSettings] = useState<RestaurantSettings>(
     defaultRestaurantSettings,
   );
-  const [activeSection, setActiveSection] = useState<SectionId>("establishment");
+  const [activeSection, setActiveSection] =
+    useState<SectionId>("establishment");
   const [toast, setToast] = useState<ToastMessage>(null);
   const [saveState, setSaveState] = useState<SaveState>("saved");
   const previewRef = useRef<HTMLElement>(null);
@@ -819,41 +863,63 @@ export function InteractiveSettingsDashboard() {
   }, [toast]);
 
   const enabledZones = settings.zones.filter((zone) => zone.enabled);
-  const operationalStatus = useMemo(() => getOperationalStatus(settings), [settings]);
+  const operationalStatus = useMemo(
+    () => getOperationalStatus(settings),
+    [settings],
+  );
+  const publicTableLink = `/r/${settings.publicSlug}/table/table-1`;
 
-  const readinessItems = useMemo(
+  const readinessItems = useMemo<ReadinessItem[]>(
     () => [
       {
         label: "Identité renseignée",
-        checked: Boolean(settings.restaurantName && settings.publicSlug),
-      },
-      {
-        label: "Coordonnées publiques prêtes",
-        checked: Boolean(settings.phone && settings.email),
-      },
-      {
-        label: "Zones de service actives",
-        checked: enabledZones.length > 0,
-      },
-      {
-        label: "QR prêts",
-        checked: Boolean(settings.qrInstruction && settings.publicSlug),
+        helper: "Nom, slug et contact prêts",
+        checked: Boolean(
+          settings.restaurantName &&
+          settings.publicSlug &&
+          settings.phone &&
+          settings.email,
+        ),
       },
       {
         label: "Horaires configurés",
+        helper: "Ouverture automatique selon vos créneaux",
         checked: settings.hours.some((hour) => hour.open),
       },
       {
-        label: "Paiement physique expliqué",
+        label: "Zones actives",
+        helper: "Salle, terrasse ou comptoir disponibles",
+        checked: enabledZones.length > 0,
+      },
+      {
+        label: "QR prêt à imprimer",
+        helper: "Instruction et zones prêtes",
+        checked: Boolean(
+          settings.qrInstruction &&
+          settings.publicSlug &&
+          enabledZones.length > 0,
+        ),
+      },
+      {
+        label: "Commandes configurées",
+        helper: settings.orderAutoAccept
+          ? "Acceptation automatique activée"
+          : "Validation manuelle recommandée",
         checked: Boolean(settings.paymentMessage),
       },
       {
         label: "Avis après repas activés",
+        helper: "Invitation proposée une fois le repas terminé",
         checked: settings.allowReviewsAfterMeal,
       },
       {
-        label: "Message client configuré",
-        checked: Boolean(settings.publicWelcomeMessage),
+        label: "Message client prêt",
+        helper: "Accueil, règlement et instruction QR visibles",
+        checked: Boolean(
+          settings.publicWelcomeMessage &&
+          settings.paymentMessage &&
+          settings.qrInstruction,
+        ),
       },
     ],
     [
@@ -861,6 +927,7 @@ export function InteractiveSettingsDashboard() {
       settings.allowReviewsAfterMeal,
       settings.email,
       settings.hours,
+      settings.orderAutoAccept,
       settings.paymentMessage,
       settings.phone,
       settings.publicSlug,
@@ -871,7 +938,8 @@ export function InteractiveSettingsDashboard() {
   );
 
   const readinessScore = Math.round(
-    (readinessItems.filter((item) => item.checked).length / readinessItems.length) *
+    (readinessItems.filter((item) => item.checked).length /
+      readinessItems.length) *
       100,
   );
 
@@ -905,6 +973,15 @@ export function InteractiveSettingsDashboard() {
 
   const showToast = (message: string) => setToast(message);
 
+  const copyText = async (value: string, successMessage: string) => {
+    try {
+      await window.navigator.clipboard.writeText(value);
+      showToast(successMessage);
+    } catch {
+      showToast("Copie indisponible dans ce navigateur.");
+    }
+  };
+
   const saveSettings = () => {
     saveLocalRestaurantSettings(settings);
     setSaveState("saved");
@@ -914,7 +991,10 @@ export function InteractiveSettingsDashboard() {
   const previewSettings = () => {
     setActiveSection("customerExperience");
     window.setTimeout(() => {
-      previewRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      previewRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
       previewRef.current?.focus({ preventScroll: true });
     }, 0);
   };
@@ -937,7 +1017,8 @@ export function InteractiveSettingsDashboard() {
   const generateSlug = () => {
     updateSetting(
       "publicSlug",
-      createSlug(settings.restaurantName) || defaultRestaurantSettings.publicSlug,
+      createSlug(settings.restaurantName) ||
+        defaultRestaurantSettings.publicSlug,
     );
     showToast("Slug public généré.");
   };
@@ -969,15 +1050,48 @@ export function InteractiveSettingsDashboard() {
     showToast("Zone supprimée.");
   };
 
-  const copyGoogleReviewLink = async () => {
-    if (!settings.googleReviewUrl) return;
+  const copyMondayToWeek = () => {
+    const monday = settings.hours.find((hour) => hour.day === "Lundi");
+    if (!monday) return;
 
-    try {
-      await window.navigator.clipboard.writeText(settings.googleReviewUrl);
-      showToast("Lien Google Avis copié.");
-    } catch {
-      showToast("Copie indisponible dans ce navigateur.");
-    }
+    setSettings((currentSettings) => ({
+      ...currentSettings,
+      hours: currentSettings.hours.map((hour) => ({
+        ...hour,
+        open: monday.open,
+        lunchStart: monday.lunchStart,
+        lunchEnd: monday.lunchEnd,
+        dinnerStart: monday.dinnerStart,
+        dinnerEnd: monday.dinnerEnd,
+      })),
+    }));
+    setSaveState("dirty");
+    showToast("Horaires du lundi appliqués à la semaine.");
+  };
+
+  const closeSundays = () => {
+    setSettings((currentSettings) => ({
+      ...currentSettings,
+      hours: currentSettings.hours.map((hour) =>
+        hour.day === "Dimanche" ? { ...hour, open: false } : hour,
+      ),
+    }));
+    setSaveState("dirty");
+    showToast("Dimanche fermé.");
+  };
+
+  const resetHours = () => {
+    setSettings((currentSettings) => ({
+      ...currentSettings,
+      hours: defaultRestaurantSettings.hours,
+    }));
+    setSaveState("dirty");
+    showToast("Horaires réinitialisés.");
+  };
+
+  const copyGoogleReviewLink = () => {
+    if (!settings.googleReviewUrl) return;
+    void copyText(settings.googleReviewUrl, "Lien Google Avis copié.");
   };
 
   const testGoogleReviewLink = () => {
@@ -985,19 +1099,20 @@ export function InteractiveSettingsDashboard() {
     window.open(settings.googleReviewUrl, "_blank", "noopener,noreferrer");
   };
 
-  const markConfigurationChecked = () => showToast("Configuration vérifiée.");
+  const openTablesPage = () => {
+    window.location.href = "/dashboard/tables";
+  };
 
   const getDayBadge = (hour: OpeningHour) => {
     const today = getTodayLabel(new Date());
-    const nextSlot = operationalStatus.nextSlot;
 
     if (!hour.open) return <StatusPill>Fermé</StatusPill>;
     if (hour.day === today && operationalStatus.isOpen) {
       return <StatusPill tone="emerald">Ouvert aujourd’hui</StatusPill>;
     }
     if (
-      nextSlot.includes(hour.day) ||
-      (nextSlot.includes("Aujourd’hui") && hour.day === today)
+      operationalStatus.nextSlot.includes(hour.day) ||
+      (operationalStatus.nextSlot.includes("Aujourd’hui") && hour.day === today)
     ) {
       return <StatusPill tone="amber">Prochain service</StatusPill>;
     }
@@ -1010,21 +1125,23 @@ export function InteractiveSettingsDashboard() {
         <SettingsCard
           eyebrow="Identité commerciale"
           title="Établissement"
-          description="Gardez une identité publique claire pour les QR, les liens de menu et les contacts visibles par les clients."
+          description="Centralisez les informations visibles par vos clients et utilisées comme base pour vos QR de table."
         >
-          <div className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1.2fr)_360px]">
+          <div className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1.2fr)_380px]">
             <div className="min-w-0 space-y-5">
               <div className="grid min-w-0 gap-4 lg:grid-cols-2">
                 <TextField
-                  label="Nom affiché du restaurant"
+                  label="Nom du restaurant"
                   value={settings.restaurantName}
                   onChange={(value) => updateSetting("restaurantName", value)}
                 />
                 <TextField
                   label="Slug public"
                   value={settings.publicSlug}
-                  onChange={(value) => updateSetting("publicSlug", createSlug(value))}
-                  helper="Utilisé pour les QR et les liens publics."
+                  onChange={(value) =>
+                    updateSetting("publicSlug", createSlug(value))
+                  }
+                  helper="Utilisé dans les liens publics et les QR."
                 />
                 <TextField
                   label="Site web"
@@ -1060,33 +1177,38 @@ export function InteractiveSettingsDashboard() {
                   type="email"
                 />
               </div>
-              <button
-                type="button"
-                onClick={generateSlug}
-                className="min-h-11 whitespace-nowrap rounded-full bg-slate-950 px-5 py-3 text-sm font-black text-white transition hover:bg-slate-800"
-              >
-                Générer le slug
-              </button>
             </div>
 
             <SettingsBlock
-              title="Identité publique"
-              description="Ce résumé représente ce qu’un client doit reconnaître immédiatement après un scan."
+              title="Lien public principal"
+              description="Ce lien servira de base aux QR de vos tables."
               tone="emerald"
             >
               <div className="rounded-[1.5rem] bg-white p-5 shadow-sm">
-                <p className="break-words text-2xl font-black text-slate-950">
-                  {settings.restaurantName}
+                <p className="break-all text-lg font-black text-slate-950">
+                  {publicTableLink}
                 </p>
-                <p className="mt-2 break-all text-sm font-black text-emerald-700">
-                  /r/{settings.publicSlug}
+                <p className="mt-3 break-words text-sm font-semibold leading-6 text-slate-500">
+                  Chaque emplacement reprend ce lien avec son identifiant dédié.
                 </p>
-                <p className="mt-4 break-words text-sm font-semibold text-slate-600">
-                  {settings.city} · {settings.postalCode}
-                </p>
-                <p className="mt-2 break-words text-sm font-semibold text-slate-600">
-                  {settings.phone} · {settings.email}
-                </p>
+              </div>
+              <div className="flex min-w-0 flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() =>
+                    void copyText(publicTableLink, "Lien public copié.")
+                  }
+                  className="min-h-11 rounded-full bg-slate-950 px-5 py-3 text-sm font-black text-white transition hover:bg-slate-800"
+                >
+                  Copier le lien
+                </button>
+                <button
+                  type="button"
+                  onClick={generateSlug}
+                  className="min-h-11 rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-black text-slate-700 transition hover:border-emerald-200 hover:bg-emerald-50"
+                >
+                  Générer le slug
+                </button>
               </div>
             </SettingsBlock>
           </div>
@@ -1097,85 +1219,130 @@ export function InteractiveSettingsDashboard() {
     if (activeSection === "service") {
       return (
         <SettingsCard
-          eyebrow="Pilotage d’ouverture"
+          eyebrow="Pilotage du service"
           title="Service"
-          description="Décidez quand les commandes à table sont ouvertes, en pause ou fermées, puis gardez un planning hebdomadaire lisible par l’équipe."
+          description="Avant l’arrivée des clients, contrôlez l’ouverture des commandes et les créneaux réellement servis."
         >
-          <div className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
+          <div className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1fr)_390px]">
             <div className="min-w-0 space-y-5">
               <SettingsBlock
-                title="Ouverture des commandes"
-                description="En automatique, les commandes suivent vos horaires. En pause, les QR restent accessibles mais les commandes sont bloquées."
+                title="Mode service"
+                description="Le mode automatique suit vos horaires. Les modes forcés permettent à l’équipe d’agir immédiatement pendant le service."
                 tone="emerald"
               >
                 <SegmentedControl
-                  label="Mode d’ouverture"
+                  label="Ouverture des commandes"
                   value={settings.serviceOpeningMode}
                   options={openingModes}
-                  onChange={(value) => updateSetting("serviceOpeningMode", value)}
+                  onChange={(value) =>
+                    updateSetting("serviceOpeningMode", value)
+                  }
                 />
               </SettingsBlock>
 
-              <SettingsBlock title="État actuel" tone="soft">
+              <SettingsBlock title="Repères opérationnels" tone="soft">
                 <div className="grid min-w-0 gap-3 sm:grid-cols-3">
-                  <StatusTile label="Statut" value={operationalStatus.stateLabel} />
-                  <StatusTile label="Créneau actif" value={operationalStatus.activeSlot} />
-                  <StatusTile label="Prochain créneau" value={operationalStatus.nextSlot} />
+                  <StatusTile
+                    label="État client"
+                    value={operationalStatus.customerState}
+                  />
+                  <StatusTile
+                    label="Créneau actif"
+                    value={operationalStatus.activeSlot}
+                  />
+                  <StatusTile
+                    label="Prochain créneau"
+                    value={operationalStatus.nextSlot}
+                  />
                 </div>
               </SettingsBlock>
             </div>
 
-            <OperationalStatusPanel
-              settings={settings}
-              operationalStatus={operationalStatus}
-            />
+            <CustomerStateCard operationalStatus={operationalStatus} />
           </div>
 
           <div className="mt-6 min-w-0 rounded-[1.75rem] border border-slate-200 bg-white p-4 md:p-5">
-            <div className="mb-4 min-w-0">
-              <h3 className="break-words text-lg font-black tracking-tight text-slate-950">
-                Planning hebdomadaire
-              </h3>
-              <p className="mt-2 break-words text-sm font-semibold leading-6 text-slate-500">
-                Chaque journée dispose d’un créneau midi et d’un créneau soir pour
-                organiser le service sans texte serré ni information ambiguë.
-              </p>
+            <div className="mb-4 flex min-w-0 flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+              <div className="min-w-0">
+                <h3 className="break-words text-lg font-black tracking-tight text-slate-950">
+                  Planning hebdomadaire
+                </h3>
+                <p className="mt-2 break-words text-sm font-semibold leading-6 text-slate-500">
+                  Chaque journée distingue le service du midi et le service du
+                  soir pour rester lisible en salle comme en cuisine.
+                </p>
+              </div>
+              <div className="flex min-w-0 flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={copyMondayToWeek}
+                  className="min-h-11 rounded-full bg-slate-950 px-4 py-2 text-sm font-black text-white transition hover:bg-slate-800"
+                >
+                  Copier lundi sur la semaine
+                </button>
+                <button
+                  type="button"
+                  onClick={closeSundays}
+                  className="min-h-11 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 transition hover:border-emerald-200 hover:bg-emerald-50"
+                >
+                  Fermer tous les dimanches
+                </button>
+                <button
+                  type="button"
+                  onClick={resetHours}
+                  className="min-h-11 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 transition hover:border-emerald-200 hover:bg-emerald-50"
+                >
+                  Réinitialiser les horaires
+                </button>
+              </div>
             </div>
             <div className="space-y-3">
               {settings.hours.map((hour) => (
                 <article
                   key={hour.day}
-                  className={`grid min-w-0 gap-4 rounded-[1.5rem] border p-4 xl:grid-cols-[minmax(150px,0.65fr)_minmax(180px,0.75fr)_minmax(0,1fr)_minmax(0,1fr)] xl:items-center ${
-                    hour.open ? "border-slate-200 bg-white" : "border-slate-200 bg-slate-50/80"
+                  className={`grid min-w-0 gap-4 rounded-[1.5rem] border p-4 2xl:grid-cols-[minmax(150px,0.55fr)_minmax(180px,0.65fr)_minmax(0,1fr)_minmax(0,1fr)] 2xl:items-center ${
+                    hour.open
+                      ? "border-slate-200 bg-white"
+                      : "border-slate-200 bg-slate-50/80"
                   }`}
                 >
                   <div className="min-w-0">
                     <div className="flex min-w-0 flex-wrap items-center gap-2">
-                      <p className={`whitespace-nowrap text-base font-black ${hour.open ? "text-slate-950" : "text-slate-500"}`}>
+                      <p
+                        className={`whitespace-nowrap text-base font-black ${hour.open ? "text-slate-950" : "text-slate-500"}`}
+                      >
                         {hour.day}
                       </p>
                       {getDayBadge(hour)}
                     </div>
                     <p className="mt-1 break-words text-xs font-bold text-slate-500">
-                      {hour.open ? "Service planifié" : "Aucune prise de commandes"}
+                      {hour.open
+                        ? "Service planifié"
+                        : "Aucune prise de commandes"}
                     </p>
                   </div>
                   <ToggleRow
                     label="Jour ouvert"
-                    helper={hour.open ? "Commandes selon les créneaux" : "Service fermé"}
+                    helper={
+                      hour.open
+                        ? "Commandes selon les créneaux"
+                        : "Service fermé"
+                    }
                     checked={hour.open}
-                    onChange={(checked) => updateHour(hour.day, { open: checked })}
+                    onChange={(checked) =>
+                      updateHour(hour.day, { open: checked })
+                    }
                   />
                   <div className={hour.open ? "min-w-0" : "min-w-0 opacity-55"}>
                     <TimeRangeEditor
-                      title="Midi"
+                      title="Service du midi"
                       hour={hour}
                       onChange={(patch) => updateHour(hour.day, patch)}
                     />
                   </div>
                   <div className={hour.open ? "min-w-0" : "min-w-0 opacity-55"}>
                     <TimeRangeEditor
-                      title="Soir"
+                      title="Service du soir"
                       hour={hour}
                       onChange={(patch) => updateHour(hour.day, patch)}
                     />
@@ -1191,86 +1358,110 @@ export function InteractiveSettingsDashboard() {
     if (activeSection === "orders") {
       return (
         <SettingsCard
-          eyebrow="Exécution en salle"
+          eyebrow="Traitement des commandes"
           title="Commandes"
-          description="Transformez les règles de commande en décisions opérationnelles simples pour la salle, la caisse et la cuisine."
+          description="Définissez comment l’équipe valide, encaisse et fait avancer les commandes reçues depuis les QR."
         >
           <div className="grid min-w-0 gap-5 lg:grid-cols-2">
             <SettingsBlock
               title="Validation des commandes"
-              description="La validation manuelle reste recommandée pour éviter les erreurs pendant un rush."
+              description="Nous recommandons de valider les commandes manuellement pendant les premiers services."
               tone="emerald"
             >
               <ToggleRow
-                label="Acceptation automatique des commandes"
-                helper="À activer uniquement si l’équipe peut préparer sans validation préalable."
-                checked={settings.orderAutoAccept}
-                onChange={(checked) => updateSetting("orderAutoAccept", checked)}
+                label="Validation manuelle recommandée"
+                helper="L’équipe accepte chaque commande avant préparation."
+                checked={!settings.orderAutoAccept}
+                onChange={(checked) =>
+                  updateSetting("orderAutoAccept", !checked)
+                }
               />
               <ToggleRow
-                label="Validation manuelle recommandée"
-                helper="Chaque commande arrive en attente avant préparation."
-                checked={!settings.orderAutoAccept}
-                onChange={(checked) => updateSetting("orderAutoAccept", !checked)}
+                label="Acceptation automatique"
+                helper="À réserver aux services parfaitement rodés."
+                checked={settings.orderAutoAccept}
+                onChange={(checked) =>
+                  updateSetting("orderAutoAccept", checked)
+                }
               />
-              {!settings.orderAutoAccept ? (
-                <p className="break-words rounded-2xl bg-white px-4 py-3 text-sm font-bold leading-6 text-emerald-900">
-                  Les commandes doivent être acceptées par l’équipe avant préparation.
-                </p>
-              ) : null}
             </SettingsBlock>
 
             <SettingsBlock
-              title="Paiement physique"
-              description="TableFlash ne déclenche aucun paiement en ligne. Le règlement reste à la caisse ou auprès du serveur."
+              title="Règlement"
+              description="TableFlash ne déclenche aucun paiement en ligne dans ce MVP. Le règlement reste physique."
               tone="soft"
             >
-              <TextAreaField
-                label="Message affiché au client"
-                value={settings.paymentMessage}
-                onChange={(value) => updateSetting("paymentMessage", value)}
+              <ToggleRow
+                label="Paiement au comptoir ou auprès du serveur"
+                checked={!settings.requirePaymentBeforePreparation}
+                onChange={(checked) =>
+                  updateSetting("requirePaymentBeforePreparation", !checked)
+                }
               />
               <ToggleRow
                 label="Paiement requis avant préparation"
-                helper="Rappelle que la commande part en cuisine après règlement physique."
+                helper="Rappelle à l’équipe d’encaisser sur place avant la cuisine."
                 checked={settings.requirePaymentBeforePreparation}
                 onChange={(checked) =>
                   updateSetting("requirePaymentBeforePreparation", checked)
                 }
               />
+              <TextAreaField
+                label="Message de règlement"
+                value={settings.paymentMessage}
+                onChange={(value) => updateSetting("paymentMessage", value)}
+              />
             </SettingsBlock>
 
-            <SettingsBlock title="Suivi client">
+            <SettingsBlock
+              title="Suivi client"
+              description="Le client suit sa commande sans solliciter l’équipe."
+            >
               <ToggleRow
-                label="Afficher le suivi au client"
-                helper="Le client peut suivre l’état de sa commande après validation."
+                label="Afficher l’avancement au client"
                 checked={settings.showPreparationTracking}
-                onChange={(checked) => updateSetting("showPreparationTracking", checked)}
+                onChange={(checked) =>
+                  updateSetting("showPreparationTracking", checked)
+                }
               />
               <ToggleRow
-                label="Autoriser les notes client"
-                helper="Allergies, cuisson ou demandes spéciales restent visibles pour l’équipe."
+                label="Afficher l’état prêt / servi"
+                checked={settings.showOpenServiceBadge}
+                onChange={(checked) =>
+                  updateSetting("showOpenServiceBadge", checked)
+                }
+              />
+              <ToggleRow
+                label="Autoriser les notes clients"
                 checked={settings.allowCustomerNotes}
-                onChange={(checked) => updateSetting("allowCustomerNotes", checked)}
+                onChange={(checked) =>
+                  updateSetting("allowCustomerNotes", checked)
+                }
               />
             </SettingsBlock>
 
-            <SettingsBlock title="Règles de sécurité" tone="soft">
-              <ToggleRow
-                label="Bloquer les commandes si le service est fermé"
-                checked={settings.blockOrdersWhenClosed}
-                onChange={(checked) => updateSetting("blockOrdersWhenClosed", checked)}
-              />
-              <ToggleRow
-                label="Afficher un message de fermeture côté client"
-                checked={settings.showClosedMessage}
-                onChange={(checked) => updateSetting("showClosedMessage", checked)}
-              />
-              <ToggleRow
-                label="Prévenir si une commande reste en attente"
-                checked={settings.warnPendingOrder}
-                onChange={(checked) => updateSetting("warnPendingOrder", checked)}
-              />
+            <SettingsBlock title="Process recommandé" tone="emerald">
+              <ol className="space-y-3">
+                {[
+                  "Accepter la commande",
+                  "Encaisser sur place",
+                  "Lancer la préparation",
+                  "Marquer prête",
+                  "Marquer servie",
+                ].map((step, index) => (
+                  <li
+                    key={step}
+                    className="flex min-w-0 items-center gap-3 rounded-2xl bg-white px-4 py-3"
+                  >
+                    <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-emerald-700 text-sm font-black text-white">
+                      {index + 1}
+                    </span>
+                    <span className="break-words text-sm font-black text-slate-900">
+                      {step}
+                    </span>
+                  </li>
+                ))}
+              </ol>
             </SettingsBlock>
           </div>
         </SettingsCard>
@@ -1278,22 +1469,15 @@ export function InteractiveSettingsDashboard() {
     }
 
     if (activeSection === "qr") {
-      const qrChecklist = [
-        { label: "Instruction QR configurée", checked: Boolean(settings.qrInstruction) },
-        { label: "Zones actives", checked: enabledZones.length > 0 },
-        { label: "Fiche imprimable prête", checked: Boolean(settings.restaurantName) },
-        { label: "URL publique prête", checked: Boolean(settings.publicSlug) },
-      ];
-
       return (
         <SettingsCard
-          eyebrow="QR table service"
+          eyebrow="QR par table"
           title="QR"
-          description="Pilotez les fiches QR standard, les zones de service et les emplacements sans multiplier les styles inutiles."
+          description="Préparez une fiche QR premium unique, lisible à l’impression, puis organisez les zones de service."
         >
-          <div className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
+          <div className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
             <div className="min-w-0 space-y-5">
-              <SettingsBlock title="Fiche QR standard" tone="emerald">
+              <SettingsBlock title="Fiche QR imprimée" tone="emerald">
                 <TextAreaField
                   label="Instruction QR"
                   value={settings.qrInstruction}
@@ -1303,23 +1487,22 @@ export function InteractiveSettingsDashboard() {
                 <ToggleRow
                   label="Afficher le nom de l’emplacement"
                   checked={settings.qrShowLocationName}
-                  onChange={(checked) => updateSetting("qrShowLocationName", checked)}
+                  onChange={(checked) =>
+                    updateSetting("qrShowLocationName", checked)
+                  }
                 />
                 <ToggleRow
                   label="Afficher le lien public"
                   checked={settings.qrShowPublicLink}
-                  onChange={(checked) => updateSetting("qrShowPublicLink", checked)}
-                />
-                <ToggleRow
-                  label="Mention TableFlash"
-                  checked={settings.qrShowTableFlashMention}
-                  onChange={(checked) => updateSetting("qrShowTableFlashMention", checked)}
+                  onChange={(checked) =>
+                    updateSetting("qrShowPublicLink", checked)
+                  }
                 />
               </SettingsBlock>
 
               <SettingsBlock
                 title="Zones de service"
-                description="Organisez les emplacements QR par salle, terrasse, comptoir ou zone événementielle."
+                description="Salle, terrasse, comptoir ou espaces temporaires peuvent chacun recevoir leurs emplacements QR."
               >
                 <div className="space-y-3">
                   {settings.zones.map((zone) => (
@@ -1330,13 +1513,17 @@ export function InteractiveSettingsDashboard() {
                       <TextField
                         label="Nom de zone"
                         value={zone.name}
-                        onChange={(value) => updateZone(zone.id, { name: value })}
+                        onChange={(value) =>
+                          updateZone(zone.id, { name: value })
+                        }
                       />
                       <div className="flex min-w-0 flex-wrap gap-2 md:justify-end">
                         <button
                           type="button"
-                          onClick={() => updateZone(zone.id, { enabled: !zone.enabled })}
-                          className={`min-h-11 whitespace-nowrap rounded-full px-4 py-2 text-sm font-black transition ${
+                          onClick={() =>
+                            updateZone(zone.id, { enabled: !zone.enabled })
+                          }
+                          className={`min-h-11 rounded-full px-4 py-2 text-sm font-black transition ${
                             zone.enabled
                               ? "bg-emerald-700 text-white"
                               : "bg-slate-100 text-slate-500"
@@ -1347,7 +1534,7 @@ export function InteractiveSettingsDashboard() {
                         <button
                           type="button"
                           onClick={() => deleteZone(zone.id)}
-                          className="min-h-11 whitespace-nowrap rounded-full border border-rose-200 px-4 py-2 text-sm font-black text-rose-700 transition hover:bg-rose-50"
+                          className="min-h-11 rounded-full border border-rose-200 px-4 py-2 text-sm font-black text-rose-700 transition hover:bg-rose-50"
                         >
                           Supprimer
                         </button>
@@ -1358,21 +1545,42 @@ export function InteractiveSettingsDashboard() {
                 <button
                   type="button"
                   onClick={addZone}
-                  className="min-h-11 whitespace-nowrap rounded-full bg-slate-950 px-5 py-3 text-sm font-black text-white transition hover:bg-slate-800"
+                  className="min-h-11 rounded-full bg-slate-950 px-5 py-3 text-sm font-black text-white transition hover:bg-slate-800"
                 >
                   Ajouter une zone
                 </button>
               </SettingsBlock>
+
+              <SettingsBlock
+                title="Conseil impression"
+                description="Imprimez un QR par table ou emplacement. Chaque QR conserve son lien dédié pour suivre les commandes correctement."
+                tone="soft"
+              >
+                <div className="flex min-w-0 flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={openTablesPage}
+                    className="min-h-11 rounded-full bg-slate-950 px-5 py-3 text-sm font-black text-white transition hover:bg-slate-800"
+                  >
+                    Voir QR par table
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      void copyText(
+                        settings.qrInstruction,
+                        "Instruction QR copiée.",
+                      )
+                    }
+                    className="min-h-11 rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-black text-slate-700 transition hover:border-emerald-200 hover:bg-emerald-50"
+                  >
+                    Copier instruction QR
+                  </button>
+                </div>
+              </SettingsBlock>
             </div>
 
-            <div className="min-w-0 space-y-5">
-              <SettingsBlock title="Contrôle QR" tone="soft">
-                {qrChecklist.map((item) => (
-                  <ChecklistItem key={item.label} {...item} />
-                ))}
-              </SettingsBlock>
-              <QrPreview settings={settings} />
-            </div>
+            <QrPreview settings={settings} />
           </div>
         </SettingsCard>
       );
@@ -1381,58 +1589,40 @@ export function InteractiveSettingsDashboard() {
     if (activeSection === "reviews") {
       return (
         <SettingsCard
-          eyebrow="Réputation locale"
+          eyebrow="Réputation"
           title="Avis"
-          description="Organisez une collecte d’avis après repas respectueuse, utile pour le dashboard et cohérente avec votre réputation locale."
+          description="Cadrez l’invitation après repas et gardez les retours utiles au bon endroit pour protéger votre image sans automatisme opaque."
         >
           <div className="grid min-w-0 gap-5 lg:grid-cols-2">
             <SettingsBlock
-              title="Collecte après repas"
-              description="L’avis est proposé quand le client a terminé son repas, sans interruption pendant le service."
+              title="Après repas"
+              description="L’invitation apparaît uniquement lorsque le repas est terminé, sans interrompre le client."
               tone="emerald"
             >
               <ToggleRow
-                label="Activer les avis après repas"
+                label="Autoriser les avis après repas"
                 checked={settings.allowReviewsAfterMeal}
-                onChange={(checked) => updateSetting("allowReviewsAfterMeal", checked)}
-              />
-              <ToggleRow
-                label="Invitation douce uniquement après commande servie"
-                checked={settings.reviewSoftInviteOnlyAfterServed}
-                onChange={(checked) => updateSetting("reviewSoftInviteOnlyAfterServed", checked)}
-              />
-            </SettingsBlock>
-
-            <SettingsBlock title="Gestion des retours" tone="soft">
-              <ToggleRow
-                label="Garder les avis négatifs en interne"
-                helper="Aucune publication automatique n’est effectuée."
-                checked={settings.keepNegativeReviewsInternal}
-                onChange={(checked) => updateSetting("keepNegativeReviewsInternal", checked)}
-              />
-              <ToggleRow
-                label="Marquer les avis à traiter"
-                checked={settings.flagReviewsToHandle}
-                onChange={(checked) => updateSetting("flagReviewsToHandle", checked)}
-              />
-              <ToggleRow
-                label="Afficher les avis récents dans le dashboard"
-                checked={settings.showRecentReviewsDashboard}
-                onChange={(checked) => updateSetting("showRecentReviewsDashboard", checked)}
+                onChange={(checked) =>
+                  updateSetting("allowReviewsAfterMeal", checked)
+                }
               />
             </SettingsBlock>
 
             <SettingsBlock
-              title="Google Avis"
-              description="Aucune publication automatique n’est effectuée. Le client reste libre de partager son avis publiquement."
+              title="Satisfaction"
+              description="Les clients satisfaits peuvent être orientés vers votre lien Google Avis. Aucune publication automatique n’est effectuée."
+              tone="soft"
             >
               <ToggleRow
-                label="Suggérer Google pour les avis positifs"
+                label="Suggérer Google Avis aux clients satisfaits"
                 checked={settings.suggestGoogleForPositiveReviews}
                 onChange={(checked) =>
                   updateSetting("suggestGoogleForPositiveReviews", checked)
                 }
               />
+            </SettingsBlock>
+
+            <SettingsBlock title="Google Avis">
               <TextField
                 label="Lien Google Avis"
                 value={settings.googleReviewUrl}
@@ -1443,105 +1633,34 @@ export function InteractiveSettingsDashboard() {
                 <button
                   type="button"
                   onClick={copyGoogleReviewLink}
-                  className="min-h-11 whitespace-nowrap rounded-full bg-slate-950 px-5 py-3 text-sm font-black text-white transition hover:bg-slate-800"
+                  className="min-h-11 rounded-full bg-slate-950 px-5 py-3 text-sm font-black text-white transition hover:bg-slate-800"
                 >
                   Copier le lien
                 </button>
                 <button
                   type="button"
                   onClick={testGoogleReviewLink}
-                  className="min-h-11 whitespace-nowrap rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-black text-slate-700 transition hover:border-emerald-200 hover:bg-emerald-50"
+                  className="min-h-11 rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-black text-slate-700 transition hover:border-emerald-200 hover:bg-emerald-50"
                 >
                   Tester le lien
                 </button>
               </div>
             </SettingsBlock>
 
-            <SettingsBlock title="Règle de suggestion" tone="emerald">
+            <SettingsBlock title="Protection de l’image" tone="emerald">
               <div className="rounded-[1.5rem] bg-white p-5">
-                <p className="break-words text-2xl font-black text-slate-950">
-                  Suggestion Google à partir de 4 étoiles.
+                <p className="break-words text-xl font-black text-slate-950">
+                  Les retours moins favorables restent visibles dans votre
+                  tableau de bord afin de pouvoir réagir avant qu’ils ne
+                  deviennent publics.
                 </p>
-                <p className="mt-2 break-words text-sm font-semibold leading-6 text-slate-500">
-                  Cette règle clarifie la logique commerciale sans masquer les
-                  retours utiles à l’équipe.
+                <p className="mt-3 break-words text-sm font-semibold leading-6 text-slate-500">
+                  TableFlash aide l’équipe à traiter les retours après repas
+                  sans masquer les avis ni publier automatiquement à la place du
+                  client.
                 </p>
               </div>
             </SettingsBlock>
-          </div>
-        </SettingsCard>
-      );
-    }
-
-    if (activeSection === "customerExperience") {
-      return (
-        <SettingsCard
-          eyebrow="Expérience client"
-          title="Expérience client"
-          description="Préparez les messages et options visibles par le client sur la page publique, du scan QR jusqu’à l’après repas."
-        >
-          <div className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
-            <div className="min-w-0 space-y-5">
-              <SettingsBlock title="Message d’accueil" tone="emerald">
-                <TextAreaField
-                  label="Message d’accueil public"
-                  value={settings.publicWelcomeMessage}
-                  onChange={(value) => updateSetting("publicWelcomeMessage", value)}
-                />
-              </SettingsBlock>
-
-              <SettingsBlock title="Promesse client" tone="soft">
-                <SegmentedControl
-                  label="Promesse affichée"
-                  value={settings.clientPromise}
-                  options={clientPromises}
-                  onChange={(value) => updateSetting("clientPromise", value)}
-                />
-              </SettingsBlock>
-
-              <SettingsBlock title="Page client">
-                <ToggleRow
-                  label="Afficher le badge service ouvert"
-                  checked={settings.showOpenServiceBadge}
-                  onChange={(checked) => updateSetting("showOpenServiceBadge", checked)}
-                />
-                <ToggleRow
-                  label="Afficher les allergènes"
-                  checked={settings.showAllergens}
-                  onChange={(checked) => updateSetting("showAllergens", checked)}
-                />
-                <ToggleRow
-                  label="Afficher les indisponibilités"
-                  checked={settings.showUnavailableItems}
-                  onChange={(checked) => updateSetting("showUnavailableItems", checked)}
-                />
-                <ToggleRow
-                  label="Autoriser les notes produit"
-                  checked={settings.allowProductNotes}
-                  onChange={(checked) => updateSetting("allowProductNotes", checked)}
-                />
-                <ToggleRow
-                  label="Autoriser une note globale de commande"
-                  checked={settings.allowOrderGlobalNote}
-                  onChange={(checked) => updateSetting("allowOrderGlobalNote", checked)}
-                />
-              </SettingsBlock>
-
-              <SettingsBlock title="Après repas" tone="soft">
-                <ToggleRow
-                  label="Afficher le message de remerciement"
-                  checked={settings.showThankYouMessage}
-                  onChange={(checked) => updateSetting("showThankYouMessage", checked)}
-                />
-                <ToggleRow
-                  label="Proposer un avis après le repas"
-                  checked={settings.allowReviewsAfterMeal}
-                  onChange={(checked) => updateSetting("allowReviewsAfterMeal", checked)}
-                />
-              </SettingsBlock>
-            </div>
-
-            <CustomerPreview settings={settings} previewRef={previewRef} />
           </div>
         </SettingsCard>
       );
@@ -1549,91 +1668,65 @@ export function InteractiveSettingsDashboard() {
 
     return (
       <SettingsCard
-        eyebrow="Identité visuelle"
-        title="Apparence"
-        description="Conservez une marque publique cohérente entre menu, QR, commande à table et avis après repas."
+        eyebrow="Expérience client"
+        title="Expérience client"
+        description="Préparez les messages visibles par le client et une identité visuelle simple, cohérente avec vos QR premium."
       >
-        <div className="grid min-w-0 gap-5 lg:grid-cols-2">
-          <SettingsBlock title="Couleur principale" tone="emerald">
-            <div className="grid min-w-0 gap-3 sm:grid-cols-2">
-              {primaryColors.map((color) => (
-                <button
-                  key={color}
-                  type="button"
-                  onClick={() => updateSetting("primaryColor", color)}
-                  className={`flex min-h-16 min-w-0 items-center gap-3 rounded-2xl border px-4 py-3 text-left transition ${
-                    settings.primaryColor === color
-                      ? "border-emerald-500 bg-white shadow-lg shadow-emerald-900/10"
-                      : "border-slate-200 bg-white hover:border-emerald-200"
-                  }`}
-                >
-                  <span className={`h-9 w-9 shrink-0 rounded-full ${colorSwatch[color]}`} />
-                  <span className="min-w-0 break-words text-sm font-black text-slate-900">
-                    {color}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </SettingsBlock>
+        <div className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1fr)_390px]">
+          <div className="min-w-0 space-y-5">
+            <SettingsBlock title="Message d’accueil" tone="emerald">
+              <TextAreaField
+                label="Message d’accueil"
+                value={settings.publicWelcomeMessage}
+                onChange={(value) =>
+                  updateSetting("publicWelcomeMessage", value)
+                }
+              />
+            </SettingsBlock>
 
-          <SettingsBlock title="Rendu public">
-            <TextAreaField
-              label="Message d’accueil"
-              value={settings.publicWelcomeMessage}
-              onChange={(value) => updateSetting("publicWelcomeMessage", value)}
-            />
-            <TextAreaField
-              label="Message de règlement"
-              value={settings.paymentMessage}
-              onChange={(value) => updateSetting("paymentMessage", value)}
-            />
-            <TextAreaField
-              label="Instruction QR"
-              value={settings.qrInstruction}
-              onChange={(value) => updateSetting("qrInstruction", value)}
-              rows={2}
-            />
-          </SettingsBlock>
+            <SettingsBlock title="Message de règlement" tone="soft">
+              <TextAreaField
+                label="Message de règlement"
+                value={settings.paymentMessage}
+                onChange={(value) => updateSetting("paymentMessage", value)}
+              />
+            </SettingsBlock>
 
-          <SettingsBlock title="Aperçu de marque" tone="soft">
-            <div className={`min-w-0 rounded-[1.75rem] bg-gradient-to-br p-5 ${colorPreview[settings.primaryColor]}`}>
-              <p className="break-words text-xs font-black uppercase tracking-[0.18em] opacity-80">
-                {settings.primaryColor}
-              </p>
-              <h3 className="mt-4 break-words text-3xl font-black leading-tight">
-                {settings.restaurantName}
-              </h3>
-              <button
-                type="button"
-                className="mt-5 min-h-11 whitespace-nowrap rounded-full bg-white px-5 py-3 text-sm font-black text-slate-950"
-              >
-                Commander à table
-              </button>
-              <div className="mt-3 inline-flex rounded-full bg-white/20 px-3 py-1 text-xs font-black">
-                Avis après repas
+            <SettingsBlock title="Instruction QR">
+              <TextAreaField
+                label="Instruction QR"
+                value={settings.qrInstruction}
+                onChange={(value) => updateSetting("qrInstruction", value)}
+                rows={2}
+              />
+            </SettingsBlock>
+
+            <SettingsBlock title="Identité visuelle" tone="emerald">
+              <div className="grid min-w-0 gap-3 sm:grid-cols-2">
+                {primaryColors.map((color) => (
+                  <button
+                    key={color}
+                    type="button"
+                    onClick={() => updateSetting("primaryColor", color)}
+                    className={`flex min-h-16 min-w-0 items-center gap-3 rounded-2xl border px-4 py-3 text-left transition ${
+                      settings.primaryColor === color
+                        ? "border-emerald-500 bg-white shadow-lg shadow-emerald-900/10"
+                        : "border-slate-200 bg-white hover:border-emerald-200"
+                    }`}
+                  >
+                    <span
+                      className={`h-9 w-9 shrink-0 rounded-full ${colorSwatch[color]}`}
+                    />
+                    <span className="min-w-0 break-words text-sm font-black text-slate-900">
+                      {color}
+                    </span>
+                  </button>
+                ))}
               </div>
-            </div>
-          </SettingsBlock>
+            </SettingsBlock>
+          </div>
 
-          <SettingsBlock title="Cohérence visuelle" tone="emerald">
-            <ChecklistItem label="Couleur définie" checked={Boolean(settings.primaryColor)} />
-            <ChecklistItem
-              label="Message d’accueil défini"
-              checked={Boolean(settings.publicWelcomeMessage)}
-            />
-            <ChecklistItem label="QR cohérent" checked={Boolean(settings.qrInstruction)} />
-            <ChecklistItem
-              label="Avis après repas configurés"
-              checked={settings.allowReviewsAfterMeal}
-            />
-            <button
-              type="button"
-              onClick={markConfigurationChecked}
-              className="min-h-11 whitespace-nowrap rounded-full bg-slate-950 px-5 py-3 text-sm font-black text-white transition hover:bg-slate-800"
-            >
-              Vérifier la cohérence
-            </button>
-          </SettingsBlock>
+          <CustomerPreview settings={settings} previewRef={previewRef} />
         </div>
       </SettingsCard>
     );
@@ -1644,26 +1737,26 @@ export function InteractiveSettingsDashboard() {
       <DashboardHeader
         eyebrow="Le Bistrot des Halles"
         title="Paramètres"
-        subtitle="Configurez votre établissement, vos QR, vos commandes et l’expérience client."
+        subtitle="Avant le service, vérifiez que l’établissement, les QR, les commandes et l’expérience client sont prêts."
       >
         <button
           type="button"
           onClick={saveSettings}
-          className="min-h-11 whitespace-nowrap rounded-full bg-emerald-700 px-5 py-3 text-sm font-black text-white shadow-lg shadow-emerald-900/20 transition hover:bg-emerald-800"
+          className="min-h-11 rounded-full bg-emerald-700 px-5 py-3 text-sm font-black text-white shadow-lg shadow-emerald-900/20 transition hover:bg-emerald-800"
         >
           Enregistrer
         </button>
         <button
           type="button"
           onClick={previewSettings}
-          className="min-h-11 whitespace-nowrap rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-black text-slate-700 transition hover:border-emerald-200 hover:bg-emerald-50"
+          className="min-h-11 rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-black text-slate-700 transition hover:border-emerald-200 hover:bg-emerald-50"
         >
           Prévisualiser
         </button>
         <button
           type="button"
           onClick={resetSettings}
-          className="min-h-11 whitespace-nowrap rounded-full border border-rose-200 bg-white px-5 py-3 text-sm font-black text-rose-700 transition hover:bg-rose-50"
+          className="min-h-11 rounded-full border border-rose-200 bg-white px-5 py-3 text-sm font-black text-rose-700 transition hover:bg-rose-50"
         >
           Réinitialiser
         </button>
@@ -1672,7 +1765,6 @@ export function InteractiveSettingsDashboard() {
       <main className="flex-1 overflow-x-hidden bg-slate-50/70 p-4 sm:p-5 lg:p-8">
         <div className="mx-auto min-w-0 max-w-[1500px] space-y-6">
           <ReadinessOverview
-            settings={settings}
             score={readinessScore}
             checklist={readinessItems}
             saveState={saveState}
