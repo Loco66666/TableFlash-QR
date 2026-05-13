@@ -1,6 +1,5 @@
 import { OrderStatusBadge } from "./OrderStatusBadge";
-import { OrderTimingBadge } from "./OrderTimingBadge";
-import { getOrderTimingStatus, type Order, type OrderAction } from "./ordersData";
+import { type Order, type OrderAction } from "./ordersData";
 import { PaymentStatusBadge } from "./PaymentStatusBadge";
 
 const actionClasses: Record<"default" | "danger" | "neutral", string> = {
@@ -18,7 +17,7 @@ type OrderCardProps = {
 };
 
 export function OrderCard({ actions, order, selected = false, onAction, onSelect }: OrderCardProps) {
-  const timingStatus = getOrderTimingStatus(order);
+  const showPaymentBadge = order.paymentStatus === "À payer" && order.status !== "Nouvelle";
 
   return (
     <article
@@ -43,8 +42,7 @@ export function OrderCard({ actions, order, selected = false, onAction, onSelect
         </div>
         <div className="flex flex-wrap justify-end gap-2">
           <OrderStatusBadge status={order.status} />
-          <PaymentStatusBadge status={order.paymentStatus} />
-          <OrderTimingBadge status={timingStatus} />
+          {showPaymentBadge ? <PaymentStatusBadge status={order.paymentStatus} /> : null}
         </div>
       </div>
 
@@ -86,7 +84,7 @@ export function OrderCard({ actions, order, selected = false, onAction, onSelect
             {action}
           </button>
         )) : (
-          <span className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-black text-slate-500">Commande clôturée</span>
+          <span className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-black text-slate-500">Commande terminée</span>
         )}
       </div>
     </article>

@@ -22,7 +22,7 @@ export function SelectedOrderPanel({ actions, order, onAction, onClose }: Select
   }
 
   const timingStatus = getOrderTimingStatus(order);
-  const showDetailedTiming = timingStatus !== "Commande clôturée";
+  const showDetailedTiming = timingStatus !== "Terminée";
   const actionGridClasses = actions.length === 2
     ? "mt-2 grid grid-cols-2 gap-2"
     : "mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2";
@@ -66,7 +66,7 @@ export function SelectedOrderPanel({ actions, order, onAction, onClose }: Select
 
         <div className="mt-3 rounded-3xl border border-emerald-100 bg-emerald-50 p-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="text-xs font-black uppercase tracking-[0.14em] text-emerald-700">Suivi préparation</p>
+            <p className="text-xs font-black uppercase tracking-[0.14em] text-emerald-700">État de la commande</p>
             <OrderTimingBadge status={timingStatus} />
           </div>
           {showDetailedTiming ? (
@@ -76,14 +76,14 @@ export function SelectedOrderPanel({ actions, order, onAction, onClose }: Select
               <TimingMeta label="Statut" value={timingStatus} />
             </div>
           ) : (
-            <p className="mt-2 text-sm font-bold leading-5 text-emerald-950">Commande terminée, suivi conservé pour l’historique local.</p>
+            <p className="mt-2 text-sm font-bold leading-5 text-emerald-950">Commande terminée.</p>
           )}
         </div>
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3 lg:pr-3">
         <div>
-          <h3 className="text-base font-black text-slate-950">Articles commandés</h3>
+          <h3 className="text-base font-black text-slate-950">Articles</h3>
           <div className="mt-2 space-y-2">
             {order.items.map((item) => (
               <div className="rounded-2xl border border-slate-100 bg-white px-3 py-2 shadow-sm shadow-slate-100" key={`${order.orderNumber}-${item.name}`}>
@@ -112,7 +112,7 @@ export function SelectedOrderPanel({ actions, order, onAction, onClose }: Select
       </div>
 
       <div className="shrink-0 border-t border-slate-200 bg-white/95 p-3 backdrop-blur lg:sticky lg:bottom-0">
-        <h3 className="text-sm font-black text-slate-950">Actions rapides</h3>
+        <h3 className="text-sm font-black text-slate-950">Actions</h3>
         {actions.length > 0 ? (
           <div className={actionGridClasses}>
             {actions.map((action) => (
@@ -128,7 +128,7 @@ export function SelectedOrderPanel({ actions, order, onAction, onClose }: Select
           </div>
         ) : (
           <p className="mt-2 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-bold text-slate-500">
-            Aucune action disponible pour cette commande.
+            Commande terminée.
           </p>
         )}
       </div>
@@ -145,7 +145,7 @@ function EmptySelectedOrderPanel() {
         Sélectionnez une commande dans la file pour afficher son détail et ses actions.
       </p>
       <p className="mt-3 rounded-3xl bg-slate-50 px-4 py-3 text-sm font-bold leading-6 text-slate-500">
-        Les commandes terminées disparaissent automatiquement du détail pour libérer l’espace de travail.
+        Les commandes terminées restent disponibles dans le filtre Terminées, sans encombrer la file active.
       </p>
     </aside>
   );

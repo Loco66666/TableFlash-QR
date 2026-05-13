@@ -1388,7 +1388,7 @@ export function InteractiveSettingsDashboard() {
 
             <SettingsBlock
               title="Règlement"
-              description="TableFlash ne déclenche aucun paiement en ligne dans ce MVP. Le règlement reste physique."
+              description="TableFlash ne déclenche aucun paiement en ligne. Le règlement reste physique."
               tone="soft"
             >
               <ToggleRow

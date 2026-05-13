@@ -43,13 +43,13 @@ const completedStatuses: OrderStatus[] = ["Servie", "Refusée", "Annulée"];
 const activeStatusPriority: OrderStatus[] = ["Nouvelle", "Acceptée", "À payer", "Payée", "En préparation", "Prête"];
 
 const actionMessages: Partial<Record<OrderAction, string>> = {
-  Accepter: "Commande acceptée dans la maquette.",
-  Refuser: "Commande refusée dans la maquette.",
-  "Marquer à payer": "Commande marquée à payer.",
-  "Marquer payée": "Commande marquée payée.",
-  "En préparation": "Commande passée en préparation.",
-  Prête: "Commande prête à servir.",
-  Servie: "Commande marquée comme servie.",
+  Accepter: "Commande acceptée.",
+  Refuser: "Commande refusée.",
+  "Marquer à régler": "Commande marquée à régler.",
+  "Marquer payé": "Paiement confirmé.",
+  "Lancer en préparation": "Préparation lancée.",
+  "Marquer prête": "Commande prête à servir.",
+  "Marquer servie": "Commande marquée comme servie.",
 };
 
 export function InteractiveOrdersDashboard() {
@@ -186,7 +186,7 @@ export function InteractiveOrdersDashboard() {
 
     const nextOrders = updateOrderStatus(orderNumber, nextState.status, nextState.paymentStatus);
     setSelectedOrderId(orderNumber);
-    showToast(actionMessages[action] ?? "Commande mise à jour dans la maquette.");
+    showToast(actionMessages[action] ?? "Commande mise à jour.");
 
     if (isCompletedStatus(nextState.status)) {
       autoCloseTimeoutRef.current = window.setTimeout(() => {
@@ -209,7 +209,7 @@ export function InteractiveOrdersDashboard() {
 
 
   function handleResetLocalOrders() {
-    const confirmed = window.confirm("Voulez-vous vraiment supprimer les commandes locales de démonstration ?");
+    const confirmed = window.confirm("Voulez-vous vraiment réinitialiser la file des commandes reçues par QR ?");
 
     if (!confirmed) {
       return;
@@ -222,7 +222,7 @@ export function InteractiveOrdersDashboard() {
 
       return currentOrder?.source === "public-menu" ? null : currentSelectedOrderId;
     });
-    showToast("Commandes locales réinitialisées.");
+    showToast("File des commandes QR réinitialisée.");
   }
 
   function handleAddTestOrder() {
@@ -230,7 +230,7 @@ export function InteractiveOrdersDashboard() {
     const nextOrderNumber = `#${highestOrderNumber + 1}`;
     const newOrder: Order = {
       orderNumber: nextOrderNumber,
-      table: "Table test",
+      table: "Comptoir",
       time: new Intl.DateTimeFormat("fr-FR", { hour: "2-digit", minute: "2-digit" }).format(new Date()),
       status: "Nouvelle",
       paymentStatus: "À payer",
@@ -242,12 +242,12 @@ export function InteractiveOrdersDashboard() {
         { quantity: 1, name: "Burger Classique", price: "18,00 €" },
         { quantity: 1, name: "Limonade", price: "3,50 €" },
       ],
-      note: "Commande de démonstration.",
+      note: "Commande ajoutée depuis le comptoir.",
     };
 
     setOrders((currentOrders) => [newOrder, ...currentOrders]);
     setSelectedOrderId(newOrder.orderNumber);
-    showToast("Commande test ajoutée dans la maquette.");
+    showToast("Commande ajoutée à la file.");
   }
 
   return (
@@ -261,10 +261,10 @@ export function InteractiveOrdersDashboard() {
           {servicePaused ? "Reprendre le service" : "Mettre en pause"}
         </button>
         <button className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-black text-slate-500 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-800" onClick={handleResetLocalOrders} type="button">
-          Réinitialiser les commandes locales
+          Réinitialiser la file QR
         </button>
         <button className="rounded-2xl bg-emerald-600 px-5 py-3 text-sm font-black text-white shadow-lg shadow-emerald-900/15 transition hover:bg-emerald-700" onClick={handleAddTestOrder} type="button">
-          Nouvelle commande test
+          Ajouter une commande
         </button>
       </DashboardHeader>
 
@@ -291,7 +291,7 @@ export function InteractiveOrdersDashboard() {
             <div className="flex items-center justify-between gap-4">
               <div>
                 <h2 className="text-2xl font-black tracking-tight text-slate-950">File des commandes</h2>
-                <p className="mt-1 text-sm font-semibold text-slate-500">Démonstration locale interactive, sans backend connecté.</p>
+                <p className="mt-1 text-sm font-semibold text-slate-500">Les commandes reçues depuis les QR apparaissent ici et avancent selon votre service.</p>
               </div>
               <span className="hidden rounded-full bg-white px-4 py-2 text-sm font-black text-slate-500 ring-1 ring-slate-200 sm:inline-flex">
                 {visibleOrders.length} commande{visibleOrders.length > 1 ? "s" : ""}
@@ -372,7 +372,7 @@ function filterOrders(orders: Order[], activeFilter: OrderFilter, searchQuery: s
 function matchesOrderFilter(order: Order, activeFilter: OrderFilter) {
   switch (activeFilter) {
     case "Toutes":
-      return true;
+      return !isCompletedStatus(order.status);
     case "Nouvelles":
       return order.status === "Nouvelle";
     case "En cours":
@@ -419,15 +419,15 @@ function getNextState(action: OrderAction): { paymentStatus?: PaymentStatus; sta
       return { status: "Acceptée" };
     case "Refuser":
       return { status: "Refusée", paymentStatus: "Annulée" };
-    case "Marquer à payer":
+    case "Marquer à régler":
       return { status: "À payer", paymentStatus: "À payer" };
-    case "Marquer payée":
+    case "Marquer payé":
       return { status: "Payée", paymentStatus: "Payée" };
-    case "En préparation":
+    case "Lancer en préparation":
       return { status: "En préparation", paymentStatus: "Payée" };
-    case "Prête":
+    case "Marquer prête":
       return { status: "Prête" };
-    case "Servie":
+    case "Marquer servie":
       return { status: "Servie", paymentStatus: "Payée" };
     case "Voir détail":
       return null;
@@ -448,7 +448,7 @@ function buildSummaryCards(orders: Order[]): SummaryCard[] {
     { value: countStatus(orders, "En préparation"), label: "En préparation", helper: "Cuisine active", tone: "amber" },
     { value: countStatus(orders, "Prête"), label: "Prêtes", helper: "À servir", tone: "sky" },
     { value: countStatus(orders, "Servie"), label: "Servies", helper: "Aujourd’hui", tone: "slate" },
-    { value: formatEuro(total), label: "Total du jour", helper: "Paiement physique", tone: "rose" },
+    { value: formatEuro(total), label: "Total du jour", helper: "Règlement sur place", tone: "rose" },
   ];
 }
 

@@ -16,7 +16,7 @@ export function LiveServiceStatusCard({ servicePaused }: LiveServiceStatusCardPr
             <p className="text-2xl font-black tracking-tight text-slate-950">{servicePaused ? "Service en pause" : "Service midi en cours"}</p>
             <p className="mt-2 max-w-3xl text-base font-medium leading-7 text-slate-500">
               {servicePaused
-                ? "Les commandes sont fermées dans cette maquette locale. Vous pouvez reprendre le service à tout moment."
+                ? "Les commandes QR sont temporairement fermées. Vous pouvez reprendre le service à tout moment."
                 : "Les clients peuvent commander depuis leur table. Le paiement se fait à la caisse ou auprès du serveur."}
             </p>
           </div>

@@ -14,11 +14,11 @@ export type PaymentStatus = "À payer" | "Payée" | "Annulée";
 export type OrderAction =
   | "Accepter"
   | "Refuser"
-  | "Marquer à payer"
-  | "Marquer payée"
-  | "En préparation"
-  | "Prête"
-  | "Servie"
+  | "Marquer à régler"
+  | "Marquer payé"
+  | "Lancer en préparation"
+  | "Marquer prête"
+  | "Marquer servie"
   | "Voir détail";
 
 export type OrderFilter =
@@ -43,7 +43,7 @@ export type TimingStatusLabel =
   | "À surveiller"
   | "En retard"
   | "Prête à servir"
-  | "Commande clôturée";
+  | "Terminée";
 
 export type OrderItem = {
   name: string;
@@ -187,15 +187,15 @@ export function getOrderActions(status: OrderStatus): OrderAction[] {
     case "Nouvelle":
       return ["Accepter", "Refuser"];
     case "Acceptée":
-      return ["Marquer à payer"];
+      return ["Marquer à régler", "Marquer payé"];
     case "À payer":
-      return ["Marquer payée"];
+      return ["Marquer payé"];
     case "Payée":
-      return ["En préparation"];
+      return ["Lancer en préparation"];
     case "En préparation":
-      return ["Prête"];
+      return ["Marquer prête"];
     case "Prête":
-      return ["Servie"];
+      return ["Marquer servie"];
     case "Servie":
     case "Refusée":
     case "Annulée":
@@ -224,7 +224,7 @@ export function getOrderTimingStatus(order: Order): TimingStatusLabel {
     return "Prête à servir";
   }
 
-  return "Commande clôturée";
+  return "Terminée";
 }
 
 export function getDelayedOrdersCount(orders: Order[]) {
