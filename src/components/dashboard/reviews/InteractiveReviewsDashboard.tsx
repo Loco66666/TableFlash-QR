@@ -103,11 +103,11 @@ export function InteractiveReviewsDashboard() {
   function handleSaveResponse(reviewId: string, response: string) {
     applyReviewPatch(reviewId, { response: response.trim(), status: "Répondu" });
     setRespondingReviewId(null);
-    showToast("Réponse enregistrée dans la maquette.");
+    showToast("Réponse enregistrée.");
   }
 
   function handleArchive(reviewId: string) {
-    const confirmed = window.confirm("Archiver cet avis dans la maquette ?");
+    const confirmed = window.confirm("Archiver cet avis ?");
 
     if (!confirmed) {
       return;
@@ -122,21 +122,23 @@ export function InteractiveReviewsDashboard() {
     showToast("Avis marqué comme traité.");
   }
 
-  function handleGoogleSuggestion() {
-    showToast("Suggestion Google préparée dans la maquette.");
+  function handleGoogleSuggestion(reviewId: string) {
+    applyReviewPatch(reviewId, { googleReviewSuggested: true });
+    showToast("Lien Google préparé.");
   }
 
-  function handlePrepareGoogleLink() {
-    showToast("Lien Google Avis préparé dans la maquette.");
+  function handlePrepareGoogleLink(reviewId: string) {
+    applyReviewPatch(reviewId, { googleReviewSuggested: true });
+    showToast("Lien Google préparé.");
   }
 
   function handleCreateReviewRequest() {
     setIsRequestPanelOpen(false);
-    showToast("Demande d’avis créée dans la maquette.");
+    showToast("Demande d’avis prête à envoyer.");
   }
 
   function handleResetLocalReviews() {
-    const confirmed = window.confirm("Voulez-vous vraiment supprimer les avis locaux de démonstration ?");
+    const confirmed = window.confirm("Voulez-vous vraiment réinitialiser les avis reçus sur cet appareil ?");
 
     if (!confirmed) {
       return;
@@ -146,7 +148,7 @@ export function InteractiveReviewsDashboard() {
     setLocalReviewIds(new Set());
     setReviews(initialReviews);
     setSelectedReviewId(initialReviews[0]?.id ?? null);
-    showToast("Avis locaux réinitialisés.");
+    showToast("Avis de cet appareil réinitialisés.");
   }
 
   return (
@@ -157,9 +159,9 @@ export function InteractiveReviewsDashboard() {
         subtitle="Suivez les retours après repas, identifiez les clients satisfaits et transformez les bonnes expériences en avis publics."
       >
         <button className="rounded-2xl bg-emerald-600 px-5 py-3 text-sm font-black text-white shadow-lg shadow-emerald-900/15 transition hover:bg-emerald-700" onClick={() => setIsRequestPanelOpen(true)} type="button">Demander un avis</button>
-        <button className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-black text-slate-700 shadow-sm transition hover:bg-slate-50" onClick={() => showToast("Export des avis simulé dans la maquette.")} type="button">Exporter les avis</button>
-        <button className="rounded-2xl border border-blue-200 bg-blue-50 px-5 py-3 text-sm font-black text-blue-700 shadow-sm transition hover:bg-blue-100" onClick={() => showToast("Lien Google Avis copié dans la maquette.")} type="button">Lien Google Avis</button>
-        <button className="rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-xs font-black text-slate-500 shadow-sm transition hover:bg-slate-50" onClick={handleResetLocalReviews} type="button">Réinitialiser les avis locaux</button>
+        <button className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-black text-slate-700 shadow-sm transition hover:bg-slate-50" onClick={() => showToast("Export des avis préparé.")} type="button">Exporter les avis</button>
+        <button className="rounded-2xl border border-blue-200 bg-blue-50 px-5 py-3 text-sm font-black text-blue-700 shadow-sm transition hover:bg-blue-100" onClick={() => showToast("Lien Google Avis prêt à partager.")} type="button">Lien Google Avis</button>
+        <button className="rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-xs font-black text-slate-500 shadow-sm transition hover:bg-slate-50" onClick={handleResetLocalReviews} type="button">Réinitialiser les avis</button>
       </DashboardHeader>
 
       <main className="flex-1 space-y-6 p-5 lg:p-8">
@@ -168,8 +170,7 @@ export function InteractiveReviewsDashboard() {
             <div>
               <p className="text-sm font-black uppercase tracking-[0.24em] text-emerald-100">Réputation locale</p>
               <h2 className="mt-3 text-3xl font-black tracking-tight md:text-4xl">Transformez les retours clients en réputation locale</h2>
-              <p className="mt-4 max-w-3xl text-base font-semibold leading-7 text-emerald-50">Après le repas, TableFlash aide vos clients à laisser un retour simple. Les avis positifs peuvent ensuite être orientés vers votre fiche Google, sans forcer l’expérience.</p>
-              <p className="mt-3 text-sm font-bold text-emerald-100">Lien Google simulé pour la maquette. Aucun avis n’est publié automatiquement.</p>
+              <p className="mt-4 max-w-3xl text-base font-semibold leading-7 text-emerald-50">Après le repas, TableFlash recueille les retours clients. Les avis positifs peuvent être orientés vers votre fiche Google, sans forcer l’expérience.</p>
             </div>
             <div className="grid gap-3 rounded-3xl border border-white/15 bg-white/10 p-4 backdrop-blur sm:grid-cols-4">
               {["Repas terminé", "Retour client", "Avis positif", "Google Avis"].map((step, index) => (
@@ -197,7 +198,7 @@ export function InteractiveReviewsDashboard() {
             <div className="flex flex-wrap items-end justify-between gap-3">
               <div>
                 <h2 className="text-2xl font-black tracking-tight text-slate-950">Avis reçus</h2>
-                <p className="mt-1 text-sm font-semibold text-slate-500">Tableau local interactif, sans backend ni intégration Google réelle.</p>
+                <p className="mt-1 text-sm font-semibold text-slate-500">Centralisez les retours clients, traitez les avis à prioriser et valorisez les expériences positives.</p>
               </div>
               <span className="rounded-full bg-white px-4 py-2 text-sm font-black text-slate-500 ring-1 ring-slate-200">{visibleReviews.length} avis</span>
             </div>
@@ -310,8 +311,8 @@ function buildSummaryCards(reviews: Review[]) {
   const toHandleCount = reviews.filter((review) => review.status === "À traiter").length;
 
   return [
-    { value: `${averageRating.toFixed(1).replace(".", ",")}/5`, label: "Note moyenne", helper: "Avis visibles localement", tone: "emerald" as const },
-    { value: String(reviews.length), label: "Avis reçus", helper: "Aujourd’hui dans la maquette", tone: "sky" as const },
+    { value: `${averageRating.toFixed(1).replace(".", ",")}/5`, label: "Note moyenne", helper: "Satisfaction globale", tone: "emerald" as const },
+    { value: String(reviews.length), label: "Avis reçus", helper: "Retours après repas", tone: "sky" as const },
     { value: String(positiveCount), label: "Avis positifs", helper: "Clients satisfaits", tone: "amber" as const },
     { value: String(toHandleCount), label: "À traiter", helper: "Retours à prioriser", tone: "rose" as const },
   ];
