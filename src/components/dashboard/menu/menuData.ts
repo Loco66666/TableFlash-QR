@@ -10,6 +10,8 @@ export type SummaryItem = {
 export type CategoryItem = {
   id: string;
   name: string;
+  order?: number;
+  createdAt?: string;
 };
 
 export type PromoType = "Pourcentage" | "Montant fixe";
@@ -38,10 +40,10 @@ export type ProductDraft = Omit<ProductItem, "id" | "imageTone" | "price"> & {
 };
 
 export const categoryItems: CategoryItem[] = [
-  { id: "entrees", name: "Entrées" },
-  { id: "plats", name: "Plats" },
-  { id: "desserts", name: "Desserts" },
-  { id: "boissons", name: "Boissons" },
+  { id: "entrees", name: "Entrées", order: 10, createdAt: "2026-01-01T00:00:00.000Z" },
+  { id: "plats", name: "Plats", order: 20, createdAt: "2026-01-01T00:00:01.000Z" },
+  { id: "desserts", name: "Desserts", order: 30, createdAt: "2026-01-01T00:00:02.000Z" },
+  { id: "boissons", name: "Boissons", order: 40, createdAt: "2026-01-01T00:00:03.000Z" },
 ];
 
 export const products: ProductItem[] = [

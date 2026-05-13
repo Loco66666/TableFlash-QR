@@ -8,6 +8,14 @@ type StoredLocalMenu = {
   products: ProductItem[];
 };
 
+const canonicalCategoryOrderByName: Record<string, number> = {
+  entrees: 10,
+  plats: 20,
+  desserts: 30,
+  boissons: 40,
+  menus: 50,
+};
+
 function canUseLocalStorage() {
   return typeof window !== "undefined" && typeof window.localStorage !== "undefined";
 }
@@ -20,29 +28,74 @@ function isStoredLocalMenu(value: unknown): value is StoredLocalMenu {
   return Array.isArray(candidate.categories) && Array.isArray(candidate.products);
 }
 
+function normalizeCategoryName(value: string) {
+  return value
+    .toLocaleLowerCase("fr-FR")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
+export function withStableCategoryOrder(categories: CategoryItem[]): CategoryItem[] {
+  return categories
+    .map((category, index) => {
+      const canonicalOrder = canonicalCategoryOrderByName[normalizeCategoryName(category.name)];
+      const order = typeof category.order === "number" ? category.order : canonicalOrder ?? 1000 + index;
+
+      return {
+        ...category,
+        order,
+        createdAt: category.createdAt ?? `2026-01-01T00:${String(index).padStart(2, "0")}:00.000Z`,
+      };
+    })
+    .sort((firstCategory, secondCategory) => {
+      if ((firstCategory.order ?? 0) !== (secondCategory.order ?? 0)) {
+        return (firstCategory.order ?? 0) - (secondCategory.order ?? 0);
+      }
+
+      return (firstCategory.createdAt ?? "").localeCompare(secondCategory.createdAt ?? "");
+    });
+}
+
+export function resequenceCategories(categories: CategoryItem[]): CategoryItem[] {
+  return categories.map((category, index) => ({
+    ...category,
+    order: (index + 1) * 10,
+    createdAt: category.createdAt ?? new Date(0).toISOString(),
+  }));
+}
+
+export function getFallbackLocalMenu(): StoredLocalMenu {
+  return {
+    categories: withStableCategoryOrder(categoryItems),
+    products: fallbackProducts,
+  };
+}
+
 export function readLocalMenu(): StoredLocalMenu {
   if (!canUseLocalStorage()) {
-    return { categories: categoryItems, products: fallbackProducts };
+    return getFallbackLocalMenu();
   }
 
   const storedValue = window.localStorage.getItem(LOCAL_MENU_STORAGE_KEY);
   if (!storedValue) {
-    return { categories: categoryItems, products: fallbackProducts };
+    return getFallbackLocalMenu();
   }
 
   try {
     const parsedValue: unknown = JSON.parse(storedValue);
 
     if (!isStoredLocalMenu(parsedValue)) {
-      return { categories: categoryItems, products: fallbackProducts };
+      return getFallbackLocalMenu();
     }
 
     return {
-      categories: parsedValue.categories.length > 0 ? parsedValue.categories : categoryItems,
+      categories: parsedValue.categories.length > 0 ? withStableCategoryOrder(parsedValue.categories) : getFallbackLocalMenu().categories,
       products: parsedValue.products.length > 0 ? parsedValue.products : fallbackProducts,
     };
   } catch {
-    return { categories: categoryItems, products: fallbackProducts };
+    return getFallbackLocalMenu();
   }
 }
 
@@ -75,4 +128,14 @@ export function toPublicMenuProducts(products: ProductItem[], categories: Catego
       visualPreset: product.visualPreset,
       imageTone: product.imageTone,
     }));
+}
+
+export function toPublicMenuCategories(categories: CategoryItem[], products: ProductItem[]): string[] {
+  const categoryNames = withStableCategoryOrder(categories).map((category) => category.name);
+  const publicProducts = toPublicMenuProducts(products, categories);
+  const extraProductCategories = publicProducts
+    .map((product) => product.category)
+    .filter((categoryName) => !categoryNames.includes(categoryName));
+
+  return [...categoryNames, ...Array.from(new Set(extraProductCategories))];
 }

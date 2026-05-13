@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { DashboardHeader } from "@/components/dashboard";
 import { formatEuro, formatPromotionValue, parseEuroInput } from "@/lib/formatters";
-import { readLocalMenu, saveLocalMenu } from "@/lib/localMenu";
+import { readLocalMenu, resequenceCategories, saveLocalMenu, withStableCategoryOrder } from "@/lib/localMenu";
 
 import { CategoryList } from "./CategoryList";
 import { MenuSummaryCard } from "./MenuSummaryCard";
@@ -261,8 +261,12 @@ export function InteractiveMenuDashboard() {
       return;
     }
 
-    const category = { id: createId(`${name}-${Date.now()}`), name };
-    setCategories((currentCategories) => [...currentCategories, category]);
+    const category = {
+      id: createId(`${name}-${Date.now()}`),
+      name,
+      createdAt: new Date().toISOString(),
+    };
+    setCategories((currentCategories) => resequenceCategories(withStableCategoryOrder([...currentCategories, category])));
     setSelectedCategoryId(category.id);
     setNewCategoryName("");
     setIsAddCategoryOpen(false);
@@ -270,14 +274,34 @@ export function InteractiveMenuDashboard() {
   };
 
   const handleDeleteAllCategories = () => {
-    const confirmed = window.confirm("Voulez-vous vraiment supprimer toutes les catégories de cette maquette ? Les produits seront conservés mais repassés sans catégorie.");
+    showMessage("Conservez au moins une catégorie.");
+  };
+
+  const deleteCategory = (categoryId: string) => {
+    if (categories.length <= 1) {
+      showMessage("Conservez au moins une catégorie.");
+      return;
+    }
+
+    const category = categories.find((item) => item.id === categoryId);
+    if (!category) return;
+
+    const count = productCounts[categoryId] ?? 0;
+    const confirmed = window.confirm(
+      count > 0
+        ? "Cette catégorie contient des produits. Voulez-vous vraiment la supprimer ? Les produits seront conservés sans catégorie."
+        : "Voulez-vous vraiment supprimer cette catégorie ?",
+    );
+
     if (!confirmed) return;
 
-    setCategories([]);
-    setSelectedCategoryId("all");
-    setProducts((currentProducts) => currentProducts.map((product) => ({ ...product, categoryId: "uncategorized" })));
-    setEditingProduct((currentDraft) => currentDraft ? { ...currentDraft, categoryId: "uncategorized" } : currentDraft);
-    showMessage("Catégories supprimées de la maquette.");
+    const remainingCategories = resequenceCategories(categories.filter((item) => item.id !== categoryId));
+    setCategories(remainingCategories);
+    setProducts((currentProducts) => currentProducts.map((product) => product.categoryId === categoryId ? { ...product, categoryId: "uncategorized" } : product));
+    setEditingProduct((currentDraft) => currentDraft?.categoryId === categoryId ? { ...currentDraft, categoryId: "uncategorized" } : currentDraft);
+    setNewProductDraft((currentDraft) => currentDraft.categoryId === categoryId ? { ...currentDraft, categoryId: remainingCategories[0]?.id ?? "uncategorized" } : currentDraft);
+    setSelectedCategoryId((currentCategoryId) => currentCategoryId === categoryId ? "all" : currentCategoryId);
+    showMessage("Catégorie supprimée.");
   };
 
   const handleDeleteActiveProducts = () => {
@@ -320,7 +344,7 @@ export function InteractiveMenuDashboard() {
 
       const nextCategories = [...currentCategories];
       [nextCategories[index - 1], nextCategories[index]] = [nextCategories[index], nextCategories[index - 1]];
-      return nextCategories;
+      return resequenceCategories(nextCategories);
     });
 
     showMessage("Ordre des catégories mis à jour dans la maquette.");
@@ -333,7 +357,7 @@ export function InteractiveMenuDashboard() {
 
       const nextCategories = [...currentCategories];
       [nextCategories[index], nextCategories[index + 1]] = [nextCategories[index + 1], nextCategories[index]];
-      return nextCategories;
+      return resequenceCategories(nextCategories);
     });
 
     showMessage("Ordre des catégories mis à jour dans la maquette.");
@@ -396,6 +420,7 @@ export function InteractiveMenuDashboard() {
               selectedCategoryId={selectedCategoryId}
               onMoveCategoryDown={handleMoveCategoryDown}
               onMoveCategoryUp={handleMoveCategoryUp}
+              onDeleteCategory={deleteCategory}
               onSelectCategory={setSelectedCategoryId}
               onToggleReorderMode={handleToggleReorderMode}
             />
