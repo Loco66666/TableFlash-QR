@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 export type ProductVisualPresetId =
   | "auto"
@@ -98,10 +98,20 @@ export function resolveProductVisualPreset(input: {
 }
 
 export function ProductImage({ productName, categoryName, imageUrl, imageAlt, visualPreset, imageTone, variant = "public-card", className = "", decorative = false }: ProductImageProps) {
+  const [mounted, setMounted] = useState(false);
   const [failedImageUrl, setFailedImageUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    const mountFrame = window.requestAnimationFrame(() => {
+      setMounted(true);
+    });
+
+    return () => window.cancelAnimationFrame(mountFrame);
+  }, []);
+
   const preset = useMemo(() => resolveProductVisualPreset({ visualPreset, categoryName, productName }), [categoryName, productName, visualPreset]);
   const normalizedImageUrl = imageUrl?.trim() || null;
-  const shouldShowImage = Boolean(normalizedImageUrl) && failedImageUrl !== normalizedImageUrl;
+  const shouldShowImage = mounted && Boolean(normalizedImageUrl) && failedImageUrl !== normalizedImageUrl;
   const imageFitClassName = variant === "edit-preview" || variant === "modal" ? "object-contain p-2" : "object-cover";
   const alt = imageAlt?.trim() || `Visuel de ${productName}`;
 
