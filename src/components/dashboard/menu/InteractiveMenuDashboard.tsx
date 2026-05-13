@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { DashboardHeader } from "@/components/dashboard";
 import { formatEuro, formatPromotionValue, parseEuroInput } from "@/lib/formatters";
+import { readLocalMenu, saveLocalMenu } from "@/lib/localMenu";
 
 import { CategoryList } from "./CategoryList";
 import { MenuSummaryCard } from "./MenuSummaryCard";
@@ -11,7 +12,7 @@ import { ProductEditPanel } from "./ProductEditPanel";
 import { ProductTable, type ActiveMenuFilter, type RowActionState } from "./ProductTable";
 import { MobilePreview, PublicMenuPreview } from "./PublicMenuPreview";
 import { RestaurantSelectorCard } from "./RestaurantSelectorCard";
-import { categoryItems, products as initialProducts, type CategoryItem, type ProductDraft, type ProductItem, type SummaryItem } from "./menuData";
+import type { CategoryItem, ProductDraft, ProductItem, SummaryItem } from "./menuData";
 
 const blankProductDraft = (categoryId: string): ProductDraft => ({
   name: "",
@@ -39,9 +40,10 @@ const imageTones = [
 ];
 
 export function InteractiveMenuDashboard() {
-  const [products, setProducts] = useState<ProductItem[]>(initialProducts);
-  const [categories, setCategories] = useState<CategoryItem[]>(categoryItems);
-  const [selectedProductId, setSelectedProductId] = useState<string | null>(initialProducts[0]?.id ?? null);
+  const [initialLocalMenu] = useState(() => readLocalMenu());
+  const [products, setProducts] = useState<ProductItem[]>(initialLocalMenu.products);
+  const [categories, setCategories] = useState<CategoryItem[]>(initialLocalMenu.categories);
+  const [selectedProductId, setSelectedProductId] = useState<string | null>(initialLocalMenu.products[0]?.id ?? null);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | "all">("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState<ActiveMenuFilter>("all");
@@ -49,8 +51,8 @@ export function InteractiveMenuDashboard() {
   const [isAddProductOpen, setIsAddProductOpen] = useState(false);
   const [isAddCategoryOpen, setIsAddCategoryOpen] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<ProductDraft | null>(() => productToDraft(initialProducts[0]));
-  const [newProductDraft, setNewProductDraft] = useState<ProductDraft>(() => blankProductDraft(categoryItems[0]?.id ?? "general"));
+  const [editingProduct, setEditingProduct] = useState<ProductDraft | null>(() => productToDraft(initialLocalMenu.products[0]));
+  const [newProductDraft, setNewProductDraft] = useState<ProductDraft>(() => blankProductDraft(initialLocalMenu.categories[0]?.id ?? "general"));
   const [newCategoryName, setNewCategoryName] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [rowAction, setRowAction] = useState<RowActionState | null>(null);
@@ -58,6 +60,10 @@ export function InteractiveMenuDashboard() {
   const editPanelRef = useRef<HTMLDivElement>(null);
 
   const selectedProduct = products.find((product) => product.id === selectedProductId) ?? null;
+
+  useEffect(() => {
+    saveLocalMenu({ categories, products });
+  }, [categories, products]);
 
   const productCounts = useMemo(() => products.reduce<Record<string, number>>((counts, product) => {
     counts[product.categoryId] = (counts[product.categoryId] ?? 0) + 1;
