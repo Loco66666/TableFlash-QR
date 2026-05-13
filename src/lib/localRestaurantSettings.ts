@@ -1,9 +1,9 @@
-export const LOCAL_RESTAURANT_SETTINGS_STORAGE_KEY = "tableflash.localRestaurantSettings.v1";
+export const LOCAL_RESTAURANT_SETTINGS_STORAGE_KEY =
+  "tableflash.localRestaurantSettings.v1";
 
 export type RestaurantSettings = {
   restaurantName: string;
   publicSlug: string;
-  legalName?: string;
   address: string;
   city: string;
   postalCode: string;
@@ -16,8 +16,13 @@ export type RestaurantSettings = {
   publicWelcomeMessage: string;
   googleReviewUrl: string;
   primaryColor: "Émeraude" | "Noir premium" | "Sable" | "Bleu nuit";
-  qrStyle: "Classique" | "Premium" | "Minimal";
   qrInstruction: string;
+  publicWelcomeTitle: string;
+  interfaceContrast: "Doux" | "Équilibré" | "Marqué";
+  ambienceStyle:
+    | "Brasserie élégante"
+    | "Comptoir moderne"
+    | "Maison chaleureuse";
   qrShowLocationName: boolean;
   qrShowPublicLink: boolean;
   orderAutoAccept: boolean;
@@ -44,7 +49,6 @@ export type RestaurantSettings = {
 export const defaultRestaurantSettings: RestaurantSettings = {
   restaurantName: "Le Bistrot des Halles",
   publicSlug: "le-bistrot-des-halles",
-  legalName: "Le Bistrot des Halles",
   address: "12 rue des Halles",
   city: "Bayonne",
   postalCode: "64100",
@@ -54,11 +58,14 @@ export const defaultRestaurantSettings: RestaurantSettings = {
   serviceStatus: "Ouvert",
   serviceMode: "Service midi",
   paymentMessage: "Paiement à la caisse ou auprès du serveur.",
-  publicWelcomeMessage: "Commandez simplement depuis votre table, nous nous occupons du reste.",
+  publicWelcomeMessage:
+    "Commandez simplement depuis votre table, nous nous occupons du reste.",
   googleReviewUrl: "https://g.page/r/tableflash-demo/review",
   primaryColor: "Émeraude",
-  qrStyle: "Premium",
   qrInstruction: "Scannez pour consulter le menu et commander.",
+  publicWelcomeTitle: "Bienvenue à table",
+  interfaceContrast: "Équilibré",
+  ambienceStyle: "Brasserie élégante",
   qrShowLocationName: true,
   qrShowPublicLink: true,
   orderAutoAccept: false,
@@ -73,24 +80,80 @@ export const defaultRestaurantSettings: RestaurantSettings = {
     { id: "zone-comptoir", name: "Comptoir", enabled: true },
   ],
   hours: [
-    { day: "Lundi", open: true, lunchStart: "11:30", lunchEnd: "14:30", dinnerStart: "18:30", dinnerEnd: "22:30" },
-    { day: "Mardi", open: true, lunchStart: "11:30", lunchEnd: "14:30", dinnerStart: "18:30", dinnerEnd: "22:30" },
-    { day: "Mercredi", open: true, lunchStart: "11:30", lunchEnd: "14:30", dinnerStart: "18:30", dinnerEnd: "22:30" },
-    { day: "Jeudi", open: true, lunchStart: "11:30", lunchEnd: "14:30", dinnerStart: "18:30", dinnerEnd: "22:30" },
-    { day: "Vendredi", open: true, lunchStart: "11:30", lunchEnd: "14:30", dinnerStart: "18:30", dinnerEnd: "23:00" },
-    { day: "Samedi", open: true, lunchStart: "11:30", lunchEnd: "15:00", dinnerStart: "18:30", dinnerEnd: "23:00" },
-    { day: "Dimanche", open: false, lunchStart: "11:30", lunchEnd: "14:30", dinnerStart: "18:30", dinnerEnd: "22:30" },
+    {
+      day: "Lundi",
+      open: true,
+      lunchStart: "11:30",
+      lunchEnd: "14:30",
+      dinnerStart: "18:30",
+      dinnerEnd: "22:30",
+    },
+    {
+      day: "Mardi",
+      open: true,
+      lunchStart: "11:30",
+      lunchEnd: "14:30",
+      dinnerStart: "18:30",
+      dinnerEnd: "22:30",
+    },
+    {
+      day: "Mercredi",
+      open: true,
+      lunchStart: "11:30",
+      lunchEnd: "14:30",
+      dinnerStart: "18:30",
+      dinnerEnd: "22:30",
+    },
+    {
+      day: "Jeudi",
+      open: true,
+      lunchStart: "11:30",
+      lunchEnd: "14:30",
+      dinnerStart: "18:30",
+      dinnerEnd: "22:30",
+    },
+    {
+      day: "Vendredi",
+      open: true,
+      lunchStart: "11:30",
+      lunchEnd: "14:30",
+      dinnerStart: "18:30",
+      dinnerEnd: "23:00",
+    },
+    {
+      day: "Samedi",
+      open: true,
+      lunchStart: "11:30",
+      lunchEnd: "15:00",
+      dinnerStart: "18:30",
+      dinnerEnd: "23:00",
+    },
+    {
+      day: "Dimanche",
+      open: false,
+      lunchStart: "11:30",
+      lunchEnd: "14:30",
+      dinnerStart: "18:30",
+      dinnerEnd: "22:30",
+    },
   ],
 };
 
-function mergeWithDefaults(value: Partial<RestaurantSettings>): RestaurantSettings {
+function mergeWithDefaults(
+  value: Partial<RestaurantSettings>,
+): RestaurantSettings {
   return {
     ...defaultRestaurantSettings,
     ...value,
-    legalName: value.legalName ?? defaultRestaurantSettings.legalName,
     website: value.website ?? defaultRestaurantSettings.website,
-    zones: Array.isArray(value.zones) && value.zones.length > 0 ? value.zones : defaultRestaurantSettings.zones,
-    hours: Array.isArray(value.hours) && value.hours.length > 0 ? value.hours : defaultRestaurantSettings.hours,
+    zones:
+      Array.isArray(value.zones) && value.zones.length > 0
+        ? value.zones
+        : defaultRestaurantSettings.zones,
+    hours:
+      Array.isArray(value.hours) && value.hours.length > 0
+        ? value.hours
+        : defaultRestaurantSettings.hours,
   };
 }
 
@@ -100,13 +163,17 @@ export function getLocalRestaurantSettings(): RestaurantSettings {
   }
 
   try {
-    const storedSettings = window.localStorage.getItem(LOCAL_RESTAURANT_SETTINGS_STORAGE_KEY);
+    const storedSettings = window.localStorage.getItem(
+      LOCAL_RESTAURANT_SETTINGS_STORAGE_KEY,
+    );
 
     if (!storedSettings) {
       return defaultRestaurantSettings;
     }
 
-    const parsedSettings = JSON.parse(storedSettings) as Partial<RestaurantSettings>;
+    const parsedSettings = JSON.parse(
+      storedSettings,
+    ) as Partial<RestaurantSettings>;
     return mergeWithDefaults(parsedSettings);
   } catch {
     return defaultRestaurantSettings;
@@ -119,7 +186,10 @@ export function saveLocalRestaurantSettings(settings: RestaurantSettings) {
   }
 
   try {
-    window.localStorage.setItem(LOCAL_RESTAURANT_SETTINGS_STORAGE_KEY, JSON.stringify(settings));
+    window.localStorage.setItem(
+      LOCAL_RESTAURANT_SETTINGS_STORAGE_KEY,
+      JSON.stringify(settings),
+    );
   } catch {
     return;
   }
