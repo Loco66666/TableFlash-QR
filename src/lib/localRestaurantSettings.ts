@@ -12,6 +12,11 @@ export type RestaurantSettings = {
   website?: string;
   serviceStatus: "Ouvert" | "En pause" | "Fermé";
   serviceMode: "Service midi" | "Service soir" | "Toute la journée";
+  serviceOpeningMode:
+    | "Automatique selon les horaires"
+    | "Forcer ouvert"
+    | "Mettre en pause"
+    | "Forcer fermé";
   paymentMessage: string;
   publicWelcomeMessage: string;
   googleReviewUrl: string;
@@ -25,12 +30,27 @@ export type RestaurantSettings = {
     | "Maison chaleureuse";
   qrShowLocationName: boolean;
   qrShowPublicLink: boolean;
+  qrShowTableFlashMention: boolean;
   orderAutoAccept: boolean;
   requirePaymentBeforePreparation: boolean;
   showPreparationTracking: boolean;
   allowCustomerNotes: boolean;
+  blockOrdersWhenClosed: boolean;
+  showClosedMessage: boolean;
+  warnPendingOrder: boolean;
   allowReviewsAfterMeal: boolean;
+  reviewSoftInviteOnlyAfterServed: boolean;
+  keepNegativeReviewsInternal: boolean;
+  flagReviewsToHandle: boolean;
+  showRecentReviewsDashboard: boolean;
   suggestGoogleForPositiveReviews: boolean;
+  clientPromise: string;
+  showOpenServiceBadge: boolean;
+  showAllergens: boolean;
+  showUnavailableItems: boolean;
+  allowProductNotes: boolean;
+  allowOrderGlobalNote: boolean;
+  showThankYouMessage: boolean;
   zones: Array<{
     id: string;
     name: string;
@@ -57,6 +77,7 @@ export const defaultRestaurantSettings: RestaurantSettings = {
   website: "",
   serviceStatus: "Ouvert",
   serviceMode: "Service midi",
+  serviceOpeningMode: "Automatique selon les horaires",
   paymentMessage: "Paiement à la caisse ou auprès du serveur.",
   publicWelcomeMessage:
     "Commandez simplement depuis votre table, nous nous occupons du reste.",
@@ -68,12 +89,27 @@ export const defaultRestaurantSettings: RestaurantSettings = {
   ambienceStyle: "Brasserie élégante",
   qrShowLocationName: true,
   qrShowPublicLink: true,
+  qrShowTableFlashMention: true,
   orderAutoAccept: false,
   requirePaymentBeforePreparation: true,
   showPreparationTracking: true,
   allowCustomerNotes: true,
+  blockOrdersWhenClosed: true,
+  showClosedMessage: true,
+  warnPendingOrder: true,
   allowReviewsAfterMeal: true,
+  reviewSoftInviteOnlyAfterServed: true,
+  keepNegativeReviewsInternal: true,
+  flagReviewsToHandle: true,
+  showRecentReviewsDashboard: true,
   suggestGoogleForPositiveReviews: true,
+  clientPromise: "Commandez à votre rythme",
+  showOpenServiceBadge: true,
+  showAllergens: true,
+  showUnavailableItems: true,
+  allowProductNotes: true,
+  allowOrderGlobalNote: true,
+  showThankYouMessage: true,
   zones: [
     { id: "zone-salle", name: "Salle", enabled: true },
     { id: "zone-terrasse", name: "Terrasse", enabled: true },
