@@ -40,20 +40,23 @@ function isPaid(paymentStatus: LocalPaymentStatus) {
   return paymentStatus === "Payée";
 }
 
-function getPaymentLabel(paymentStatus: LocalPaymentStatus, status: LocalOrderStatus) {
-  if (paymentStatus === "Annulée" || status === "Refusée" || status === "Annulée") {
+function getPaymentLabel(
+  paymentStatus: LocalPaymentStatus,
+  status: LocalOrderStatus,
+) {
+  if (
+    paymentStatus === "Annulée" ||
+    status === "Refusée" ||
+    status === "Annulée"
+  ) {
     return null;
   }
 
   return isPaid(paymentStatus) ? "Règlement confirmé" : "À régler sur place";
 }
 
-function isPaymentReminderUseful(status: LocalOrderStatus, paymentStatus: LocalPaymentStatus) {
-  if (paymentStatus !== "À payer") {
-    return false;
-  }
-
-  return ["Nouvelle", "Acceptée", "À payer", "Prête"].includes(status);
+function isPaymentReminderUseful() {
+  return false;
 }
 
 export function getPublicOrderPresentation({
@@ -63,7 +66,7 @@ export function getPublicOrderPresentation({
 }: PresentationInput): PublicOrderPresentationModel {
   const paymentLabel = getPaymentLabel(paymentStatus, status);
   const paymentIsConfirmed = isPaid(paymentStatus);
-  const showPaymentReminder = isPaymentReminderUseful(status, paymentStatus);
+  const showPaymentReminder = isPaymentReminderUseful();
 
   switch (status) {
     case "Nouvelle":
@@ -91,7 +94,7 @@ export function getPublicOrderPresentation({
         paymentLabel,
         nextStepLabel: paymentIsConfirmed
           ? "La préparation peut commencer."
-          : "Le règlement se fait à la caisse ou auprès du serveur.",
+          : "Le règlement pourra se faire à la caisse ou auprès du serveur.",
         showPaymentReminder,
         showReviewInvite: false,
         showReviewThanks: false,
@@ -104,11 +107,13 @@ export function getPublicOrderPresentation({
       return {
         currentStep: status,
         displayTitle: "Règlement sur place",
-        displaySubtitle: "Vous pouvez régler à la caisse ou auprès du serveur.",
-        operationalLabel: "En attente de règlement",
+        displaySubtitle:
+          "Le règlement pourra se faire à la caisse ou auprès du serveur.",
+        operationalLabel: "Règlement sur place",
         paymentLabel: "À régler sur place",
-        nextStepLabel: "Une fois le règlement confirmé, la préparation pourra commencer.",
-        showPaymentReminder: true,
+        nextStepLabel:
+          "Une fois le règlement confirmé, la préparation pourra commencer.",
+        showPaymentReminder: false,
         showReviewInvite: false,
         showReviewThanks: false,
         showBottomActions: true,
@@ -168,10 +173,11 @@ export function getPublicOrderPresentation({
       return {
         currentStep: status,
         displayTitle: "Commande servie",
-        displaySubtitle: "Merci pour votre commande. Nous espérons que vous avez passé un agréable moment.",
+        displaySubtitle:
+          "Merci pour votre commande. Nous espérons que tout s’est bien passé.",
         operationalLabel: "Servie",
         paymentLabel: paymentIsConfirmed ? null : paymentLabel,
-        nextStepLabel: "Quand vous aurez terminé, votre avis nous aide à améliorer l’expérience.",
+        nextStepLabel: null,
         showPaymentReminder: false,
         showReviewInvite: !hasSubmittedReview,
         showReviewThanks: hasSubmittedReview,
@@ -184,10 +190,12 @@ export function getPublicOrderPresentation({
       return {
         currentStep: status,
         displayTitle: "Commande non retenue",
-        displaySubtitle: "La commande n’a pas pu être prise en charge par le restaurant.",
+        displaySubtitle:
+          "La commande n’a pas pu être prise en charge par le restaurant.",
         operationalLabel: "Non retenue",
         paymentLabel: null,
-        nextStepLabel: "Rapprochez-vous de l’équipe en salle pour choisir une alternative.",
+        nextStepLabel:
+          "Rapprochez-vous de l’équipe en salle pour choisir une alternative.",
         showPaymentReminder: false,
         showReviewInvite: false,
         showReviewThanks: false,
@@ -203,7 +211,8 @@ export function getPublicOrderPresentation({
         displaySubtitle: "Cette commande a été annulée.",
         operationalLabel: "Annulée",
         paymentLabel: null,
-        nextStepLabel: "L’équipe reste disponible si vous souhaitez repasser commande.",
+        nextStepLabel:
+          "L’équipe reste disponible si vous souhaitez repasser commande.",
         showPaymentReminder: false,
         showReviewInvite: false,
         showReviewThanks: false,

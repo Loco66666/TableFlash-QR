@@ -6,8 +6,10 @@ import { formatEuro } from "@/lib/formatters";
 import {
   addLocalReview,
   createLocalReview,
+  findLocalReviewByOrderNumber,
   hasLocalReviewForOrder,
   type LocalReviewRating,
+  type LocalSubmittedReview,
 } from "@/lib/localReviews";
 import {
   getLocalOrders,
@@ -17,6 +19,7 @@ import {
   LOCAL_ORDERS_STORAGE_KEY,
   type LocalSubmittedOrder,
 } from "@/lib/localOrders";
+import { getLocalRestaurantSettings } from "@/lib/localRestaurantSettings";
 
 import {
   getPublicOrderPresentation,
@@ -30,6 +33,11 @@ type PublicOrderConfirmationProps = {
   onBackToMenu: () => void;
   onNewOrder: () => void;
 };
+
+const REVIEW_INVITE_TEXT =
+  "Votre retour est le bienvenu si vous souhaitez partager votre expérience.";
+const GOOGLE_REVIEW_INVITE_TEXT =
+  "Si vous le souhaitez, vous pouvez aussi partager votre expérience sur Google.";
 
 function findLatestOrder(orderNumber: string): LocalSubmittedOrder | null {
   return (
@@ -45,9 +53,7 @@ function DetailPill({ label, value }: { label: string; value: string }) {
       <p className="text-[0.62rem] font-black uppercase tracking-[0.14em] text-emerald-700/75">
         {label}
       </p>
-      <p className="mt-1 truncate text-sm font-black text-slate-950">
-        {value}
-      </p>
+      <p className="mt-1 truncate text-sm font-black text-slate-950">{value}</p>
     </div>
   );
 }
@@ -75,7 +81,8 @@ export function PublicOrderConfirmation({
   const [reviewComment, setReviewComment] = useState("");
   const [reviewCustomerName, setReviewCustomerName] = useState("");
   const [reviewError, setReviewError] = useState<string | null>(null);
-  const [hasSubmittedReview, setHasSubmittedReview] = useState(false);
+  const [submittedReview, setSubmittedReview] =
+    useState<LocalSubmittedReview | null>(null);
 
   const refreshOrderStatus = useCallback(() => {
     if (!order) {
@@ -84,7 +91,7 @@ export function PublicOrderConfirmation({
     }
 
     setLatestOrder(findLatestOrder(order.orderNumber));
-    setHasSubmittedReview(hasLocalReviewForOrder(order.orderNumber));
+    setSubmittedReview(findLocalReviewByOrderNumber(order.orderNumber));
   }, [order]);
 
   useEffect(() => {
@@ -126,9 +133,17 @@ export function PublicOrderConfirmation({
   const orderPresentation = getPublicOrderPresentation({
     status: currentStatus,
     paymentStatus: currentPaymentStatus,
-    hasSubmittedReview,
+    hasSubmittedReview: Boolean(submittedReview),
   });
   const paymentIsPending = currentPaymentStatus === "À payer";
+  const restaurantSettings = getLocalRestaurantSettings();
+  const googleReviewUrl = restaurantSettings.googleReviewUrl.trim();
+  const canSuggestGoogleReview =
+    orderPresentation.showReviewThanks &&
+    submittedReview !== null &&
+    submittedReview.rating >= 4 &&
+    googleReviewUrl.length > 0 &&
+    restaurantSettings.suggestGoogleForPositiveReviews;
   const shouldShowOperationalPill =
     Boolean(orderPresentation.operationalLabel) &&
     orderPresentation.operationalLabel !== orderPresentation.displayTitle;
@@ -169,35 +184,44 @@ export function PublicOrderConfirmation({
     const alreadySubmitted = hasLocalReviewForOrder(confirmedOrder.orderNumber);
 
     if (alreadySubmitted) {
-      setHasSubmittedReview(true);
+      setSubmittedReview(
+        findLocalReviewByOrderNumber(confirmedOrder.orderNumber),
+      );
       resetReviewForm();
       return;
     }
 
-    addLocalReview(
-      createLocalReview({
-        customerName: reviewCustomerName,
-        rating: selectedRating,
-        comment: reviewComment,
-        restaurantSlug:
-          "restaurantSlug" in reviewOrder
-            ? reviewOrder.restaurantSlug
-            : "le-bistrot-des-halles",
-        restaurantName:
-          "restaurantName" in reviewOrder
-            ? reviewOrder.restaurantName
-            : "Le Bistrot des Halles",
-        tableId:
-          "tableId" in reviewOrder
-            ? reviewOrder.tableId
-            : confirmedOrder.tableName.toLowerCase().replaceAll(" ", "-"),
-        tableName: reviewOrder.tableName,
-        orderNumber: reviewOrder.orderNumber,
-      }),
-    );
+    const nextReview = createLocalReview({
+      customerName: reviewCustomerName,
+      rating: selectedRating,
+      comment: reviewComment,
+      restaurantSlug:
+        "restaurantSlug" in reviewOrder
+          ? reviewOrder.restaurantSlug
+          : "le-bistrot-des-halles",
+      restaurantName:
+        "restaurantName" in reviewOrder
+          ? reviewOrder.restaurantName
+          : "Le Bistrot des Halles",
+      tableId:
+        "tableId" in reviewOrder
+          ? reviewOrder.tableId
+          : confirmedOrder.tableName.toLowerCase().replaceAll(" ", "-"),
+      tableName: reviewOrder.tableName,
+      orderNumber: reviewOrder.orderNumber,
+    });
 
-    setHasSubmittedReview(true);
+    addLocalReview(nextReview);
+    setSubmittedReview(nextReview);
     resetReviewForm();
+  }
+
+  function handleOpenGoogleReview() {
+    if (!googleReviewUrl) {
+      return;
+    }
+
+    window.open(googleReviewUrl, "_blank", "noopener,noreferrer");
   }
 
   return (
@@ -347,8 +371,7 @@ export function PublicOrderConfirmation({
                   Règlement sur place
                 </p>
                 <p className="mt-1">
-                  Présentez-vous à la caisse ou sollicitez un serveur lorsque
-                  vous êtes prêt.
+                  Le règlement pourra se faire à la caisse ou auprès du serveur.
                 </p>
               </div>
             ) : null}
@@ -417,18 +440,43 @@ export function PublicOrderConfirmation({
               {orderPresentation.showReviewThanks ? (
                 <>
                   <p className="text-lg font-black tracking-[-0.03em]">
-                    Merci pour votre avis
+                    Merci pour votre retour
                   </p>
-                  <p className="mt-2 text-sm leading-6 text-emerald-50">
-                    Votre retour a bien été transmis au restaurant.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={onBackToMenu}
-                    className="mt-4 min-h-12 rounded-2xl bg-white px-5 text-sm font-black text-emerald-900 shadow-lg shadow-emerald-950/20 transition hover:bg-emerald-50"
-                  >
-                    Retour au menu
-                  </button>
+                  {canSuggestGoogleReview ? (
+                    <p className="mt-2 text-sm leading-6 text-emerald-50">
+                      {GOOGLE_REVIEW_INVITE_TEXT}
+                    </p>
+                  ) : (
+                    <>
+                      <p className="mt-2 text-sm leading-6 text-emerald-50">
+                        Votre avis a bien été transmis au restaurant.
+                      </p>
+                      {submittedReview && submittedReview.rating <= 3 ? (
+                        <p className="mt-1 text-sm font-semibold leading-6 text-emerald-100">
+                          L’équipe pourra en tenir compte pour améliorer
+                          l’expérience.
+                        </p>
+                      ) : null}
+                    </>
+                  )}
+                  <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    {canSuggestGoogleReview ? (
+                      <button
+                        type="button"
+                        onClick={handleOpenGoogleReview}
+                        className="min-h-12 rounded-2xl bg-white px-5 text-sm font-black text-emerald-900 shadow-lg shadow-emerald-950/20 transition hover:bg-emerald-50"
+                      >
+                        Donner un avis sur Google
+                      </button>
+                    ) : null}
+                    <button
+                      type="button"
+                      onClick={onBackToMenu}
+                      className="min-h-12 rounded-2xl border border-white/20 bg-white/10 px-5 text-sm font-black text-white transition hover:bg-white/15"
+                    >
+                      {canSuggestGoogleReview ? "Plus tard" : "Retour au menu"}
+                    </button>
+                  </div>
                 </>
               ) : (
                 <>
@@ -436,19 +484,27 @@ export function PublicOrderConfirmation({
                     Merci pour votre visite
                   </p>
                   <p className="mt-2 text-sm leading-6 text-emerald-50">
-                    Quand vous aurez terminé, votre avis nous aide à améliorer
-                    l’expérience.
+                    {REVIEW_INVITE_TEXT}
                   </p>
                   <p className="mt-1 text-sm font-semibold text-emerald-100">
-                    Cela ne prend que quelques secondes.
+                    Vous pouvez le faire maintenant ou plus tard.
                   </p>
-                  <button
-                    type="button"
-                    onClick={handleOpenReviewForm}
-                    className="mt-4 min-h-12 rounded-2xl bg-white px-5 text-sm font-black text-emerald-900 shadow-lg shadow-emerald-950/20 transition hover:bg-emerald-50"
-                  >
-                    Laisser un avis
-                  </button>
+                  <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <button
+                      type="button"
+                      onClick={handleOpenReviewForm}
+                      className="min-h-12 rounded-2xl bg-white px-5 text-sm font-black text-emerald-900 shadow-lg shadow-emerald-950/20 transition hover:bg-emerald-50"
+                    >
+                      Laisser un avis
+                    </button>
+                    <button
+                      type="button"
+                      onClick={onBackToMenu}
+                      className="min-h-12 rounded-2xl border border-white/20 bg-white/10 px-5 text-sm font-black text-white transition hover:bg-white/15"
+                    >
+                      Plus tard
+                    </button>
+                  </div>
                 </>
               )}
             </div>
@@ -568,9 +624,10 @@ export function PublicOrderConfirmation({
 
         {orderPresentation.showBottomActions ? (
           <div
-            className={`mt-5 grid grid-cols-1 gap-3 ${orderPresentation.showReviewThanks ? "" : "sm:grid-cols-2"}`}
+            className={`mt-5 grid grid-cols-1 gap-3 ${orderPresentation.showReviewInvite || orderPresentation.showReviewThanks ? "" : "sm:grid-cols-2"}`}
           >
-            {orderPresentation.showReviewThanks ? null : (
+            {orderPresentation.showReviewInvite ||
+            orderPresentation.showReviewThanks ? null : (
               <button
                 type="button"
                 onClick={onBackToMenu}
