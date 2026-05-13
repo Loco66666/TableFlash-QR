@@ -18,7 +18,7 @@ export function PublicMenuPreview({ categories, products, selectedCategoryId, on
       <div className="flex items-center justify-between gap-3">
         <div>
           <p className="text-sm font-bold uppercase tracking-[0.18em] text-emerald-700">Client</p>
-          <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950">Aperçu menu public</h2>
+          <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950">Aperçu client</h2>
         </div>
         <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-500">Mobile</span>
       </div>
@@ -82,7 +82,7 @@ function PreviewRow({ product }: { product: ProductItem }) {
           {product.promo ? <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-black text-amber-700">{product.promoValue || "Promo"}</span> : null}
         </span>
         <span className="mt-1 block text-xs font-semibold leading-5 text-slate-500">{product.description}</span>
-        <span className="mt-2 block text-sm font-black text-emerald-700">{formatEuro(product.price)}</span>
+        <span className="mt-2 block whitespace-nowrap text-sm font-black text-emerald-700">{formatEuro(product.price)}</span>
         {!product.available ? <span className="mt-1 block text-xs font-black text-rose-600">En rupture</span> : null}
       </span>
     </article>

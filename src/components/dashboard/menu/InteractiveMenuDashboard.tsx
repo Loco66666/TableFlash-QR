@@ -163,14 +163,7 @@ export function InteractiveMenuDashboard() {
     setProducts((currentProducts) => currentProducts.map((product) => product.id === selectedProductId ? { ...product, ...savedProductPatch } : product));
     setSelectedProductId(selectedProductId);
     setEditingProduct(savedDraft);
-    showMessage("Modification enregistrée dans la maquette.");
-  };
-
-  const selectNextProductAfterBulkChange = (nextProducts: ProductItem[]) => {
-    const nextSelected = nextProducts.find((product) => product.available && product.visible) ?? nextProducts[0] ?? null;
-
-    setSelectedProductId(nextSelected?.id ?? null);
-    setEditingProduct(productToDraft(nextSelected));
+    showMessage("Modification enregistrée dans le menu.");
   };
 
   const cancelEditedProduct = () => {
@@ -204,12 +197,12 @@ export function InteractiveMenuDashboard() {
     setSelectedProductId(duplicate.id);
     setEditingProduct(productToDraft(duplicate));
     setRowAction(null);
-    showMessage("Produit dupliqué dans la maquette.");
+    showMessage("Produit dupliqué dans le menu.");
   };
 
   const deleteProduct = (productId: string) => {
     const product = products.find((item) => item.id === productId);
-    if (!product || !window.confirm(`Supprimer ${product.name} de la maquette ?`)) return;
+    if (!product || !window.confirm(`Supprimer ${product.name} du menu ?`)) return;
 
     const remainingProducts = products.filter((item) => item.id !== productId);
     setProducts(remainingProducts);
@@ -217,7 +210,7 @@ export function InteractiveMenuDashboard() {
     setSelectedProductId(nextSelected?.id ?? null);
     setEditingProduct(productToDraft(nextSelected));
     setRowAction(null);
-    showMessage("Produit supprimé de la maquette.");
+    showMessage("Produit supprimé du menu.");
   };
 
   const openAddProduct = () => {
@@ -251,7 +244,7 @@ export function InteractiveMenuDashboard() {
     setSelectedCategoryId(product.categoryId);
     setEditingProduct(productToDraft(product));
     setIsAddProductOpen(false);
-    showMessage("Produit ajouté dans la maquette.");
+    showMessage("Produit ajouté dans le menu.");
   };
 
   const addCategory = () => {
@@ -270,11 +263,7 @@ export function InteractiveMenuDashboard() {
     setSelectedCategoryId(category.id);
     setNewCategoryName("");
     setIsAddCategoryOpen(false);
-    showMessage("Catégorie ajoutée dans la maquette.");
-  };
-
-  const handleDeleteAllCategories = () => {
-    showMessage("Conservez au moins une catégorie.");
+    showMessage("Catégorie ajoutée dans le menu.");
   };
 
   const deleteCategory = (categoryId: string) => {
@@ -304,35 +293,6 @@ export function InteractiveMenuDashboard() {
     showMessage("Catégorie supprimée.");
   };
 
-  const handleDeleteActiveProducts = () => {
-    const confirmed = window.confirm("Voulez-vous vraiment supprimer tous les produits actifs de cette maquette ?");
-    if (!confirmed) return;
-
-    const nextProducts = products.filter((product) => !(product.available && product.visible));
-    setProducts(nextProducts);
-    selectNextProductAfterBulkChange(nextProducts);
-    showMessage("Produits actifs supprimés de la maquette.");
-  };
-
-  const handleDeleteUnavailableProducts = () => {
-    const confirmed = window.confirm("Voulez-vous vraiment supprimer tous les produits en rupture de cette maquette ?");
-    if (!confirmed) return;
-
-    const nextProducts = products.filter((product) => product.available);
-    setProducts(nextProducts);
-    selectNextProductAfterBulkChange(nextProducts);
-    showMessage("Produits en rupture supprimés de la maquette.");
-  };
-
-  const handleRemoveAllPromotions = () => {
-    const confirmed = window.confirm("Voulez-vous vraiment retirer toutes les promotions actives de cette maquette ?");
-    if (!confirmed) return;
-
-    setProducts((currentProducts) => currentProducts.map((product) => ({ ...product, promo: false, promoValue: "" })));
-    setEditingProduct((currentDraft) => currentDraft ? { ...currentDraft, promo: false, promoValue: "" } : currentDraft);
-    showMessage("Promotions retirées de la maquette.");
-  };
-
   const handleToggleReorderMode = () => {
     setReorderMode((isActive) => !isActive);
   };
@@ -347,7 +307,7 @@ export function InteractiveMenuDashboard() {
       return resequenceCategories(nextCategories);
     });
 
-    showMessage("Ordre des catégories mis à jour dans la maquette.");
+    showMessage("Ordre des catégories mis à jour dans le menu.");
   };
 
   const handleMoveCategoryDown = (categoryId: string) => {
@@ -360,26 +320,7 @@ export function InteractiveMenuDashboard() {
       return resequenceCategories(nextCategories);
     });
 
-    showMessage("Ordre des catégories mis à jour dans la maquette.");
-  };
-
-  const summaryActions: Record<string, { actionLabel: string; onAction: () => void }> = {
-    "Catégories": {
-      actionLabel: "Supprimer toutes les catégories de la maquette",
-      onAction: handleDeleteAllCategories,
-    },
-    "Produits actifs": {
-      actionLabel: "Supprimer tous les produits actifs de la maquette",
-      onAction: handleDeleteActiveProducts,
-    },
-    "Produit en rupture": {
-      actionLabel: "Supprimer tous les produits en rupture de la maquette",
-      onAction: handleDeleteUnavailableProducts,
-    },
-    "Promotions actives": {
-      actionLabel: "Retirer toutes les promotions actives de la maquette",
-      onAction: handleRemoveAllPromotions,
-    },
+    showMessage("Ordre des catégories mis à jour dans le menu.");
   };
 
   return (
@@ -390,7 +331,7 @@ export function InteractiveMenuDashboard() {
         subtitle="Organisez vos catégories, produits, disponibilités et promotions."
       >
         <button className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-black text-slate-700 shadow-sm transition hover:border-emerald-200 hover:bg-emerald-50" onClick={() => setIsPreviewOpen(true)} type="button">
-          Aperçu public
+          Aperçu client
         </button>
         <button className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-black text-emerald-800 transition hover:bg-emerald-100" onClick={() => setIsAddCategoryOpen(true)} type="button">
           Ajouter une catégorie
@@ -403,11 +344,11 @@ export function InteractiveMenuDashboard() {
       {successMessage ? <Toast message={successMessage} onClose={() => setSuccessMessage("")} /> : null}
 
       <main className="flex-1 space-y-7 p-5 lg:p-8">
-        <RestaurantSelectorCard onClick={() => showMessage("Le changement de restaurant est désactivé dans cette maquette locale.")} />
+        <RestaurantSelectorCard onClick={() => showMessage("Le changement de restaurant est désactivé dans cette version de démonstration.")} />
 
         <section className="grid gap-4 sm:grid-cols-2 2xl:grid-cols-4">
           {summaryItems.map((item) => (
-            <MenuSummaryCard key={item.label} {...item} {...summaryActions[item.label]} />
+            <MenuSummaryCard key={item.label} {...item} />
           ))}
         </section>
 
@@ -451,7 +392,7 @@ export function InteractiveMenuDashboard() {
             <div ref={editPanelRef}>
               <ProductEditPanel categories={categories} draft={editingProduct} onCancel={cancelEditedProduct} onDraftChange={setEditingProduct} onNormalizePrice={() => setEditingProduct((currentDraft) => currentDraft ? normalizeDraftPrice(currentDraft, selectedProduct?.price) : currentDraft)} onSave={saveEditedProduct} product={selectedProduct} />
             </div>
-            <PublicMenuPreview categories={categories} products={products} selectedCategoryId={selectedCategoryId} onCartClick={() => showMessage("Le panier public est simulé dans cette maquette.")} />
+            <PublicMenuPreview categories={categories} products={products} selectedCategoryId={selectedCategoryId} onCartClick={() => showMessage("L’aperçu du panier est disponible depuis le menu client.")} />
           </div>
         </section>
       </main>
@@ -474,8 +415,8 @@ export function InteractiveMenuDashboard() {
       ) : null}
 
       {isPreviewOpen ? (
-        <Modal title="Aperçu public" onClose={() => setIsPreviewOpen(false)} wide>
-          <MobilePreview categories={categories} products={products.filter((product) => product.visible && (selectedCategoryId === "all" || product.categoryId === selectedCategoryId))} selectedCategoryId={selectedCategoryId} onCartClick={() => showMessage("Le panier public est simulé dans cette maquette.")} />
+        <Modal title="Aperçu client" onClose={() => setIsPreviewOpen(false)} wide>
+          <MobilePreview categories={categories} products={products.filter((product) => product.visible && (selectedCategoryId === "all" || product.categoryId === selectedCategoryId))} selectedCategoryId={selectedCategoryId} onCartClick={() => showMessage("L’aperçu du panier est disponible depuis le menu client.")} />
         </Modal>
       ) : null}
     </>
@@ -529,7 +470,7 @@ function Modal({ children, onClose, title, wide = false }: { children: React.Rea
       <section className={`max-h-[90vh] w-full overflow-y-auto rounded-[2rem] border border-slate-200 bg-white p-5 shadow-2xl shadow-slate-950/20 ${wide ? "max-w-xl" : "max-w-lg"}`}>
         <div className="mb-5 flex items-start justify-between gap-4">
           <div>
-            <p className="text-sm font-bold uppercase tracking-[0.18em] text-emerald-700">Maquette locale</p>
+            <p className="text-sm font-bold uppercase tracking-[0.18em] text-emerald-700">Menu du restaurant</p>
             <h2 className="mt-2 text-2xl font-black text-slate-950">{title}</h2>
           </div>
           <button aria-label="Fermer" className="flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-100 text-slate-500 transition hover:bg-slate-200" onClick={onClose} type="button">×</button>

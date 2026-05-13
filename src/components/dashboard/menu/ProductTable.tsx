@@ -238,7 +238,7 @@ export function ProductTable({
                       </span>
                     </div>
                   </td>
-                  <td className="border-t border-slate-100 px-4 py-4 text-sm font-black text-slate-950">{formatEuro(product.price)}</td>
+                  <td className="whitespace-nowrap border-t border-slate-100 px-4 py-4 text-sm font-black text-slate-950">{formatEuro(product.price)}</td>
                   <td className="border-t border-slate-100 px-4 py-4">
                     <div className="flex flex-wrap gap-1.5">
                       {product.allergens.map((allergen) => (
@@ -368,7 +368,7 @@ function MobileMeta({ label, value, strong = false }: { label: string; value: st
   return (
     <div>
       <p className="text-xs font-black uppercase tracking-[0.14em] text-slate-400">{label}</p>
-      <p className={`mt-2 text-sm ${strong ? "font-black text-slate-950" : "font-bold text-slate-500"}`}>{value}</p>
+      <p className={`mt-2 text-sm ${strong ? "whitespace-nowrap font-black text-slate-950" : "font-bold text-slate-500"}`}>{value}</p>
     </div>
   );
 }
