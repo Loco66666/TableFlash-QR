@@ -81,7 +81,7 @@ export const defaultRestaurantSettings: RestaurantSettings = {
   paymentMessage: "Paiement à la caisse ou auprès du serveur.",
   publicWelcomeMessage:
     "Commandez simplement depuis votre table, nous nous occupons du reste.",
-  googleReviewUrl: "https://g.page/r/tableflash-demo/review",
+  googleReviewUrl: "https://g.page/r/tableflash/review",
   primaryColor: "Émeraude",
   qrInstruction: "Scannez pour consulter le menu et commander.",
   publicWelcomeTitle: "Bienvenue à table",

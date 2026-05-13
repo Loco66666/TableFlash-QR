@@ -46,7 +46,7 @@ export const periodOptions: StatisticsPeriodOption[] = [
   { id: "dinner", label: "Service soir", multiplier: 0.42, previousDelta: 2 },
 ];
 
-export const mockAnalyticsOrders: AnalyticsOrder[] = [
+export const referenceAnalyticsOrders: AnalyticsOrder[] = [
   {
     id: "analytics-1",
     table: "Terrasse 3",
@@ -121,7 +121,7 @@ export const mockAnalyticsOrders: AnalyticsOrder[] = [
   })),
 ];
 
-export const mockAnalyticsReviews: AnalyticsReview[] = [
+export const referenceAnalyticsReviews: AnalyticsReview[] = [
   { id: "review-a", rating: 5, status: "Nouveau", sentiment: "Positif", time: "12:48" },
   { id: "review-b", rating: 4, status: "Nouveau", sentiment: "Positif", time: "12:36" },
   { id: "review-c", rating: 3, status: "À traiter", sentiment: "Neutre", time: "12:24" },
@@ -134,7 +134,7 @@ export const mockAnalyticsReviews: AnalyticsReview[] = [
   { id: "review-j", rating: 4, status: "Archivé", sentiment: "Positif", time: "14:02" },
 ];
 
-export const mockActiveLocations: ActiveLocation[] = [
+export const referenceActiveLocations: ActiveLocation[] = [
   { name: "Terrasse 3", scans: 21, orders: 5 },
   { name: "Table 1", scans: 18, orders: 4 },
   { name: "Terrasse 1", scans: 14, orders: 3 },

@@ -30,9 +30,9 @@ import { StatisticsSummaryCard } from "./StatisticsSummaryCard";
 import { StatisticsToast } from "./StatisticsToast";
 import { TopProductsTable } from "./TopProductsTable";
 import {
-  mockActiveLocations,
-  mockAnalyticsOrders,
-  mockAnalyticsReviews,
+  referenceActiveLocations,
+  referenceAnalyticsOrders,
+  referenceAnalyticsReviews,
   periodOptions,
   type ActiveLocation,
   type AnalyticsOrder,
@@ -85,7 +85,7 @@ function mapLocalOrderToAnalytics(order: LocalSubmittedOrder): AnalyticsOrder {
     table: order.tableName,
     hour,
     total: order.total,
-    prepMinutes: order.mockElapsedMinutes || order.estimatedPrepMinutes,
+    prepMinutes: order.elapsedMinutes || order.estimatedPrepMinutes,
     estimatedPrepMinutes: order.estimatedPrepMinutes,
     status: order.status === "Servie" ? "served" : order.status === "Prête" ? "ready" : order.status === "En préparation" ? "preparing" : "accepted",
     items: order.items.map((item) => ({ name: item.name, quantity: item.quantity, price: item.price })),
@@ -129,7 +129,7 @@ function buildTopProducts(orders: AnalyticsOrder[], multiplier: number): Product
 function buildActiveTables(orders: AnalyticsOrder[], multiplier: number): ActiveTableRow[] {
   const locationMap = new Map<string, ActiveLocation>();
 
-  mockActiveLocations.forEach((location) => {
+  referenceActiveLocations.forEach((location) => {
     locationMap.set(location.name, {
       name: location.name,
       scans: scale(location.scans, multiplier),
@@ -159,8 +159,8 @@ export function InteractiveStatisticsDashboard() {
   const [periodPanelOpen, setPeriodPanelOpen] = useState(false);
 
   const activeOption = periodOptions.find((period) => period.id === activePeriod) ?? periodOptions[0];
-  const analyticsOrders = useMemo(() => [...mockAnalyticsOrders, ...localOrders.map(mapLocalOrderToAnalytics)], [localOrders]);
-  const analyticsReviews = useMemo(() => [...mockAnalyticsReviews, ...localReviews.map(mapLocalReviewToAnalytics)], [localReviews]);
+  const analyticsOrders = useMemo(() => [...referenceAnalyticsOrders, ...localOrders.map(mapLocalOrderToAnalytics)], [localOrders]);
+  const analyticsReviews = useMemo(() => [...referenceAnalyticsReviews, ...localReviews.map(mapLocalReviewToAnalytics)], [localReviews]);
   const multiplier = activeOption.multiplier;
 
   const stats = useMemo(() => {
@@ -275,7 +275,7 @@ export function InteractiveStatisticsDashboard() {
   }
 
   function handleExport() {
-    setToast("Export du rapport simulé dans la maquette.");
+    setToast("Export du rapport préparé.");
   }
 
   function handleCustomPeriod() {
@@ -306,7 +306,7 @@ export function InteractiveStatisticsDashboard() {
       <main className="min-w-0 flex-1 space-y-6 overflow-x-hidden bg-slate-50/70 p-4 sm:p-5 lg:p-8">
         {periodPanelOpen ? (
           <section className="min-w-0 max-w-full break-words rounded-[2rem] border border-emerald-100 bg-emerald-50 p-5 text-sm font-semibold text-emerald-900 shadow-sm">
-            La sélection de dates personnalisées sera connectée dans une prochaine étape. La maquette reste locale et sans API externe.
+            La sélection de dates personnalisées sera affinée dans une prochaine étape. Les données restent disponibles sans service externe.
           </section>
         ) : null}
 

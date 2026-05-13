@@ -76,7 +76,7 @@ export function inferProductVisualPreset(input: { categoryName?: string | null; 
     .replace(/[\u0300-\u036f]/g, "")
     .toLocaleLowerCase("fr-FR");
 
-  if (/boissons?|sodas?|jus|eaux?|limonade|sirop|mocktail|cocktail|biere|vin/.test(normalized)) return "drink";
+  if (/boissons?|sodas?|jus|eaux?|limonade|sirop|cocktail|biere|vin/.test(normalized)) return "drink";
   if (/cafes?|cafe|the|chai|infusion|chocolat chaud|espresso|capuccino|cappuccino/.test(normalized)) return "hotDrink";
   if (/desserts?|douceurs?|patisserie|gateau|tiramisu|creme|glace|sorbet/.test(normalized)) return "dessert";
   if (/menus?|formules?|offres? groupees?|combo|plateau/.test(normalized)) return "menu";

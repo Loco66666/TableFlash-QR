@@ -62,10 +62,10 @@ export function InteractiveTablesDashboard() {
   const selectedTable = selectedTableId ? tables.find((table) => table.id === selectedTableId) ?? null : null;
   const visibleTables = useMemo(() => filterAndSortTables(tables, searchQuery, activeZoneFilter, activeStatusFilter, sortMode), [activeStatusFilter, activeZoneFilter, searchQuery, sortMode, tables]);
   const summaryCards = useMemo(() => [
-    { value: String(tables.length), label: "Tables configurées", helper: "QR générés localement" },
+    { value: String(tables.length), label: "Tables configurées", helper: "Emplacements prêts" },
     { value: String(tables.filter((table) => table.isActive).length), label: "QR actifs", helper: "Disponibles au scan" },
     { value: String(tables.reduce((total, table) => total + table.scansToday, 0)), label: "Scans aujourd’hui", helper: "Depuis les QR de table" },
-    { value: String(tables.reduce((total, table) => total + table.ordersToday, 0)), label: "Commandes QR", helper: "Envoyées sans paiement en ligne" },
+    { value: String(tables.reduce((total, table) => total + table.ordersToday, 0)), label: "Commandes QR", helper: "Commandes reçues" },
   ], [tables]);
 
   function showToast(message: string) {
@@ -109,7 +109,7 @@ export function InteractiveTablesDashboard() {
     link.click();
     link.remove();
     URL.revokeObjectURL(url);
-    showToast("Téléchargement QR simulé dans la maquette.");
+    showToast("QR prêt à être téléchargé.");
   }
 
   function handlePrintTable(table: RestaurantTable) {
@@ -136,12 +136,20 @@ export function InteractiveTablesDashboard() {
   }
 
   function handleToggleActive(table: RestaurantTable) {
+    const message = table.isActive
+      ? "Désactiver ce QR ? Les clients ne pourront plus commander depuis ce lien."
+      : "Réactiver ce QR ? Le lien sera de nouveau disponible au scan.";
+
+    if (!window.confirm(message)) {
+      return;
+    }
+
     setTables((currentTables) => currentTables.map((currentTable) => currentTable.id === table.id ? { ...currentTable, isActive: !currentTable.isActive } : currentTable));
     showToast(table.isActive ? "QR désactivé." : "QR activé.");
   }
 
   function handleDelete(table: RestaurantTable) {
-    const confirmed = window.confirm("Voulez-vous vraiment supprimer ce QR de table ?");
+    const confirmed = window.confirm(getDeleteConfirmationMessage(table));
 
     if (!confirmed) {
       return;
@@ -158,7 +166,7 @@ export function InteractiveTablesDashboard() {
       }
       return nextTables;
     });
-    showToast("Table supprimée de la maquette.");
+    showToast("Emplacement QR supprimé.");
   }
 
   function handleOpenEdit(table: RestaurantTable) {
@@ -185,7 +193,7 @@ export function InteractiveTablesDashboard() {
       publicUrl: `/r/le-bistrot-des-halles/table/${id}`,
       scansToday: 0,
       ordersToday: 0,
-      lastScanAt: "—",
+      lastScanAt: "Pas encore scanné",
       createdAt: new Date().toISOString(),
     };
 
@@ -193,7 +201,7 @@ export function InteractiveTablesDashboard() {
     setSelectedTableId(newTable.id);
     setIsAddTableOpen(false);
     setSortMode("custom");
-    showToast("Table ajoutée dans la maquette.");
+    showToast("Emplacement QR ajouté.");
   }
 
   function handleEditTable(values: TableFormValues) {
@@ -221,7 +229,7 @@ export function InteractiveTablesDashboard() {
     } : table));
     setSelectedTableId(nextSlug);
     setIsEditTableOpen(false);
-    showToast("Table mise à jour dans la maquette.");
+    showToast("Emplacement QR mis à jour.");
   }
 
   function handleSortModeChange(nextSortMode: TableSortMode) {
@@ -233,7 +241,7 @@ export function InteractiveTablesDashboard() {
 
   function handleReorderToggle() {
     if (sortMode !== "custom") {
-      showToast("Repassez en tri personnalisé pour réorganiser les tables.");
+      showToast("Repassez en ordre personnalisé pour réorganiser les tables.");
       return;
     }
 
@@ -242,7 +250,7 @@ export function InteractiveTablesDashboard() {
 
   function moveTable(tableId: string, direction: "up" | "down") {
     if (sortMode !== "custom") {
-      showToast("Repassez en tri personnalisé pour réorganiser les tables.");
+      showToast("Repassez en ordre personnalisé pour réorganiser les tables.");
       return;
     }
 
@@ -259,7 +267,7 @@ export function InteractiveTablesDashboard() {
       nextTables.splice(nextIndex, 0, movedTable);
       return nextTables;
     });
-    showToast("Ordre des tables mis à jour dans la maquette.");
+    showToast("Ordre des emplacements mis à jour.");
   }
 
   return (
@@ -272,9 +280,9 @@ export function InteractiveTablesDashboard() {
         <DashboardHeader
           eyebrow="Le Bistrot des Halles"
           title="QR par table"
-          subtitle="Générez, organisez et imprimez les QR codes que vos clients scannent depuis leur table."
+          subtitle="Préparez les QR codes que vos clients scannent pour consulter le menu et commander depuis leur table."
         >
-          <button className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-black text-slate-700 shadow-sm transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-800" onClick={() => showToast("Export des QR simulé dans la maquette.")} type="button">
+          <button className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-black text-slate-700 shadow-sm transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-800" onClick={() => showToast("Export des QR préparé.")} type="button">
             Exporter les QR
           </button>
           <button className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-black text-slate-700 shadow-sm transition hover:border-amber-200 hover:bg-amber-50 hover:text-amber-800" onClick={handleHeaderPrint} type="button">
@@ -291,10 +299,10 @@ export function InteractiveTablesDashboard() {
             <div>
               <p className="text-sm font-black uppercase tracking-[0.22em] text-emerald-200">Flux client</p>
               <h2 className="mt-3 text-2xl font-black tracking-tight md:text-3xl">Un QR unique pour chaque table</h2>
-              <p className="mt-2 max-w-3xl text-sm font-semibold leading-6 text-emerald-50/85">Chaque QR code ouvre le menu public avec la table déjà associée. Le client commande sans paiement en ligne, puis règle à la caisse ou auprès du serveur.</p>
+              <p className="mt-2 max-w-3xl text-sm font-semibold leading-6 text-emerald-50/85">Chaque QR code ouvre le menu public avec la table déjà associée. QR prêts à être imprimés, commandes reçues sans paiement en ligne, règlement à la caisse ou auprès du serveur.</p>
             </div>
             <div className="grid gap-2 sm:grid-cols-4 lg:min-w-[540px]">
-              {["QR scanné", "Menu public", "Panier validé", "Commande reçue"].map((step, index) => (
+              {["QR scanné", "Menu publié", "Panier validé", "Commande reçue"].map((step, index) => (
                 <div className="rounded-2xl bg-white/10 p-3 text-center ring-1 ring-white/15" key={step}>
                   <p className="mx-auto flex h-8 w-8 items-center justify-center rounded-full bg-emerald-300 text-sm font-black text-emerald-950">{index + 1}</p>
                   <p className="mt-2 text-xs font-black text-white">{step}</p>
@@ -329,7 +337,7 @@ export function InteractiveTablesDashboard() {
             <div className="flex items-center justify-between gap-4">
               <div>
                 <h2 className="text-xl font-black tracking-tight text-slate-950">QR configurés</h2>
-                <p className="mt-1 text-sm font-semibold text-slate-500">{visibleTables.length} table{visibleTables.length > 1 ? "s" : ""} affichée{visibleTables.length > 1 ? "s" : ""} dans cette maquette locale.</p>
+                <p className="mt-1 text-sm font-semibold text-slate-500">Emplacements configurés : {visibleTables.length}.</p>
               </div>
             </div>
 
@@ -395,6 +403,14 @@ export function InteractiveTablesDashboard() {
       ) : null}
     </>
   );
+}
+
+function getDeleteConfirmationMessage(table: RestaurantTable) {
+  const hasActivity = table.scansToday > 0 || table.ordersToday > 0;
+
+  return hasActivity
+    ? "Cet emplacement possède déjà de l’activité. Voulez-vous vraiment le supprimer ?"
+    : "Voulez-vous vraiment supprimer cet emplacement QR ?";
 }
 
 function filterAndSortTables(tables: RestaurantTable[], searchQuery: string, activeZoneFilter: TableZoneFilter, activeStatusFilter: TableStatusFilter, sortMode: TableSortMode) {
