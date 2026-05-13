@@ -19,6 +19,8 @@ export const publicMenuProducts: PublicMenuProduct[] = [
     allergens: ["Œuf", "Lait"],
     available: true,
     promo: false,
+    imageAlt: "Visuel premium de la Salade César",
+    visualPreset: "main",
   },
   {
     id: "burrata-tomate",
@@ -29,6 +31,8 @@ export const publicMenuProducts: PublicMenuProduct[] = [
     allergens: ["Lait"],
     available: true,
     promo: false,
+    imageAlt: "Visuel premium de la Burrata tomate",
+    visualPreset: "starter",
   },
   {
     id: "burger-classique",
@@ -40,6 +44,8 @@ export const publicMenuProducts: PublicMenuProduct[] = [
     available: true,
     promo: true,
     promoLabel: "-10 %",
+    imageAlt: "Visuel premium du Burger Classique",
+    visualPreset: "main",
   },
   {
     id: "frites-maison",
@@ -50,6 +56,8 @@ export const publicMenuProducts: PublicMenuProduct[] = [
     allergens: ["Vegan"],
     available: true,
     promo: false,
+    imageAlt: "Visuel premium des Frites Maison",
+    visualPreset: "side",
   },
   {
     id: "risotto-du-marche",
@@ -60,6 +68,8 @@ export const publicMenuProducts: PublicMenuProduct[] = [
     allergens: ["Lait"],
     available: false,
     promo: false,
+    imageAlt: "Visuel premium du Risotto du marché",
+    visualPreset: "main",
   },
   {
     id: "tiramisu",
@@ -71,6 +81,8 @@ export const publicMenuProducts: PublicMenuProduct[] = [
     available: true,
     promo: true,
     promoLabel: "-10 %",
+    imageAlt: "Visuel premium du Tiramisu",
+    visualPreset: "dessert",
   },
   {
     id: "cafe-gourmand",
@@ -81,6 +93,8 @@ export const publicMenuProducts: PublicMenuProduct[] = [
     allergens: ["Gluten", "Lait"],
     available: true,
     promo: false,
+    imageAlt: "Visuel premium du Café gourmand",
+    visualPreset: "hotDrink",
   },
   {
     id: "limonade",
@@ -91,6 +105,8 @@ export const publicMenuProducts: PublicMenuProduct[] = [
     allergens: ["Sans"],
     available: true,
     promo: false,
+    imageAlt: "Visuel premium de la Limonade",
+    visualPreset: "drink",
   },
   {
     id: "eau-petillante",
@@ -101,5 +117,7 @@ export const publicMenuProducts: PublicMenuProduct[] = [
     allergens: ["Sans"],
     available: true,
     promo: false,
+    imageAlt: "Visuel premium de l’Eau pétillante",
+    visualPreset: "drink",
   },
 ];

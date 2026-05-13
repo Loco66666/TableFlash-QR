@@ -1,3 +1,4 @@
+import { ProductImage } from "@/components/shared/ProductImage";
 import { formatEuro } from "@/lib/formatters";
 import { PublicAllergenBadge } from "./PublicAllergenBadge";
 import type { PublicMenuProduct } from "./types";
@@ -27,9 +28,17 @@ export function PublicProductCard({
     >
       <button type="button" onClick={() => onOpenProduct(product)} className="block w-full p-4 text-left" aria-label={`Voir ${product.name}`}>
         <div className="grid grid-cols-[4.75rem_minmax(0,1fr)] gap-3.5">
-          <div className="relative h-20 overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-100 via-stone-100 to-amber-100">
-            <div className="absolute inset-3 rounded-[1.25rem] border border-white/60 bg-white/25" />
-            <div className="absolute bottom-2 right-2 h-8 w-8 rounded-full bg-emerald-800/85 shadow-lg" />
+          <div className="relative min-w-0">
+            <ProductImage
+              categoryName={product.category}
+              decorative
+              imageAlt={product.imageAlt}
+              imageTone={product.imageTone}
+              imageUrl={product.imageUrl}
+              productName={product.name}
+              variant="public-card"
+              visualPreset={product.visualPreset}
+            />
             {quantityInCart > 0 ? (
               <span className="absolute left-2 top-2 rounded-full bg-slate-950 px-2 py-1 text-xs font-black text-white">
                 ×{quantityInCart}

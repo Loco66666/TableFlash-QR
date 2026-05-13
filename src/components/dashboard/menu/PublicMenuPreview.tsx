@@ -1,3 +1,4 @@
+import { ProductImage } from "@/components/shared/ProductImage";
 import { formatEuro } from "@/lib/formatters";
 
 import type { CategoryItem, ProductItem } from "./menuData";
@@ -65,12 +66,16 @@ export function MobilePreview({ categories, products, selectedCategoryId, onCart
 function PreviewRow({ product }: { product: ProductItem }) {
   return (
     <article className={`flex gap-3 rounded-3xl bg-white p-3 shadow-sm shadow-slate-200/70 ${product.available ? "" : "opacity-60"}`}>
-      <span className={`flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl ${product.imageUrl ? "bg-slate-100" : `bg-gradient-to-br ${product.imageTone}`}`}>
-        {product.imageUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img alt="" className="h-full w-full object-cover" src={product.imageUrl} />
-        ) : null}
-      </span>
+      <ProductImage
+        categoryName={product.categoryId}
+        decorative
+        imageAlt={product.imageAlt}
+        imageTone={product.imageTone}
+        imageUrl={product.imageUrl}
+        productName={product.name}
+        variant="compact"
+        visualPreset={product.visualPreset}
+      />
       <span className="min-w-0 flex-1">
         <span className="flex items-start justify-between gap-2">
           <span className="font-black text-slate-950">{product.name}</span>

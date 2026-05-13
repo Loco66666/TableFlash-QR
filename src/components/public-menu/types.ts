@@ -1,3 +1,5 @@
+import type { ProductVisualPresetId } from "@/components/shared/ProductImage";
+
 export type PublicMenuCategory = "Entrées" | "Plats" | "Desserts" | "Boissons";
 
 export type PublicMenuProduct = {
@@ -10,6 +12,10 @@ export type PublicMenuProduct = {
   available: boolean;
   promo: boolean;
   promoLabel?: string;
+  imageUrl?: string | null;
+  imageAlt?: string;
+  visualPreset?: ProductVisualPresetId;
+  imageTone?: string;
 };
 
 export type PublicRestaurant = {

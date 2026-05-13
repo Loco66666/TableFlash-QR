@@ -1,3 +1,5 @@
+import type { ProductVisualPresetId } from "@/components/shared/ProductImage";
+
 export type SummaryItem = {
   value: string;
   label: string;
@@ -25,8 +27,10 @@ export type ProductItem = {
   promoType: PromoType;
   promoValue: string;
   promoEndDate: string;
-  imageTone: string;
+  imageTone?: string;
   imageUrl?: string | null;
+  imageAlt?: string;
+  visualPreset?: ProductVisualPresetId;
 };
 
 export type ProductDraft = Omit<ProductItem, "id" | "imageTone" | "price"> & {
@@ -55,6 +59,8 @@ export const products: ProductItem[] = [
     promoValue: "-10 %",
     promoEndDate: "2026-05-31",
     imageTone: "from-amber-200 via-orange-100 to-emerald-100",
+    imageAlt: "Visuel premium du Burger Classique",
+    visualPreset: "main",
   },
   {
     id: "salade-cesar",
@@ -70,6 +76,8 @@ export const products: ProductItem[] = [
     promoValue: "",
     promoEndDate: "",
     imageTone: "from-lime-200 via-emerald-100 to-stone-100",
+    imageAlt: "Visuel premium de la Salade César",
+    visualPreset: "main",
   },
   {
     id: "frites-maison",
@@ -85,6 +93,8 @@ export const products: ProductItem[] = [
     promoValue: "",
     promoEndDate: "",
     imageTone: "from-yellow-200 via-amber-100 to-orange-100",
+    imageAlt: "Visuel premium des Frites Maison",
+    visualPreset: "side",
   },
   {
     id: "limonade",
@@ -100,6 +110,8 @@ export const products: ProductItem[] = [
     promoValue: "",
     promoEndDate: "",
     imageTone: "from-cyan-100 via-lime-100 to-emerald-100",
+    imageAlt: "Visuel premium de la Limonade",
+    visualPreset: "drink",
   },
   {
     id: "tiramisu",
@@ -115,6 +127,8 @@ export const products: ProductItem[] = [
     promoValue: "-10 %",
     promoEndDate: "2026-05-31",
     imageTone: "from-stone-300 via-amber-100 to-yellow-50",
+    imageAlt: "Visuel premium du Tiramisu",
+    visualPreset: "dessert",
   },
   {
     id: "cafe-gourmand",
@@ -130,6 +144,8 @@ export const products: ProductItem[] = [
     promoValue: "",
     promoEndDate: "",
     imageTone: "from-stone-300 via-zinc-100 to-slate-100",
+    imageAlt: "Visuel premium du Café gourmand",
+    visualPreset: "hotDrink",
   },
 ];
 
