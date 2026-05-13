@@ -22,7 +22,7 @@ export function PublicPaymentNotice({ note, compact = false, inverted = false }:
         }`}
       >
         <p className={`text-xs font-black uppercase tracking-[0.2em] ${inverted ? "text-emerald-100" : "text-emerald-700"}`}>
-          Paiement au restaurant
+          Règlement sur place
         </p>
         <p className="mt-1 text-sm">{note}</p>
       </div>
