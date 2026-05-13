@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { DashboardHeader } from "@/components/dashboard";
 import { formatEuro, formatPromotionValue, parseEuroInput } from "@/lib/formatters";
-import { readLocalMenu, resequenceCategories, saveLocalMenu, withStableCategoryOrder } from "@/lib/localMenu";
+import { getFallbackLocalMenu, readLocalMenu, resequenceCategories, saveLocalMenu, withStableCategoryOrder } from "@/lib/localMenu";
 
 import { CategoryList } from "./CategoryList";
 import { MenuSummaryCard } from "./MenuSummaryCard";
@@ -39,11 +39,13 @@ const imageTones = [
   "from-stone-300 via-amber-100 to-yellow-50",
 ];
 
+const initialMenu = getFallbackLocalMenu();
+
 export function InteractiveMenuDashboard() {
-  const [initialLocalMenu] = useState(() => readLocalMenu());
-  const [products, setProducts] = useState<ProductItem[]>(initialLocalMenu.products);
-  const [categories, setCategories] = useState<CategoryItem[]>(initialLocalMenu.categories);
-  const [selectedProductId, setSelectedProductId] = useState<string | null>(initialLocalMenu.products[0]?.id ?? null);
+  const [mounted, setMounted] = useState(false);
+  const [products, setProducts] = useState<ProductItem[]>(initialMenu.products);
+  const [categories, setCategories] = useState<CategoryItem[]>(initialMenu.categories);
+  const [selectedProductId, setSelectedProductId] = useState<string | null>(initialMenu.products[0]?.id ?? null);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | "all">("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState<ActiveMenuFilter>("all");
@@ -51,8 +53,8 @@ export function InteractiveMenuDashboard() {
   const [isAddProductOpen, setIsAddProductOpen] = useState(false);
   const [isAddCategoryOpen, setIsAddCategoryOpen] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<ProductDraft | null>(() => productToDraft(initialLocalMenu.products[0]));
-  const [newProductDraft, setNewProductDraft] = useState<ProductDraft>(() => blankProductDraft(initialLocalMenu.categories[0]?.id ?? "general"));
+  const [editingProduct, setEditingProduct] = useState<ProductDraft | null>(() => productToDraft(initialMenu.products[0]));
+  const [newProductDraft, setNewProductDraft] = useState<ProductDraft>(() => blankProductDraft(initialMenu.categories[0]?.id ?? "general"));
   const [newCategoryName, setNewCategoryName] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [rowAction, setRowAction] = useState<RowActionState | null>(null);
@@ -62,8 +64,33 @@ export function InteractiveMenuDashboard() {
   const selectedProduct = products.find((product) => product.id === selectedProductId) ?? null;
 
   useEffect(() => {
+    // The stable fallback state is intentionally used for SSR and the first client render.
+    // Local menu data is loaded only after mount to avoid hydration mismatches.
+    const loadFrame = window.requestAnimationFrame(() => {
+      const localMenu = readLocalMenu();
+      const nextSelectedProduct = localMenu.products[0] ?? null;
+
+      setProducts(localMenu.products);
+      setCategories(localMenu.categories);
+      setSelectedProductId(nextSelectedProduct?.id ?? null);
+      setEditingProduct(productToDraft(nextSelectedProduct));
+      setNewProductDraft((currentDraft) => ({
+        ...currentDraft,
+        categoryId: localMenu.categories.some((category) => category.id === currentDraft.categoryId)
+          ? currentDraft.categoryId
+          : localMenu.categories[0]?.id ?? "general",
+      }));
+      setMounted(true);
+    });
+
+    return () => window.cancelAnimationFrame(loadFrame);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
+
     saveLocalMenu({ categories, products });
-  }, [categories, products]);
+  }, [categories, mounted, products]);
 
   const productCounts = useMemo(() => products.reduce<Record<string, number>>((counts, product) => {
     counts[product.categoryId] = (counts[product.categoryId] ?? 0) + 1;
