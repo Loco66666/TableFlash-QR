@@ -64,7 +64,7 @@ export type Order = {
   acceptedAt?: string;
   preparationStartedAt?: string;
   estimatedPrepMinutes: number;
-  mockElapsedMinutes: number;
+  elapsedMinutes: number;
   note?: string;
   source?: "public-menu";
   localOrderId?: string;
@@ -91,7 +91,7 @@ export const orders: Order[] = [
     status: "Nouvelle",
     paymentStatus: "À payer",
     estimatedPrepMinutes: 12,
-    mockElapsedMinutes: 5,
+    elapsedMinutes: 5,
     total: "31,50 €",
     items: [
       { quantity: 1, name: "Burger Classique", price: "18,00 €" },
@@ -109,7 +109,7 @@ export const orders: Order[] = [
     status: "Acceptée",
     paymentStatus: "À payer",
     estimatedPrepMinutes: 12,
-    mockElapsedMinutes: 11,
+    elapsedMinutes: 11,
     total: "44,00 €",
     items: [
       { quantity: 2, name: "Salade César", price: "29,00 €" },
@@ -125,7 +125,7 @@ export const orders: Order[] = [
     status: "Payée",
     paymentStatus: "Payée",
     estimatedPrepMinutes: 12,
-    mockElapsedMinutes: 8,
+    elapsedMinutes: 8,
     total: "18,00 €",
     items: [{ quantity: 1, name: "Burger Classique", price: "18,00 €" }],
   },
@@ -139,7 +139,7 @@ export const orders: Order[] = [
     status: "En préparation",
     paymentStatus: "Payée",
     estimatedPrepMinutes: 12,
-    mockElapsedMinutes: 18,
+    elapsedMinutes: 18,
     total: "26,50 €",
     items: [
       { quantity: 1, name: "Tiramisu", price: "6,50 €" },
@@ -156,7 +156,7 @@ export const orders: Order[] = [
     status: "Prête",
     paymentStatus: "Payée",
     estimatedPrepMinutes: 12,
-    mockElapsedMinutes: 14,
+    elapsedMinutes: 14,
     total: "39,50 €",
     items: [
       { quantity: 2, name: "Burger Classique", price: "36,00 €" },
@@ -173,7 +173,7 @@ export const orders: Order[] = [
     status: "Servie",
     paymentStatus: "Payée",
     estimatedPrepMinutes: 12,
-    mockElapsedMinutes: 13,
+    elapsedMinutes: 13,
     total: "52,00 €",
     items: [
       { quantity: 2, name: "Salade César", price: "29,00 €" },
@@ -209,11 +209,11 @@ export function getOrderTimingStatus(order: Order): TimingStatusLabel {
   }
 
   if (order.status === "En préparation") {
-    if (order.mockElapsedMinutes <= order.estimatedPrepMinutes) {
+    if (order.elapsedMinutes <= order.estimatedPrepMinutes) {
       return "Dans les temps";
     }
 
-    if (order.mockElapsedMinutes <= order.estimatedPrepMinutes + 5) {
+    if (order.elapsedMinutes <= order.estimatedPrepMinutes + 5) {
       return "À surveiller";
     }
 

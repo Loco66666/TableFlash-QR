@@ -58,7 +58,7 @@ export function TableQrPreviewPanel({ onClose, onCopy, onDelete, onDownload, onE
       <dl className="mt-3 grid grid-cols-3 gap-2 text-center">
         <Metric label="Scans" value={String(table.scansToday)} />
         <Metric label="Commandes" value={String(table.ordersToday)} />
-        <Metric label="Dernier scan" value={table.lastScanAt} />
+        <Metric label="Dernier scan" value={formatLastScan(table.lastScanAt)} />
       </dl>
 
       <div className="mt-4 rounded-[1.35rem] border border-slate-200/80 bg-white p-3">
@@ -115,4 +115,8 @@ function CloseButton({ onClose }: { onClose: () => void }) {
       ×
     </button>
   );
+}
+
+function formatLastScan(value: string) {
+  return value === "—" || value.trim() === "" ? "Pas encore scanné" : value;
 }

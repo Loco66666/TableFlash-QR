@@ -621,7 +621,7 @@ function ReadinessOverview({
         <p className="mt-4 break-words text-sm font-bold text-slate-500">
           Dernière sauvegarde locale ·{" "}
           {saveState === "saved"
-            ? "Paramètres enregistrés localement"
+            ? "Paramètres enregistrés"
             : "Modifications non enregistrées"}
         </p>
       </div>
@@ -727,7 +727,7 @@ function TimeRangeEditor({
   );
 }
 
-function QrMockCode() {
+function QrDecorativeCode() {
   return (
     <div className="grid h-32 w-32 grid-cols-5 gap-1 rounded-2xl border border-slate-200 bg-white p-3">
       {Array.from({ length: 25 }).map((_, index) => (
@@ -754,7 +754,7 @@ function QrPreview({ settings }: { settings: RestaurantSettings }) {
           {settings.restaurantName}
         </p>
         <div className="mt-5 flex justify-center">
-          <QrMockCode />
+          <QrDecorativeCode />
         </div>
         {settings.qrShowLocationName ? (
           <p className="mt-5 break-words text-2xl font-black text-slate-950">
@@ -985,7 +985,7 @@ export function InteractiveSettingsDashboard() {
   const saveSettings = () => {
     saveLocalRestaurantSettings(settings);
     setSaveState("saved");
-    showToast("Paramètres enregistrés localement.");
+    showToast("Paramètres enregistrés.");
   };
 
   const previewSettings = () => {

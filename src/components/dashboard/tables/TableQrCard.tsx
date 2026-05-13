@@ -36,7 +36,7 @@ export function TableQrCard({ canMoveDown, canMoveUp, isReorderMode, onCopy, onM
       <dl className="mt-3 grid grid-cols-3 gap-1.5 text-center">
         <Metric value={String(table.scansToday)} label="Scans" />
         <Metric value={String(table.ordersToday)} label="Commandes" />
-        <Metric value={table.lastScanAt} label="Dernier scan" />
+        <Metric value={formatLastScan(table.lastScanAt)} label="Dernier scan" />
       </dl>
 
       {isReorderMode ? (
@@ -72,4 +72,8 @@ function Metric({ label, value }: { label: string; value: string }) {
       <dd className="mt-0.5 truncate text-sm font-black text-slate-950">{value}</dd>
     </div>
   );
+}
+
+function formatLastScan(value: string) {
+  return value === "—" || value.trim() === "" ? "Pas encore scanné" : value;
 }

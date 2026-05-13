@@ -39,7 +39,7 @@ export function TablesToolbar({ activeStatusFilter, activeZoneFilter, isReorderM
             onChange={(event) => onSortModeChange(event.target.value as TableSortMode)}
             value={sortMode}
           >
-            <option value="custom">Tri personnalisé</option>
+            <option value="custom">Ordre personnalisé</option>
             <option value="name">Nom de table</option>
             <option value="zone">Zone</option>
             <option value="scans">Scans du jour</option>

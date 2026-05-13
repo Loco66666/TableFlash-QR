@@ -138,7 +138,7 @@ export function InteractiveOrdersDashboard() {
         paymentStatus: nextPaymentStatus ?? order.paymentStatus,
         acceptedAt: nextStatus === "Acceptée" ? order.acceptedAt ?? new Date().toISOString() : order.acceptedAt,
         preparationStartedAt: nextStatus === "En préparation" ? order.preparationStartedAt ?? new Date().toISOString() : order.preparationStartedAt,
-        mockElapsedMinutes: nextStatus === "En préparation" ? Math.max(order.mockElapsedMinutes, 1) : order.mockElapsedMinutes,
+        elapsedMinutes: nextStatus === "En préparation" ? Math.max(order.elapsedMinutes, 1) : order.elapsedMinutes,
       };
     });
 
@@ -152,7 +152,7 @@ export function InteractiveOrdersDashboard() {
         paymentStatus: nextPaymentStatus ?? updatedOrder.paymentStatus,
         acceptedAt: updatedOrder.acceptedAt,
         preparationStartedAt: updatedOrder.preparationStartedAt,
-        mockElapsedMinutes: updatedOrder.mockElapsedMinutes,
+        elapsedMinutes: updatedOrder.elapsedMinutes,
       });
     }
 
@@ -236,7 +236,7 @@ export function InteractiveOrdersDashboard() {
       paymentStatus: "À payer",
       createdAt: new Date().toISOString(),
       estimatedPrepMinutes: 12,
-      mockElapsedMinutes: 0,
+      elapsedMinutes: 0,
       total: "21,50 €",
       items: [
         { quantity: 1, name: "Burger Classique", price: "18,00 €" },

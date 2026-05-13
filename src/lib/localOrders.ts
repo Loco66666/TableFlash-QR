@@ -44,7 +44,7 @@ export type LocalSubmittedOrder = {
   items: LocalSubmittedOrderItem[];
   source: "public-menu";
   estimatedPrepMinutes: number;
-  mockElapsedMinutes: number;
+  elapsedMinutes: number;
 };
 
 export type CreateLocalOrderInput = {
@@ -80,7 +80,7 @@ export type LocalDashboardOrder = {
   acceptedAt?: string;
   preparationStartedAt?: string;
   estimatedPrepMinutes: number;
-  mockElapsedMinutes: number;
+  elapsedMinutes: number;
   note?: string;
   source: "public-menu";
   localOrderId: string;
@@ -207,7 +207,7 @@ export function createLocalOrder(input: CreateLocalOrderInput): LocalSubmittedOr
     })),
     source: "public-menu",
     estimatedPrepMinutes: 12,
-    mockElapsedMinutes: 0,
+    elapsedMinutes: 0,
   };
 }
 
@@ -271,7 +271,7 @@ export function mapLocalOrderToDashboardOrder(order: LocalSubmittedOrder): Local
     acceptedAt: order.acceptedAt,
     preparationStartedAt: order.preparationStartedAt,
     estimatedPrepMinutes: order.estimatedPrepMinutes,
-    mockElapsedMinutes: order.mockElapsedMinutes,
+    elapsedMinutes: order.elapsedMinutes,
     note: order.customerNote || undefined,
     source: "public-menu",
     localOrderId: order.id,

@@ -72,7 +72,7 @@ export function SelectedOrderPanel({ actions, order, onAction, onClose }: Select
           {showDetailedTiming ? (
             <div className="mt-3 grid grid-cols-1 gap-2 text-sm font-bold text-emerald-950 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
               <TimingMeta label="Temps estimé" value={`${order.estimatedPrepMinutes} min`} />
-              <TimingMeta label="Temps écoulé" value={`${order.mockElapsedMinutes} min`} />
+              <TimingMeta label="Temps écoulé" value={`${order.elapsedMinutes} min`} />
               <TimingMeta label="Statut" value={timingStatus} />
             </div>
           ) : (

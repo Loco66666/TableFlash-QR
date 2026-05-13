@@ -1,4 +1,4 @@
-type QrMockCodeProps = {
+type QrDecorativeCodeProps = {
   label: string;
   compact?: boolean;
   large?: boolean;
@@ -21,7 +21,7 @@ const activeCells = new Set([
   132, 133, 135, 137, 139, 140, 142,
 ]);
 
-export function QrMockCode({ compact = false, label, large = false, muted = false }: QrMockCodeProps) {
+export function QrDecorativeCode({ compact = false, label, large = false, muted = false }: QrDecorativeCodeProps) {
   const sizeClass = large ? "h-48 w-48" : compact ? "h-20 w-20" : "h-32 w-32";
   const cellClass = large ? "rounded-[3px]" : "rounded-[2px]";
   const wrapperGapClass = compact ? "gap-0" : "gap-3";
