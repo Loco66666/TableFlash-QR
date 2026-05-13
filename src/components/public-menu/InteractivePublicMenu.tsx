@@ -223,6 +223,7 @@ export function InteractivePublicMenu({ restaurantSlug, tableId, tableName }: In
       tableName: localOrder.tableName,
       total: localOrder.total,
       items: cartItems,
+      customerNote: localOrder.customerNote,
     };
 
     setConfirmedOrder(order);
@@ -342,7 +343,6 @@ export function InteractivePublicMenu({ restaurantSlug, tableId, tableName }: In
 
       <PublicOrderConfirmation
         order={confirmedOrder}
-        paymentNote="Le règlement se fera à la caisse ou auprès du serveur."
         onBackToMenu={handleBackToMenu}
         onNewOrder={handleNewOrder}
       />

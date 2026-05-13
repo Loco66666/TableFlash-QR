@@ -35,4 +35,5 @@ export type ConfirmedOrder = {
   tableName: string;
   total: number;
   items: PublicCartItem[];
+  customerNote?: string;
 };
