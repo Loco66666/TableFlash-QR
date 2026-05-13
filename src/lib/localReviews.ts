@@ -94,10 +94,10 @@ function getTagsFromRating(rating: LocalReviewRating) {
   }
 
   if (rating === 3) {
-    return ["Retour client", "À écouter"];
+    return ["À prioriser", "À écouter"];
   }
 
-  return ["Retour prioritaire", "Expérience à améliorer"];
+  return ["À prioriser", "Expérience à améliorer"];
 }
 
 function isLocalReviewRating(value: unknown): value is LocalReviewRating {
@@ -181,7 +181,7 @@ export function createLocalReview(input: CreateLocalReviewInput): LocalSubmitted
     createdAt: formatLocalReviewDate(now),
     time: formatLocalReviewTime(now),
     source: "TableFlash",
-    status: "Nouveau",
+    status: input.rating >= 4 ? "Nouveau" : "À traiter",
     sentiment: getSentimentFromRating(input.rating),
     tags: getTagsFromRating(input.rating),
     googleReviewSuggested: input.rating >= 4,
