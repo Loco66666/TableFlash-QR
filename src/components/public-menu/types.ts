@@ -1,6 +1,6 @@
 import type { ProductVisualPresetId } from "@/components/shared/ProductImage";
 
-export type PublicMenuCategory = "Entrées" | "Plats" | "Desserts" | "Boissons";
+export type PublicMenuCategory = string;
 
 export type PublicMenuProduct = {
   id: string;

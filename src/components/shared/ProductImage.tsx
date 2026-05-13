@@ -40,7 +40,7 @@ const presetsById = productVisualPresets.reduce<Record<ProductVisualPresetId, Pr
   return presets;
 }, {} as Record<ProductVisualPresetId, ProductVisualPreset>);
 
-export type ProductImageVariant = "dashboard" | "public-card" | "modal" | "compact";
+export type ProductImageVariant = "dashboard" | "public-card" | "modal" | "compact" | "edit-preview";
 
 type ProductImageProps = {
   productName: string;
@@ -59,6 +59,7 @@ const variantClassNames: Record<ProductImageVariant, string> = {
   "public-card": "h-20 w-full rounded-3xl",
   modal: "min-h-36 w-full rounded-[1.75rem]",
   compact: "h-16 w-16 rounded-2xl",
+  "edit-preview": "aspect-[4/3] w-full rounded-[1.75rem]",
 };
 
 const textMarkerClassNames: Record<ProductImageVariant, string> = {
@@ -66,6 +67,7 @@ const textMarkerClassNames: Record<ProductImageVariant, string> = {
   "public-card": "text-lg",
   modal: "text-2xl",
   compact: "text-base",
+  "edit-preview": "text-2xl",
 };
 
 export function inferProductVisualPreset(input: { categoryName?: string | null; productName?: string | null }): Exclude<ProductVisualPresetId, "auto"> {
@@ -98,7 +100,9 @@ export function resolveProductVisualPreset(input: {
 export function ProductImage({ productName, categoryName, imageUrl, imageAlt, visualPreset, imageTone, variant = "public-card", className = "", decorative = false }: ProductImageProps) {
   const [failedImageUrl, setFailedImageUrl] = useState<string | null>(null);
   const preset = useMemo(() => resolveProductVisualPreset({ visualPreset, categoryName, productName }), [categoryName, productName, visualPreset]);
-  const shouldShowImage = Boolean(imageUrl) && failedImageUrl !== imageUrl;
+  const normalizedImageUrl = imageUrl?.trim() || null;
+  const shouldShowImage = Boolean(normalizedImageUrl) && failedImageUrl !== normalizedImageUrl;
+  const imageFitClassName = variant === "edit-preview" ? "object-contain p-2" : "object-cover";
   const alt = imageAlt?.trim() || `Visuel de ${productName}`;
 
   return (
@@ -110,7 +114,7 @@ export function ProductImage({ productName, categoryName, imageUrl, imageAlt, vi
     >
       {shouldShowImage ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img alt={decorative ? "" : alt} className="absolute inset-0 h-full w-full object-cover" onError={() => setFailedImageUrl(imageUrl ?? null)} src={imageUrl ?? undefined} />
+        <img alt={decorative ? "" : alt} className={`absolute inset-0 h-full w-full ${imageFitClassName} object-center`} onError={() => setFailedImageUrl(normalizedImageUrl)} src={normalizedImageUrl ?? undefined} />
       ) : (
         <>
           <span className="absolute inset-0 bg-[radial-gradient(circle_at_25%_20%,rgba(255,255,255,0.78),transparent_34%),radial-gradient(circle_at_80%_80%,rgba(6,95,70,0.18),transparent_32%)]" />

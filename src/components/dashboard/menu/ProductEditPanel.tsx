@@ -94,14 +94,14 @@ export function ProductEditPanel({ product, draft, categories, onDraftChange, on
             <span className="shrink-0 rounded-full bg-white px-3 py-1 text-xs font-black text-emerald-700">{selectedPreset.label}</span>
           </div>
 
-          <div className="mt-4">
+          <div className="mt-4 rounded-[1.9rem] border border-white/80 bg-white/80 p-2 shadow-inner shadow-emerald-900/5">
             <ProductImage
               categoryName={categories.find((category) => category.id === draft.categoryId)?.name ?? draft.categoryId}
               imageAlt={draft.imageAlt}
               imageTone={product.imageTone}
               imageUrl={draft.imageUrl}
               productName={draft.name || product.name}
-              variant="modal"
+              variant="edit-preview"
               visualPreset={draft.visualPreset}
             />
           </div>
@@ -125,9 +125,13 @@ export function ProductEditPanel({ product, draft, categories, onDraftChange, on
             ref={fileInputRef}
             type="file"
           />
-          <div className="mt-3 grid grid-cols-2 gap-3">
+          <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
             <button className="rounded-2xl bg-emerald-700 px-4 py-3 text-sm font-black text-white shadow-lg shadow-emerald-900/15" onClick={() => fileInputRef.current?.click()} type="button">Changer l’aperçu</button>
-            <button className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-black text-rose-700 disabled:cursor-not-allowed disabled:opacity-50" disabled={!draft.imageUrl} onClick={() => updateDraft({ imageUrl: null })} type="button">Supprimer</button>
+            {draft.imageUrl ? (
+              <button className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-black text-rose-700" onClick={() => updateDraft({ imageUrl: null })} type="button">Supprimer l’image</button>
+            ) : (
+              <button className="rounded-2xl border border-emerald-200 bg-white px-4 py-3 text-sm font-black text-emerald-700" onClick={() => updateDraft({ visualPreset: "premium" })} type="button">Revenir au visuel premium</button>
+            )}
           </div>
         </div>
 
