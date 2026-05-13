@@ -19,7 +19,6 @@ import {
 } from "@/lib/localReviews";
 import { ActiveTablesTable } from "./ActiveTablesTable";
 import { OrdersTrendCard } from "./OrdersTrendCard";
-import { PeakHoursChart } from "./PeakHoursChart";
 import { PreparationPerformanceCard } from "./PreparationPerformanceCard";
 import { QuickServiceReadingCard } from "./QuickServiceReadingCard";
 import { RevenueTrendCard } from "./RevenueTrendCard";
@@ -76,6 +75,65 @@ function formatOrderDelta(delta: number) {
   }
 
   return `${delta} ${delta > 1 ? "commandes" : "commande"} de plus qu’hier`;
+}
+
+
+function getPeriodReadingTitle(period: StatisticsPeriod) {
+  const titles: Record<StatisticsPeriod, string> = {
+    today: "Résumé du service",
+    "7d": "Tendance de la semaine",
+    "30d": "Vue mensuelle",
+    lunch: "Lecture du service midi",
+    dinner: "Lecture du service soir",
+  };
+
+  return titles[period];
+}
+
+function buildServiceSummary({ orderCount, revenue, delayedOrders, averageRating, peakHour }: { orderCount: number; revenue: number; delayedOrders: number; averageRating: number; peakHour: string }) {
+  const activity = revenue >= 900 || orderCount >= 80 ? "Activité forte" : orderCount >= 25 ? "Service solide" : "Service à installer";
+  const kitchen = delayedOrders > 0 ? `la cuisine reste globalement maîtrisée avec ${delayedOrders} commandes à reprendre en priorité` : "la cuisine tient le rythme prévu";
+  const satisfaction = averageRating >= 4.3 ? "La satisfaction client est positive" : averageRating >= 3.6 ? "Les retours clients restent corrects" : "Les avis clients demandent une attention particulière";
+
+  return `${activity} sur la période. Les commandes QR se concentrent autour de ${peakHour} et ${kitchen}. ${satisfaction}.`;
+}
+
+function buildServiceWrapUp(delayedOrders: number, topProductName: string, averageRating: number) {
+  const kitchenFocus = delayedOrders > 0 ? "Les prochains gains se situent sur la préparation pendant les pics" : "La régularité cuisine permet de consolider le rythme du service";
+  const reviewFocus = averageRating >= 4 ? "la valorisation des clients satisfaits" : "le traitement rapide des retours clients";
+
+  return `Le service est porté par les commandes QR et ${topProductName}. ${kitchenFocus} et ${reviewFocus}.`;
+}
+
+function buildRecommendedDecisions({ peakHour, topProductName, delayedOrders, averageRating, topLocationName }: { peakHour: string; topProductName: string; delayedOrders: number; averageRating: number; topLocationName: string }) {
+  return [
+    {
+      title: `Renforcer l’équipe autour de ${peakHour}`,
+      description: "Pic d’activité observé sur ce créneau.",
+    },
+    {
+      title: `Mettre en avant ${topProductName}`,
+      description: "Produit le plus commandé sur la période.",
+    },
+    delayedOrders > 0
+      ? {
+          title: "Surveiller les délais de préparation",
+          description: "Certaines commandes dépassent le délai estimé.",
+        }
+      : {
+          title: "Maintenir le rythme cuisine",
+          description: "Les commandes restent dans les délais prévus.",
+        },
+    averageRating >= 4
+      ? {
+          title: "Valoriser les clients satisfaits",
+          description: "Les avis positifs peuvent être orientés vers Google Avis.",
+        }
+      : {
+          title: `Analyser ${topLocationName}`,
+          description: "Cet emplacement concentre l’activité et mérite un suivi attentif.",
+        },
+  ];
 }
 
 function mapLocalOrderToAnalytics(order: LocalSubmittedOrder): AnalyticsOrder {
@@ -226,23 +284,22 @@ export function InteractiveStatisticsDashboard() {
     },
   ];
 
-  const insights = [
-    {
-      title: "Produit à mettre en avant",
-      value: topProductName,
-      description: `${topProductName} génère le plus de commandes aujourd’hui.`,
-    },
-    {
-      title: "Emplacement le plus actif",
-      value: topLocationName,
-      description: `${topLocationName} concentre le plus de scans.`,
-    },
-    {
-      title: "Avis à traiter",
-      value: `${stats.reviewsToHandle} retours`,
-      description: `${stats.reviewsToHandle} retours nécessitent une réponse.`,
-    },
-  ];
+  const recommendedDecisions = buildRecommendedDecisions({
+    peakHour: peakPoint ? peakPoint.hour : "12h",
+    topProductName,
+    delayedOrders: stats.delayedOrders,
+    averageRating: stats.averageRating,
+    topLocationName,
+  });
+  const serviceSummary = buildServiceSummary({
+    orderCount: stats.orderCount,
+    revenue: stats.revenue,
+    delayedOrders: stats.delayedOrders,
+    averageRating: stats.averageRating,
+    peakHour: peakPoint ? peakPoint.hour : "12h",
+  });
+  const serviceWrapUp = buildServiceWrapUp(stats.delayedOrders, topProductName, stats.averageRating);
+  const periodReadingTitle = getPeriodReadingTitle(activePeriod);
 
   useEffect(() => {
     function refreshLocalData() {
@@ -295,7 +352,7 @@ export function InteractiveStatisticsDashboard() {
 
   function handleCustomPeriod() {
     setPeriodPanelOpen((isOpen) => !isOpen);
-    setToast("Sélection de période disponible dans la prochaine étape.");
+    setToast("Le choix de période est prêt à être affiné.");
   }
 
   const hasData = stats.orderCount > 0 || analyticsReviews.length > 0;
@@ -304,8 +361,8 @@ export function InteractiveStatisticsDashboard() {
     <>
       <DashboardHeader
         eyebrow="Le Bistrot des Halles"
-        title="Statistiques"
-        subtitle="Analysez vos commandes QR, vos tables les plus actives, vos produits populaires et la fluidité du service."
+        title="Analyse du service"
+        subtitle="Suivez vos commandes QR, vos ventes estimées, vos produits forts et les points à surveiller."
       >
         <button type="button" onClick={handleExport} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-black text-slate-700 shadow-sm transition hover:border-emerald-200 hover:text-emerald-800">
           Exporter le rapport
@@ -321,7 +378,7 @@ export function InteractiveStatisticsDashboard() {
       <main className="min-w-0 flex-1 space-y-6 overflow-x-hidden bg-slate-50/70 p-4 sm:p-5 lg:p-8">
         {periodPanelOpen ? (
           <section className="min-w-0 max-w-full break-words rounded-[2rem] border border-emerald-100 bg-emerald-50 p-5 text-sm font-semibold text-emerald-900 shadow-sm">
-            Les données affichées reflètent l’activité de vos commandes QR.
+            Le rapport suit l’activité des commandes QR et les points opérationnels du service.
           </section>
         ) : null}
 
@@ -334,13 +391,16 @@ export function InteractiveStatisticsDashboard() {
             <section className="grid min-w-0 max-w-full gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
               <StatisticsSummaryCard label="Commandes reçues" value={String(stats.orderCount)} helper={formatOrderDelta(activeOption.previousDelta)} />
               <StatisticsSummaryCard label="Ventes estimées" value={formatEuro(stats.revenue)} helper="Paiement caisse / serveur" tone="sky" />
-              <StatisticsSummaryCard label="Panier moyen" value={formatEuro(stats.averageBasket)} helper="Par commande QR" tone="slate" />
+              <StatisticsSummaryCard label="Panier moyen" value={formatEuro(stats.averageBasket)} helper="Par commande" tone="slate" />
               <StatisticsSummaryCard label="Préparation moyenne" value={`${stats.averagePrep} min`} helper={stats.delayedOrders > 0 ? `${stats.delayedOrders} commandes en retard` : "Service fluide"} tone={stats.delayedOrders > 0 ? "rose" : "emerald"} />
               <StatisticsSummaryCard label="Note clients" value={`${stats.averageRating.toLocaleString("fr-FR", { maximumFractionDigits: 1 })}/5`} helper="Note moyenne" tone="amber" />
-              <StatisticsSummaryCard label="Emplacements actifs" value={String(stats.activeTables.length)} helper="Emplacements scannés" tone="emerald" />
+              <StatisticsSummaryCard label="Emplacements actifs" value={String(stats.activeTables.length)} helper="Zones scannées" tone="emerald" />
             </section>
 
-            <QuickServiceReadingCard insights={quickInsights} />
+            <section className="grid min-w-0 max-w-full gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
+              <QuickServiceReadingCard title={periodReadingTitle} summary={serviceSummary} insights={quickInsights} />
+              <OrdersTrendCard title="Décisions recommandées" subtitle="Actions concrètes à préparer pour le prochain service." insights={recommendedDecisions} />
+            </section>
 
             <section className="grid min-w-0 max-w-full gap-6 2xl:grid-cols-[minmax(0,1.35fr)_minmax(0,0.65fr)]">
               <RevenueTrendCard points={trendPoints} />
@@ -352,13 +412,16 @@ export function InteractiveStatisticsDashboard() {
               <ActiveTablesTable rows={stats.activeTables} />
             </section>
 
-            <section className="grid min-w-0 max-w-full gap-6 xl:grid-cols-2 2xl:grid-cols-3">
+            <section className="grid min-w-0 max-w-full gap-6 xl:grid-cols-2">
               <PreparationPerformanceCard averageMinutes={stats.averagePrep} delayedOrders={stats.delayedOrders} watchOrders={stats.watchOrders} onTimeOrders={stats.onTimeOrders} />
               <ReviewsInsightCard averageRating={stats.averageRating} positiveReviews={stats.positiveReviews} reviewsToHandle={stats.reviewsToHandle} latestSentiment={stats.latestSentiment} />
-              <PeakHoursChart hours={trendPoints.map((point) => ({ hour: point.hour, orders: point.orders }))} />
             </section>
 
-            <OrdersTrendCard insights={insights} />
+            <section className="min-w-0 max-w-full overflow-hidden rounded-[2rem] border border-emerald-100 bg-emerald-950 p-6 text-white shadow-xl shadow-emerald-950/15">
+              <p className="text-sm font-black uppercase tracking-[0.10em] text-emerald-200">Bilan opérationnel</p>
+              <h2 className="mt-2 break-words text-2xl font-black">Bilan du service</h2>
+              <p className="mt-4 max-w-4xl break-words text-base font-semibold leading-7 text-emerald-50">{serviceWrapUp}</p>
+            </section>
           </>
         )}
       </main>

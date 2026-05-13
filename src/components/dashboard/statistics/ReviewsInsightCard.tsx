@@ -8,8 +8,11 @@ type ReviewsInsightCardProps = {
 export function ReviewsInsightCard({ averageRating, positiveReviews, reviewsToHandle, latestSentiment }: ReviewsInsightCardProps) {
   return (
     <article className="min-w-0 max-w-full overflow-hidden rounded-[2rem] border border-slate-200/80 bg-white p-6 shadow-sm shadow-slate-200/60">
-      <h2 className="break-words text-2xl font-black text-slate-950">Retours clients</h2>
-      <div className="mt-5 grid grid-cols-2 gap-3">
+      <p className="text-sm font-black uppercase tracking-[0.08em] text-emerald-700">Satisfaction client</p>
+      <h2 className="mt-2 break-words text-2xl font-black text-slate-950">Satisfaction client</h2>
+      <p className="mt-2 break-words text-sm font-semibold leading-6 text-slate-500">Suivez la qualité perçue du service et les retours à traiter.</p>
+
+      <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div className="rounded-3xl bg-emerald-50 p-4">
           <p className="text-sm font-bold text-emerald-700">Note moyenne</p>
           <p className="mt-2 text-3xl font-black text-slate-950">{averageRating.toLocaleString("fr-FR", { maximumFractionDigits: 1 })}/5</p>
@@ -19,11 +22,13 @@ export function ReviewsInsightCard({ averageRating, positiveReviews, reviewsToHa
           <p className="mt-2 text-2xl font-black text-slate-950">{latestSentiment}</p>
         </div>
       </div>
+
       <div className="mt-5 grid gap-3 sm:grid-cols-2">
         <p className="rounded-2xl border border-slate-100 p-3 text-sm font-black text-slate-700">{positiveReviews} avis positifs</p>
         <p className="rounded-2xl border border-slate-100 p-3 text-sm font-black text-slate-700">{reviewsToHandle} avis à traiter</p>
       </div>
-      <p className="mt-5 rounded-3xl bg-emerald-50 p-4 text-sm font-semibold leading-6 text-emerald-900">Les clients satisfaits peuvent être orientés vers votre lien Google Avis.</p>
+
+      <p className="mt-5 rounded-3xl bg-emerald-50 p-4 text-sm font-semibold leading-6 text-emerald-900">Les retours positifs peuvent être valorisés vers votre fiche Google, tandis que les avis à traiter restent prioritaires.</p>
     </article>
   );
 }
