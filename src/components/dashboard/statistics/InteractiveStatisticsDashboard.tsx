@@ -21,6 +21,7 @@ import { ActiveTablesTable } from "./ActiveTablesTable";
 import { OrdersTrendCard } from "./OrdersTrendCard";
 import { PeakHoursChart } from "./PeakHoursChart";
 import { PreparationPerformanceCard } from "./PreparationPerformanceCard";
+import { QuickServiceReadingCard } from "./QuickServiceReadingCard";
 import { RevenueTrendCard } from "./RevenueTrendCard";
 import { ReviewsInsightCard } from "./ReviewsInsightCard";
 import { ServiceHealthCard } from "./ServiceHealthCard";
@@ -177,7 +178,7 @@ export function InteractiveStatisticsDashboard() {
     const positiveReviews = scale(analyticsReviews.filter((review) => review.rating >= 4).length, multiplier);
     const reviewsToHandle = analyticsReviews.filter((review) => review.status === "À traiter" || review.status === "Nouveau").length;
     const activeTables = buildActiveTables(analyticsOrders, multiplier);
-    const status: ServiceStatus = delayedOrders > 0 ? "Attention aux retards" : orderCount > 20 ? "Activité soutenue" : "Service fluide";
+    const status: ServiceStatus = delayedOrders > 0 ? "Attention aux retards" : "Service fluide";
 
     return {
       orderCount,
@@ -192,7 +193,7 @@ export function InteractiveStatisticsDashboard() {
       reviewsToHandle,
       activeTables,
       serviceStatus: status,
-      recommendation: delayedOrders > 0 ? "Surveillez les commandes en préparation." : "Le service reste stable.",
+      recommendation: delayedOrders > 0 ? "Certaines commandes dépassent le délai estimé. Priorité aux commandes en préparation." : "Les commandes restent dans les délais prévus.",
       latestSentiment: analyticsReviews[0]?.sentiment ?? "Positif",
       topProducts: buildTopProducts(analyticsOrders, multiplier),
     };
@@ -211,16 +212,30 @@ export function InteractiveStatisticsDashboard() {
     [analyticsOrders, multiplier],
   );
 
+  const peakPoint = trendPoints.reduce((bestPoint, point) => (point.orders > bestPoint.orders ? point : bestPoint), trendPoints[0]);
+  const topProductName = stats.topProducts[0]?.name ?? "Burger Classique";
+  const topLocationName = stats.activeTables[0]?.name ?? "Terrasse 3";
+  const quickInsights = [
+    { label: "Pic d’activité", value: peakPoint ? peakPoint.hour : "12h", helper: peakPoint ? `${peakPoint.orders} commandes` : "Commandes du jour" },
+    { label: "Produit le plus commandé", value: topProductName, helper: `${stats.topProducts[0]?.quantity ?? 0} commandes` },
+    { label: "Emplacement le plus actif", value: topLocationName, helper: `${stats.activeTables[0]?.orders ?? 0} commandes` },
+    {
+      label: "Point à surveiller",
+      value: stats.delayedOrders > 0 ? `${stats.delayedOrders} commandes en retard` : "Aucun retard",
+      helper: stats.delayedOrders > 0 ? "Priorité à la préparation" : "Service dans les délais",
+    },
+  ];
+
   const insights = [
     {
       title: "Produit à mettre en avant",
-      value: stats.topProducts[0]?.name ?? "Burger Classique",
-      description: `${stats.topProducts[0]?.name ?? "Burger Classique"} génère le plus de commandes aujourd’hui.`,
+      value: topProductName,
+      description: `${topProductName} génère le plus de commandes aujourd’hui.`,
     },
     {
-      title: "Table la plus active",
-      value: stats.activeTables[0]?.name ?? "Terrasse 3",
-      description: `${stats.activeTables[0]?.name ?? "Terrasse 3"} concentre le plus de scans.`,
+      title: "Emplacement le plus actif",
+      value: topLocationName,
+      description: `${topLocationName} concentre le plus de scans.`,
     },
     {
       title: "Avis à traiter",
@@ -306,7 +321,7 @@ export function InteractiveStatisticsDashboard() {
       <main className="min-w-0 flex-1 space-y-6 overflow-x-hidden bg-slate-50/70 p-4 sm:p-5 lg:p-8">
         {periodPanelOpen ? (
           <section className="min-w-0 max-w-full break-words rounded-[2rem] border border-emerald-100 bg-emerald-50 p-5 text-sm font-semibold text-emerald-900 shadow-sm">
-            La sélection de dates personnalisées sera affinée dans une prochaine étape. Les données restent disponibles sans service externe.
+            Les données affichées reflètent l’activité de vos commandes QR.
           </section>
         ) : null}
 
@@ -317,13 +332,15 @@ export function InteractiveStatisticsDashboard() {
         ) : (
           <>
             <section className="grid min-w-0 max-w-full gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
-              <StatisticsSummaryCard label="Commandes QR" value={String(stats.orderCount)} helper={formatOrderDelta(activeOption.previousDelta)} />
-              <StatisticsSummaryCard label="Chiffre potentiel" value={formatEuro(stats.revenue)} helper="Paiement caisse / serveur" tone="sky" />
+              <StatisticsSummaryCard label="Commandes reçues" value={String(stats.orderCount)} helper={formatOrderDelta(activeOption.previousDelta)} />
+              <StatisticsSummaryCard label="Ventes estimées" value={formatEuro(stats.revenue)} helper="Paiement caisse / serveur" tone="sky" />
               <StatisticsSummaryCard label="Panier moyen" value={formatEuro(stats.averageBasket)} helper="Par commande QR" tone="slate" />
-              <StatisticsSummaryCard label="Temps moyen préparation" value={`${stats.averagePrep} min`} helper={stats.delayedOrders > 0 ? `${stats.delayedOrders} commandes en retard` : "Service fluide"} tone={stats.delayedOrders > 0 ? "rose" : "emerald"} />
-              <StatisticsSummaryCard label="Avis clients" value={`${stats.averageRating.toLocaleString("fr-FR", { maximumFractionDigits: 1 })}/5`} helper="Note moyenne" tone="amber" />
-              <StatisticsSummaryCard label="Tables actives" value={String(stats.activeTables.length)} helper="Emplacements scannés" tone="emerald" />
+              <StatisticsSummaryCard label="Préparation moyenne" value={`${stats.averagePrep} min`} helper={stats.delayedOrders > 0 ? `${stats.delayedOrders} commandes en retard` : "Service fluide"} tone={stats.delayedOrders > 0 ? "rose" : "emerald"} />
+              <StatisticsSummaryCard label="Note clients" value={`${stats.averageRating.toLocaleString("fr-FR", { maximumFractionDigits: 1 })}/5`} helper="Note moyenne" tone="amber" />
+              <StatisticsSummaryCard label="Emplacements actifs" value={String(stats.activeTables.length)} helper="Emplacements scannés" tone="emerald" />
             </section>
+
+            <QuickServiceReadingCard insights={quickInsights} />
 
             <section className="grid min-w-0 max-w-full gap-6 2xl:grid-cols-[minmax(0,1.35fr)_minmax(0,0.65fr)]">
               <RevenueTrendCard points={trendPoints} />

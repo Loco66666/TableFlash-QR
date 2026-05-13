@@ -20,7 +20,7 @@ export function PreparationPerformanceCard({ averageMinutes, delayedOrders, watc
 
       <div className="mt-6 grid gap-4 sm:grid-cols-2">
         <div className="rounded-3xl bg-emerald-50 p-5">
-          <p className="text-sm font-bold text-emerald-700">Temps moyen</p>
+          <p className="text-sm font-bold text-emerald-700">Préparation moyenne</p>
           <p className="mt-3 text-3xl font-black text-slate-950">{averageMinutes} min</p>
         </div>
         <div className="rounded-3xl bg-rose-50 p-5">
@@ -35,10 +35,10 @@ export function PreparationPerformanceCard({ averageMinutes, delayedOrders, watc
         ))}
       </div>
 
-      <div className="mt-5 grid gap-4 md:grid-cols-3">
+      <div className="mt-5 grid gap-4 sm:grid-cols-3">
         {segments.map((segment) => (
-          <div key={segment.label} className="flex min-h-28 flex-col justify-between rounded-3xl border border-slate-100 bg-white p-4 shadow-sm shadow-slate-100/80">
-            <p className={`text-sm font-bold leading-5 ${segment.textClassName}`}>{segment.label}</p>
+          <div key={segment.label} className="flex min-h-28 min-w-0 flex-col justify-between rounded-3xl border border-slate-100 bg-white p-4 shadow-sm shadow-slate-100/80">
+            <p className={`break-words text-sm font-bold leading-5 ${segment.textClassName}`}>{segment.label}</p>
             <p className="mt-4 text-2xl font-black tabular-nums text-slate-950">{segment.value}</p>
           </div>
         ))}
