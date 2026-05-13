@@ -6,7 +6,7 @@ const timingClasses: Record<TimingStatusLabel, string> = {
   "À surveiller": "border-amber-200 bg-amber-50 text-amber-700",
   "En retard": "border-rose-200 bg-rose-50 text-rose-700",
   "Prête à servir": "border-sky-200 bg-sky-50 text-sky-700",
-  "Commande clôturée": "border-slate-200 bg-slate-100 text-slate-600",
+  Terminée: "border-slate-200 bg-slate-100 text-slate-600",
 };
 
 type OrderTimingBadgeProps = {
