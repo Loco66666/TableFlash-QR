@@ -56,10 +56,10 @@ type ProductImageProps = {
 
 const variantClassNames: Record<ProductImageVariant, string> = {
   dashboard: "h-14 w-14 rounded-2xl",
-  "public-card": "h-20 w-full rounded-3xl",
-  modal: "min-h-36 w-full rounded-[1.75rem]",
+  "public-card": "aspect-square h-[5.5rem] w-[5.5rem] rounded-2xl",
+  modal: "h-[220px] max-h-[34vh] w-full rounded-[1.75rem]",
   compact: "h-16 w-16 rounded-2xl",
-  "edit-preview": "aspect-[4/3] w-full rounded-[1.75rem]",
+  "edit-preview": "h-[180px] max-h-[220px] w-full rounded-2xl sm:h-[200px]",
 };
 
 const textMarkerClassNames: Record<ProductImageVariant, string> = {
@@ -102,7 +102,7 @@ export function ProductImage({ productName, categoryName, imageUrl, imageAlt, vi
   const preset = useMemo(() => resolveProductVisualPreset({ visualPreset, categoryName, productName }), [categoryName, productName, visualPreset]);
   const normalizedImageUrl = imageUrl?.trim() || null;
   const shouldShowImage = Boolean(normalizedImageUrl) && failedImageUrl !== normalizedImageUrl;
-  const imageFitClassName = variant === "edit-preview" ? "object-contain p-2" : "object-cover";
+  const imageFitClassName = variant === "edit-preview" || variant === "modal" ? "object-contain p-2" : "object-cover";
   const alt = imageAlt?.trim() || `Visuel de ${productName}`;
 
   return (
