@@ -63,29 +63,42 @@ export function CategoryList({
               }`}
               key={category.id}
             >
-              <button
-                aria-pressed={active}
-                className="flex w-full items-center justify-between px-4 py-4 text-left"
-                onClick={() => onSelectCategory(category.id)}
-                type="button"
-              >
-                <span className="flex items-center gap-3">
-                  <span
-                    className={`flex h-10 w-10 items-center justify-center rounded-2xl text-sm font-black ${
-                      active ? "bg-emerald-700 text-white" : "bg-slate-100 text-slate-500"
-                    }`}
-                  >
-                    {category.id === "all" ? "★" : index}
-                  </span>
-                  <span>
-                    <span className="block font-black text-slate-950">{category.name}</span>
-                    <span className="mt-1 block text-sm font-semibold text-slate-500">
-                      {count} produit{count > 1 ? "s" : ""}
+              <div className="flex items-center gap-2 px-4 py-4">
+                <button
+                  aria-pressed={active}
+                  className="flex min-w-0 flex-1 items-center justify-between gap-3 text-left"
+                  onClick={() => onSelectCategory(category.id)}
+                  type="button"
+                >
+                  <span className="flex min-w-0 items-center gap-3">
+                    <span
+                      className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl text-sm font-black ${
+                        active ? "bg-emerald-700 text-white" : "bg-slate-100 text-slate-500"
+                      }`}
+                    >
+                      {category.id === "all" ? "★" : index}
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block truncate font-black text-slate-950">{category.name}</span>
+                      <span className="mt-1 block text-sm font-semibold text-slate-500">
+                        {count} produit{count > 1 ? "s" : ""}
+                      </span>
                     </span>
                   </span>
-                </span>
-                <ChevronRightIcon />
-              </button>
+                  <ChevronRightIcon />
+                </button>
+
+                {isRealCategory ? (
+                  <button
+                    aria-label={`Supprimer la catégorie ${category.name}`}
+                    className="shrink-0 rounded-xl border border-rose-100 bg-rose-50 px-3 py-2 text-xs font-black text-rose-700 transition hover:border-rose-200 hover:bg-rose-100"
+                    onClick={() => onDeleteCategory(category.id)}
+                    type="button"
+                  >
+                    Supprimer
+                  </button>
+                ) : null}
+              </div>
 
               {reorderMode && isRealCategory ? (
                 <div className="flex flex-wrap gap-2 border-t border-emerald-100 px-4 pb-4 pt-3">
@@ -108,19 +121,6 @@ export function CategoryList({
                 </div>
               ) : null}
 
-              {isRealCategory ? (
-                <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 px-4 pb-4 pt-3">
-                  <span className="text-xs font-bold text-slate-400">Actions catégorie</span>
-                  <button
-                    aria-label={`Supprimer la catégorie ${category.name}`}
-                    className="rounded-xl border border-rose-100 bg-rose-50 px-3 py-2 text-xs font-black text-rose-700 transition hover:border-rose-200 hover:bg-rose-100"
-                    onClick={() => onDeleteCategory(category.id)}
-                    type="button"
-                  >
-                    Supprimer
-                  </button>
-                </div>
-              ) : null}
             </div>
           );
         })}
