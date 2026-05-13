@@ -27,7 +27,7 @@ export function PublicProductCard({
       }`}
     >
       <button type="button" onClick={() => onOpenProduct(product)} className="block w-full p-4 text-left" aria-label={`Voir ${product.name}`}>
-        <div className="grid grid-cols-[4.75rem_minmax(0,1fr)] gap-3.5">
+        <div className="grid grid-cols-[5.5rem_minmax(0,1fr)] gap-4">
           <div className="relative min-w-0">
             <ProductImage
               categoryName={product.category}
@@ -47,7 +47,7 @@ export function PublicProductCard({
           </div>
 
           <div className="min-w-0">
-            <div className="flex items-start justify-between gap-3">
+            <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
                   <h3 className="text-[1.05rem] font-black leading-5 tracking-[-0.025em] text-slate-950">{product.name}</h3>
@@ -59,7 +59,7 @@ export function PublicProductCard({
                 </div>
                 <p className="mt-1.5 line-clamp-2 text-sm leading-5 text-slate-500">{product.description}</p>
               </div>
-              <p className="shrink-0 text-base font-black text-emerald-800">{formatEuro(product.price)}</p>
+              <p className="whitespace-nowrap text-base font-black text-emerald-800">{formatEuro(product.price)}</p>
             </div>
 
             <div className="mt-3 flex flex-wrap gap-1.5">
