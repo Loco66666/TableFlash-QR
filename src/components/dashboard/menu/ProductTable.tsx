@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, type ReactNode, type RefObject } from "react";
 
 import { StatusBadge } from "@/components/dashboard";
+import { ProductImage } from "@/components/shared/ProductImage";
 import { formatEuro } from "@/lib/formatters";
 
 import type { ProductItem } from "./menuData";
@@ -346,14 +347,16 @@ function EmptyProductsState() {
 
 function ProductThumbnail({ product }: { product: ProductItem }) {
   return (
-    <span className={`flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl ${product.imageUrl ? "bg-slate-100" : `bg-gradient-to-br ${product.imageTone}`} text-xs font-black text-emerald-900`}>
-      {product.imageUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img alt="" className="h-full w-full object-cover" src={product.imageUrl} />
-      ) : (
-        product.name.split(" ").map((word) => word[0]).join("").slice(0, 2)
-      )}
-    </span>
+    <ProductImage
+      categoryName={product.categoryId}
+      decorative
+      imageAlt={product.imageAlt}
+      imageTone={product.imageTone}
+      imageUrl={product.imageUrl}
+      productName={product.name}
+      variant="dashboard"
+      visualPreset={product.visualPreset}
+    />
   );
 }
 

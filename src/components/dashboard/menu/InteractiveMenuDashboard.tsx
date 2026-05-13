@@ -25,6 +25,9 @@ const blankProductDraft = (categoryId: string): ProductDraft => ({
   promoType: "Pourcentage",
   promoValue: "",
   promoEndDate: "",
+  imageUrl: null,
+  imageAlt: "",
+  visualPreset: "auto",
 });
 
 const imageTones = [
@@ -146,6 +149,8 @@ export function InteractiveMenuDashboard() {
       allergens: normalizedDraft.allergens.map((allergen) => allergen.trim()).filter(Boolean),
       promoValue: normalizedPromoValue,
       imageUrl: normalizedDraft.imageUrl ?? null,
+      imageAlt: normalizedDraft.imageAlt?.trim() ?? "",
+      visualPreset: normalizedDraft.visualPreset ?? "auto",
     };
     const savedProductPatch = { ...savedDraft, price: parsedPrice };
 
@@ -227,6 +232,9 @@ export function InteractiveMenuDashboard() {
       ...normalizedDraft,
       id: createId(`${newProductDraft.name}-${Date.now()}`),
       imageTone: imageTones[products.length % imageTones.length],
+      imageUrl: normalizedDraft.imageUrl ?? null,
+      imageAlt: normalizedDraft.imageAlt?.trim() || `Visuel premium de ${normalizedDraft.name.trim()}`,
+      visualPreset: normalizedDraft.visualPreset ?? "auto",
       name: normalizedDraft.name.trim(),
       description: normalizedDraft.description.trim(),
       price: parsedPrice,
@@ -526,6 +534,8 @@ function productToDraft(product: ProductItem | null | undefined): ProductDraft |
     promoValue: product.promoValue,
     promoEndDate: product.promoEndDate,
     imageUrl: product.imageUrl ?? null,
+    imageAlt: product.imageAlt ?? "",
+    visualPreset: product.visualPreset ?? "auto",
   };
 }
 

@@ -1,3 +1,4 @@
+import { ProductImage } from "@/components/shared/ProductImage";
 import { formatEuro } from "@/lib/formatters";
 import { PublicAllergenBadge } from "./PublicAllergenBadge";
 import type { PublicMenuProduct } from "./types";
@@ -39,9 +40,16 @@ export function PublicProductDetailModal({
     >
       <div className="max-h-[92vh] w-full max-w-[460px] overflow-y-auto rounded-t-[2.25rem] bg-white p-5 shadow-2xl md:rounded-[2.25rem]">
         <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-slate-200" />
-        <div className="relative min-h-36 overflow-hidden rounded-[1.75rem] bg-gradient-to-br from-emerald-100 via-stone-100 to-amber-100 p-4">
-          <div className="absolute -right-8 -top-8 h-28 w-28 rounded-full bg-white/40" />
-          <div className="absolute bottom-4 right-4 h-16 w-16 rounded-full bg-emerald-800/85 shadow-2xl" />
+        <div className="relative overflow-hidden rounded-[1.75rem]">
+          <ProductImage
+            categoryName={product.category}
+            imageAlt={product.imageAlt}
+            imageTone={product.imageTone}
+            imageUrl={product.imageUrl}
+            productName={product.name}
+            variant="modal"
+            visualPreset={product.visualPreset}
+          />
           <button
             type="button"
             onClick={onClose}
@@ -50,7 +58,7 @@ export function PublicProductDetailModal({
           >
             ×
           </button>
-          <div className="relative flex flex-wrap items-center gap-2">
+          <div className="absolute left-4 top-4 flex flex-wrap items-center gap-2">
             {product.promo && product.promoLabel ? (
               <span className="rounded-full bg-emerald-800 px-3 py-1 text-xs font-black text-white">{product.promoLabel}</span>
             ) : null}
