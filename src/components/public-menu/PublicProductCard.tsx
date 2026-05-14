@@ -7,6 +7,7 @@ type PublicProductCardProps = {
   product: PublicMenuProduct;
   quantityInCart: number;
   orderingDisabled: boolean;
+  hydrationReady?: boolean;
   onOpenProduct: (product: PublicMenuProduct) => void;
   onQuickAdd: (product: PublicMenuProduct) => void;
 };
@@ -15,6 +16,7 @@ export function PublicProductCard({
   product,
   quantityInCart,
   orderingDisabled,
+  hydrationReady = true,
   onOpenProduct,
   onQuickAdd,
 }: PublicProductCardProps) {
@@ -38,6 +40,7 @@ export function PublicProductCard({
               productName={product.name}
               variant="public-card"
               visualPreset={product.visualPreset}
+              hydrationReady={hydrationReady}
             />
             {quantityInCart > 0 ? (
               <span className="absolute left-2 top-2 rounded-full bg-slate-950 px-2 py-1 text-xs font-black text-white">

@@ -8,9 +8,10 @@ type PublicMenuPreviewProps = {
   products: ProductItem[];
   selectedCategoryId: string | "all";
   onCartClick: () => void;
+  hydrationReady?: boolean;
 };
 
-export function PublicMenuPreview({ categories, products, selectedCategoryId, onCartClick }: PublicMenuPreviewProps) {
+export function PublicMenuPreview({ categories, products, selectedCategoryId, onCartClick, hydrationReady = true }: PublicMenuPreviewProps) {
   const visibleProducts = products.filter((product) => product.visible && (selectedCategoryId === "all" || product.categoryId === selectedCategoryId));
 
   return (
@@ -23,12 +24,12 @@ export function PublicMenuPreview({ categories, products, selectedCategoryId, on
         <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-500">Mobile</span>
       </div>
 
-      <MobilePreview categories={categories} products={visibleProducts} selectedCategoryId={selectedCategoryId} onCartClick={onCartClick} />
+      <MobilePreview categories={categories} products={visibleProducts} hydrationReady={hydrationReady} selectedCategoryId={selectedCategoryId} onCartClick={onCartClick} />
     </section>
   );
 }
 
-export function MobilePreview({ categories, products, selectedCategoryId, onCartClick }: PublicMenuPreviewProps) {
+export function MobilePreview({ categories, products, selectedCategoryId, onCartClick, hydrationReady = true }: PublicMenuPreviewProps) {
   return (
     <div className="mt-6 flex justify-center">
       <div className="w-full max-w-[330px] rounded-[2.5rem] border border-slate-200 bg-slate-950 p-3 shadow-2xl shadow-slate-900/15">
@@ -48,7 +49,7 @@ export function MobilePreview({ categories, products, selectedCategoryId, onCart
             </div>
 
             {products.length > 0 ? products.slice(0, 4).map((product) => (
-              <PreviewRow key={product.id} product={product} />
+              <PreviewRow key={product.id} product={product} hydrationReady={hydrationReady} />
             )) : (
               <p className="rounded-3xl bg-white p-4 text-center text-sm font-bold text-slate-500">Aucun produit visible dans cette sélection.</p>
             )}
@@ -63,7 +64,7 @@ export function MobilePreview({ categories, products, selectedCategoryId, onCart
   );
 }
 
-function PreviewRow({ product }: { product: ProductItem }) {
+function PreviewRow({ product, hydrationReady }: { product: ProductItem; hydrationReady: boolean }) {
   return (
     <article className={`flex gap-3 rounded-3xl bg-white p-3 shadow-sm shadow-slate-200/70 ${product.available ? "" : "opacity-60"}`}>
       <ProductImage
@@ -75,6 +76,7 @@ function PreviewRow({ product }: { product: ProductItem }) {
         productName={product.name}
         variant="compact"
         visualPreset={product.visualPreset}
+        hydrationReady={hydrationReady}
       />
       <span className="min-w-0 flex-1">
         <span className="flex items-start justify-between gap-2">

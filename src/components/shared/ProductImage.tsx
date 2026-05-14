@@ -52,6 +52,7 @@ type ProductImageProps = {
   variant?: ProductImageVariant;
   className?: string;
   decorative?: boolean;
+  hydrationReady?: boolean;
 };
 
 const variantClassNames: Record<ProductImageVariant, string> = {
@@ -97,7 +98,7 @@ export function resolveProductVisualPreset(input: {
   return presetsById[presetId] ?? presetsById.premium;
 }
 
-export function ProductImage({ productName, categoryName, imageUrl, imageAlt, visualPreset, imageTone, variant = "public-card", className = "", decorative = false }: ProductImageProps) {
+export function ProductImage({ productName, categoryName, imageUrl, imageAlt, visualPreset, imageTone, variant = "public-card", className = "", decorative = false, hydrationReady = true }: ProductImageProps) {
   const [mounted, setMounted] = useState(false);
   const [failedImageUrl, setFailedImageUrl] = useState<string | null>(null);
 
@@ -111,7 +112,7 @@ export function ProductImage({ productName, categoryName, imageUrl, imageAlt, vi
 
   const preset = useMemo(() => resolveProductVisualPreset({ visualPreset, categoryName, productName }), [categoryName, productName, visualPreset]);
   const normalizedImageUrl = imageUrl?.trim() || null;
-  const shouldShowImage = mounted && Boolean(normalizedImageUrl) && failedImageUrl !== normalizedImageUrl;
+  const shouldShowImage = hydrationReady && mounted && Boolean(normalizedImageUrl) && failedImageUrl !== normalizedImageUrl;
   const imageFitClassName = variant === "edit-preview" || variant === "modal" ? "object-contain p-2" : "object-cover";
   const alt = imageAlt?.trim() || `Visuel de ${productName}`;
 

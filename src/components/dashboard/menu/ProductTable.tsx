@@ -23,6 +23,7 @@ type ProductTableProps = {
   activeFilter: ActiveMenuFilter;
   isFilterOpen: boolean;
   rowAction: RowActionState | null;
+  hydrationReady?: boolean;
   onSearchChange: (value: string) => void;
   onToggleFilter: () => void;
   onSelectFilter: (filter: ActiveMenuFilter) => void;
@@ -51,6 +52,7 @@ export function ProductTable({
   activeFilter,
   isFilterOpen,
   rowAction,
+  hydrationReady = true,
   onSearchChange,
   onToggleFilter,
   onSelectFilter,
@@ -173,7 +175,7 @@ export function ProductTable({
           {products.map((product) => (
             <article className={`p-5 transition ${rowClassName(product, selectedProductId)}`} key={product.id} onClick={() => onSelectProduct(product.id)}>
               <div className="flex items-start gap-4">
-                <ProductThumbnail product={product} />
+                <ProductThumbnail product={product} hydrationReady={hydrationReady} />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-start justify-between gap-3">
                     <div>
@@ -231,7 +233,7 @@ export function ProductTable({
                 <tr className={`group cursor-pointer border-t border-slate-100 transition ${rowClassName(product, selectedProductId)}`} key={product.id} onClick={() => onSelectProduct(product.id)}>
                   <td className="border-t border-slate-100 px-5 py-4 lg:px-6">
                     <div className="flex items-center gap-4">
-                      <ProductThumbnail product={product} />
+                      <ProductThumbnail product={product} hydrationReady={hydrationReady} />
                       <span>
                         <span className={`block font-black ${product.visible ? "text-slate-950" : "text-slate-400 line-through decoration-slate-300"}`}>{product.name}</span>
                         <span className="mt-1 block max-w-xs text-sm font-medium text-slate-500">{product.description}</span>
@@ -345,7 +347,7 @@ function EmptyProductsState() {
   );
 }
 
-function ProductThumbnail({ product }: { product: ProductItem }) {
+function ProductThumbnail({ product, hydrationReady }: { product: ProductItem; hydrationReady: boolean }) {
   return (
     <ProductImage
       categoryName={product.categoryId}
@@ -356,6 +358,7 @@ function ProductThumbnail({ product }: { product: ProductItem }) {
       productName={product.name}
       variant="dashboard"
       visualPreset={product.visualPreset}
+      hydrationReady={hydrationReady}
     />
   );
 }
