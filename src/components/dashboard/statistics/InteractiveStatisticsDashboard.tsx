@@ -6,7 +6,6 @@ import {
   LOCAL_RESTAURANT_SETTINGS_STORAGE_KEY,
   LOCAL_RESTAURANT_SETTINGS_UPDATED_EVENT,
   getLocalRestaurantSettings,
-  type RestaurantSettings,
 } from "@/lib/localRestaurantSettings";
 import {
   getCurrentServiceContext,
@@ -63,6 +62,11 @@ type ProductRow = {
 type ActiveTableRow = ActiveLocation & {
   conversion: number;
 };
+
+type ServiceHours = {
+  startTime: string;
+  endTime: string;
+} | null;
 
 const defaultTopProducts: ProductRow[] = [
   { name: "Burger Classique", quantity: 18, revenue: 324, badge: "Top vente" },
@@ -162,6 +166,16 @@ function formatServiceHours(startTime: string | null, endTime: string | null) {
   return `${startTime} — ${endTime}`;
 }
 
+function formatNextServiceLabel(label: string | null) {
+  if (!label) {
+    return null;
+  }
+
+  return label
+    .replace(/^Service\s+/i, "")
+    .replace(/^service\s+/i, "");
+}
+
 function getServiceCardTone(status: CurrentServiceContext["status"]) {
   if (status === "open") return "border-emerald-200 bg-white shadow-emerald-900/5";
   if (status === "between-services") return "border-amber-200 bg-amber-50/70 shadow-amber-900/5";
@@ -181,10 +195,11 @@ function ServiceContextCard({ serviceContext }: { serviceContext: CurrentService
   }
 
   const serviceHours = formatServiceHours(serviceContext.startTime, serviceContext.endTime);
+  const nextServiceName = formatNextServiceLabel(serviceContext.nextServiceLabel);
   const statusHelper = serviceContext.status === "open" && serviceHours
     ? `${serviceHours} · ${serviceContext.message}`
-    : serviceContext.status === "between-services" && serviceContext.nextServiceLabel && serviceContext.nextServiceStart
-      ? `Prochain service : ${serviceContext.nextServiceLabel.toLowerCase()} à ${serviceContext.nextServiceStart}`
+    : serviceContext.status === "between-services" && nextServiceName && serviceContext.nextServiceStart
+      ? `Prochain service : ${nextServiceName.toLowerCase()} à ${serviceContext.nextServiceStart}`
       : serviceContext.message;
 
   return (
@@ -284,20 +299,18 @@ function buildActiveTables(orders: AnalyticsOrder[], multiplier: number): Active
 }
 
 export function InteractiveStatisticsDashboard() {
-  const [mounted, setMounted] = useState(false);
   const [activePeriod, setActivePeriod] = useState<StatisticsPeriod>("current");
   const [localOrders, setLocalOrders] = useState<LocalSubmittedOrder[]>([]);
   const [localReviews, setLocalReviews] = useState<LocalSubmittedReview[]>([]);
-  const [settings, setSettings] = useState<RestaurantSettings>(() => getLocalRestaurantSettings());
   const [serviceContext, setServiceContext] = useState<CurrentServiceContext | null>(null);
+  const [todayLunchHours, setTodayLunchHours] = useState<ServiceHours>(null);
+  const [todayDinnerHours, setTodayDinnerHours] = useState<ServiceHours>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [periodPanelOpen, setPeriodPanelOpen] = useState(false);
 
   const activeOption = periodOptions.find((period) => period.id === activePeriod) ?? periodOptions[0];
   const analyticsOrders = useMemo(() => [...referenceAnalyticsOrders, ...localOrders.map(mapLocalOrderToAnalytics)], [localOrders]);
   const analyticsReviews = useMemo(() => [...referenceAnalyticsReviews, ...localReviews.map(mapLocalReviewToAnalytics)], [localReviews]);
-  const todayLunchHours = mounted ? getTodayServiceHours(settings, new Date(), "midi") : null;
-  const todayDinnerHours = mounted ? getTodayServiceHours(settings, new Date(), "soir") : null;
   const currentServiceMultiplier = serviceContext?.status === "open"
     ? serviceContext.activePeriod === "soir" ? 0.42 : serviceContext.activePeriod === "all-day" ? 1 : 0.72
     : 0.72;
@@ -350,7 +363,7 @@ export function InteractiveStatisticsDashboard() {
   const topLocationName = stats.activeTables[0]?.name ?? "Terrasse 3";
   const quickInsights = [
     { label: "Pic d’activité", value: peakPoint ? peakPoint.hour : "12h", helper: peakPoint ? `${peakPoint.orders} commandes` : "Commandes du jour" },
-    { label: "Produit le plus commandé", value: topProductName, helper: `${stats.topProducts[0]?.quantity ?? 0} commandes` },
+    { label: "Produit le plus demandé", value: topProductName, helper: `${stats.topProducts[0]?.quantity ?? 0} commandes` },
     { label: "Emplacement le plus actif", value: topLocationName, helper: `${stats.activeTables[0]?.orders ?? 0} commandes` },
     {
       label: "Point à surveiller",
@@ -377,19 +390,13 @@ export function InteractiveStatisticsDashboard() {
   const periodReadingTitle = getPeriodReadingTitle(activePeriod, serviceContext);
 
   useEffect(() => {
-    const timeoutId = window.setTimeout(() => setMounted(true), 0);
-    return () => window.clearTimeout(timeoutId);
-  }, []);
-
-  useEffect(() => {
-    if (!mounted) {
-      return;
-    }
-
     function refreshServiceContext() {
       const nextSettings = getLocalRestaurantSettings();
-      setSettings(nextSettings);
-      setServiceContext(getCurrentServiceContext(nextSettings, new Date()));
+      const currentTime = new Date();
+
+      setServiceContext(getCurrentServiceContext(nextSettings, currentTime));
+      setTodayLunchHours(getTodayServiceHours(nextSettings, currentTime, "midi"));
+      setTodayDinnerHours(getTodayServiceHours(nextSettings, currentTime, "soir"));
     }
 
     refreshServiceContext();
@@ -400,7 +407,7 @@ export function InteractiveStatisticsDashboard() {
       window.removeEventListener(LOCAL_RESTAURANT_SETTINGS_UPDATED_EVENT, refreshServiceContext);
       window.removeEventListener("focus", refreshServiceContext);
     };
-  }, [mounted]);
+  }, []);
 
   useEffect(() => {
     function refreshLocalData() {
@@ -413,8 +420,11 @@ export function InteractiveStatisticsDashboard() {
         refreshLocalData();
         if (event.key === LOCAL_RESTAURANT_SETTINGS_STORAGE_KEY) {
           const nextSettings = getLocalRestaurantSettings();
-          setSettings(nextSettings);
-          setServiceContext(getCurrentServiceContext(nextSettings, new Date()));
+          const currentTime = new Date();
+
+          setServiceContext(getCurrentServiceContext(nextSettings, currentTime));
+          setTodayLunchHours(getTodayServiceHours(nextSettings, currentTime, "midi"));
+          setTodayDinnerHours(getTodayServiceHours(nextSettings, currentTime, "soir"));
         }
       }
     }
@@ -448,8 +458,11 @@ export function InteractiveStatisticsDashboard() {
 
   function handleRefresh() {
     const nextSettings = getLocalRestaurantSettings();
-    setSettings(nextSettings);
-    setServiceContext(getCurrentServiceContext(nextSettings, new Date()));
+    const currentTime = new Date();
+
+    setServiceContext(getCurrentServiceContext(nextSettings, currentTime));
+    setTodayLunchHours(getTodayServiceHours(nextSettings, currentTime, "midi"));
+    setTodayDinnerHours(getTodayServiceHours(nextSettings, currentTime, "soir"));
     setLocalOrders(getLocalOrders());
     setLocalReviews(getLocalReviews());
     setToast("Statistiques actualisées.");
