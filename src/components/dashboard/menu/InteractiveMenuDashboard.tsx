@@ -43,6 +43,7 @@ const initialMenu = getFallbackLocalMenu();
 
 export function InteractiveMenuDashboard() {
   const [mounted, setMounted] = useState(false);
+  const [hasLoadedLocalMenu, setHasLoadedLocalMenu] = useState(false);
   const [products, setProducts] = useState<ProductItem[]>(initialMenu.products);
   const [categories, setCategories] = useState<CategoryItem[]>(initialMenu.categories);
   const [selectedProductId, setSelectedProductId] = useState<string | null>(initialMenu.products[0]?.id ?? null);
@@ -64,9 +65,17 @@ export function InteractiveMenuDashboard() {
   const selectedProduct = products.find((product) => product.id === selectedProductId) ?? null;
 
   useEffect(() => {
-    // The stable fallback state is intentionally used for SSR and the first client render.
-    // Local menu data is loaded only after mount to avoid hydration mismatches.
-    const loadFrame = window.requestAnimationFrame(() => {
+    const mountedTimer = window.setTimeout(() => setMounted(true), 0);
+
+    return () => window.clearTimeout(mountedTimer);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted || hasLoadedLocalMenu) return;
+
+    const loadTimer = window.setTimeout(() => {
+      // The stable fallback state is intentionally used for SSR and the first client render.
+      // Local menu data is loaded only after mount so every SSR-visible value stays deterministic.
       const localMenu = readLocalMenu();
       const nextSelectedProduct = localMenu.products[0] ?? null;
 
@@ -80,17 +89,19 @@ export function InteractiveMenuDashboard() {
           ? currentDraft.categoryId
           : localMenu.categories[0]?.id ?? "general",
       }));
-      setMounted(true);
-    });
+      setHasLoadedLocalMenu(true);
+    }, 0);
 
-    return () => window.cancelAnimationFrame(loadFrame);
-  }, []);
+    return () => window.clearTimeout(loadTimer);
+  }, [hasLoadedLocalMenu, mounted]);
 
   useEffect(() => {
-    if (!mounted) return;
+    if (!mounted || !hasLoadedLocalMenu) return;
 
     saveLocalMenu({ categories, products });
-  }, [categories, mounted, products]);
+  }, [categories, hasLoadedLocalMenu, mounted, products]);
+
+  const hydrationReady = mounted && hasLoadedLocalMenu;
 
   const productCounts = useMemo(() => products.reduce<Record<string, number>>((counts, product) => {
     counts[product.categoryId] = (counts[product.categoryId] ?? 0) + 1;
@@ -409,6 +420,7 @@ export function InteractiveMenuDashboard() {
               onOpenRowActions={openRowActions}
               onToggleVisibility={toggleVisibility}
               products={filteredProducts}
+              hydrationReady={hydrationReady}
               rowAction={rowAction}
               searchQuery={searchQuery}
               selectedProductId={selectedProductId}
@@ -417,9 +429,9 @@ export function InteractiveMenuDashboard() {
 
           <div className="space-y-7">
             <div ref={editPanelRef}>
-              <ProductEditPanel categories={categories} draft={editingProduct} onCancel={cancelEditedProduct} onDraftChange={setEditingProduct} onNormalizePrice={() => setEditingProduct((currentDraft) => currentDraft ? normalizeDraftPrice(currentDraft, selectedProduct?.price) : currentDraft)} onSave={saveEditedProduct} product={selectedProduct} />
+              <ProductEditPanel categories={categories} draft={editingProduct} hydrationReady={hydrationReady} onCancel={cancelEditedProduct} onDraftChange={setEditingProduct} onNormalizePrice={() => setEditingProduct((currentDraft) => currentDraft ? normalizeDraftPrice(currentDraft, selectedProduct?.price) : currentDraft)} onSave={saveEditedProduct} product={selectedProduct} />
             </div>
-            <PublicMenuPreview categories={categories} products={products} selectedCategoryId={selectedCategoryId} onCartClick={() => showMessage("L’aperçu du panier est disponible depuis le menu client.")} />
+            <PublicMenuPreview categories={categories} products={products} hydrationReady={hydrationReady} selectedCategoryId={selectedCategoryId} onCartClick={() => showMessage("L’aperçu du panier est disponible depuis le menu client.")} />
           </div>
         </section>
       </main>
@@ -443,7 +455,7 @@ export function InteractiveMenuDashboard() {
 
       {isPreviewOpen ? (
         <Modal title="Aperçu client" onClose={() => setIsPreviewOpen(false)} wide>
-          <MobilePreview categories={categories} products={products.filter((product) => product.visible && (selectedCategoryId === "all" || product.categoryId === selectedCategoryId))} selectedCategoryId={selectedCategoryId} onCartClick={() => showMessage("L’aperçu du panier est disponible depuis le menu client.")} />
+          <MobilePreview categories={categories} products={products.filter((product) => product.visible && (selectedCategoryId === "all" || product.categoryId === selectedCategoryId))} hydrationReady={hydrationReady} selectedCategoryId={selectedCategoryId} onCartClick={() => showMessage("L’aperçu du panier est disponible depuis le menu client.")} />
         </Modal>
       ) : null}
     </>

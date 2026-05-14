@@ -8,6 +8,7 @@ type PublicProductDetailModalProps = {
   quantity: number;
   note: string;
   orderingDisabled: boolean;
+  hydrationReady?: boolean;
   onQuantityChange: (quantity: number) => void;
   onNoteChange: (note: string) => void;
   onAddToCart: () => void;
@@ -19,6 +20,7 @@ export function PublicProductDetailModal({
   quantity,
   note,
   orderingDisabled,
+  hydrationReady = true,
   onQuantityChange,
   onNoteChange,
   onAddToCart,
@@ -49,6 +51,7 @@ export function PublicProductDetailModal({
             productName={product.name}
             variant="modal"
             visualPreset={product.visualPreset}
+            hydrationReady={hydrationReady}
           />
           <button
             type="button"

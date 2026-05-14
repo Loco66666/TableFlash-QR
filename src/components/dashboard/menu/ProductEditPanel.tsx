@@ -15,9 +15,10 @@ type ProductEditPanelProps = {
   onCancel: () => void;
   onNormalizePrice: () => void;
   onSave: () => void;
+  hydrationReady?: boolean;
 };
 
-export function ProductEditPanel({ product, draft, categories, onDraftChange, onCancel, onNormalizePrice, onSave }: ProductEditPanelProps) {
+export function ProductEditPanel({ product, draft, categories, onDraftChange, onCancel, onNormalizePrice, onSave, hydrationReady = true }: ProductEditPanelProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (!product || !draft) {
@@ -48,6 +49,8 @@ export function ProductEditPanel({ product, draft, categories, onDraftChange, on
     };
     reader.readAsDataURL(file);
   };
+
+  const shouldShowImageControls = hydrationReady && Boolean(draft.imageUrl);
 
   const selectedPreset = resolveProductVisualPreset({
     categoryName: selectedCategoryName,
@@ -104,6 +107,7 @@ export function ProductEditPanel({ product, draft, categories, onDraftChange, on
               productName={draft.name || product.name}
               variant="edit-preview"
               visualPreset={draft.visualPreset}
+              hydrationReady={hydrationReady}
             />
           </div>
 
@@ -128,7 +132,7 @@ export function ProductEditPanel({ product, draft, categories, onDraftChange, on
           />
           <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
             <button className="rounded-2xl bg-emerald-700 px-4 py-3 text-sm font-black text-white shadow-lg shadow-emerald-900/15 transition hover:bg-emerald-800" onClick={() => fileInputRef.current?.click()} type="button">Changer la photo</button>
-            {draft.imageUrl ? (
+            {shouldShowImageControls ? (
               <button className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-black text-rose-700 transition hover:bg-rose-100" onClick={() => updateDraft({ imageUrl: null, visualPreset: "auto" })} type="button">Supprimer l’image</button>
             ) : (
               <button className="rounded-2xl border border-emerald-200 bg-white px-4 py-3 text-sm font-black text-emerald-700 transition hover:bg-emerald-50" onClick={() => updateDraft({ visualPreset: "auto" })} type="button">Visuel automatique</button>
@@ -171,7 +175,7 @@ export function ProductEditPanel({ product, draft, categories, onDraftChange, on
         </EditorSection>
 
         <EditorSection title="Aperçu client" description="Vue compacte de la fiche produit sur le menu public.">
-          <ClientProductPreview draft={draft} product={product} categoryName={selectedCategoryName} />
+          <ClientProductPreview draft={draft} product={product} categoryName={selectedCategoryName} hydrationReady={hydrationReady} />
         </EditorSection>
 
         <div className="sticky bottom-0 z-30 -mx-5 grid grid-cols-2 gap-3 border-t border-slate-100 bg-white/95 px-5 pb-1 pt-4 backdrop-blur lg:-mx-6 lg:px-6">
@@ -234,7 +238,7 @@ function ToggleRow({ label, checked, helper, onChange }: { label: string; checke
   );
 }
 
-function ClientProductPreview({ draft, product, categoryName }: { draft: ProductDraft; product: ProductItem; categoryName: string }) {
+function ClientProductPreview({ draft, product, categoryName, hydrationReady }: { draft: ProductDraft; product: ProductItem; categoryName: string; hydrationReady: boolean }) {
   return (
     <article className={`flex gap-3 rounded-3xl bg-white p-3 shadow-sm shadow-slate-200/70 ${draft.available ? "" : "opacity-60"}`}>
       <ProductImage
@@ -246,6 +250,7 @@ function ClientProductPreview({ draft, product, categoryName }: { draft: Product
         productName={draft.name || product.name}
         variant="compact"
         visualPreset={draft.visualPreset}
+        hydrationReady={hydrationReady}
       />
       <span className="min-w-0 flex-1">
         <span className="flex items-start justify-between gap-2">

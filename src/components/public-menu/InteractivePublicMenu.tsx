@@ -38,6 +38,8 @@ function buildPublicMenuSnapshot(localMenu = getFallbackLocalMenu()) {
 }
 
 export function InteractivePublicMenu({ restaurantSlug, tableId, tableName }: InteractivePublicMenuProps) {
+  const [mounted, setMounted] = useState(false);
+  const [hasLoadedLocalMenu, setHasLoadedLocalMenu] = useState(false);
   const [publicMenu, setPublicMenu] = useState(() => buildPublicMenuSnapshot());
   const [selectedCategory, setSelectedCategory] = useState<PublicMenuCategory>(publicMenu.categories[0] ?? "La carte");
   const [cartItems, setCartItems] = useState<PublicCartItem[]>([]);
@@ -53,12 +55,27 @@ export function InteractivePublicMenu({ restaurantSlug, tableId, tableName }: In
   const orderingDisabled = restaurant.serviceStatus !== "open";
 
   useEffect(() => {
-    const timeoutId = window.setTimeout(() => {
-      setPublicMenu(buildPublicMenuSnapshot(readLocalMenu()));
+    const mountedTimer = window.setTimeout(() => setMounted(true), 0);
+
+    return () => window.clearTimeout(mountedTimer);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted || hasLoadedLocalMenu) return;
+
+    const loadTimer = window.setTimeout(() => {
+      const nextPublicMenu = buildPublicMenuSnapshot(readLocalMenu());
+      setPublicMenu(nextPublicMenu);
+      setSelectedCategory((currentCategory) => nextPublicMenu.categories.includes(currentCategory)
+        ? currentCategory
+        : nextPublicMenu.categories[0] ?? "La carte");
+      setHasLoadedLocalMenu(true);
     }, 0);
 
-    return () => window.clearTimeout(timeoutId);
-  }, []);
+    return () => window.clearTimeout(loadTimer);
+  }, [hasLoadedLocalMenu, mounted]);
+
+  const hydrationReady = mounted && hasLoadedLocalMenu;
 
   const activeCategory = publicMenu.categories.includes(selectedCategory) ? selectedCategory : publicMenu.categories[0] ?? "La carte";
 
@@ -315,6 +332,7 @@ export function InteractivePublicMenu({ restaurantSlug, tableId, tableName }: In
                     product={product}
                     quantityInCart={cartQuantitiesByProduct[product.id] ?? 0}
                     orderingDisabled={orderingDisabled}
+                    hydrationReady={hydrationReady}
                     onOpenProduct={handleOpenProduct}
                     onQuickAdd={(quickProduct) => addProductToCart(quickProduct)}
                   />
@@ -338,6 +356,7 @@ export function InteractivePublicMenu({ restaurantSlug, tableId, tableName }: In
         quantity={productQuantity}
         note={productNote}
         orderingDisabled={orderingDisabled}
+        hydrationReady={hydrationReady}
         onQuantityChange={setProductQuantity}
         onNoteChange={setProductNote}
         onAddToCart={handleAddSelectedProduct}
