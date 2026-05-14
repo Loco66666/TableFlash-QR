@@ -3,6 +3,17 @@
 import { useEffect, useMemo, useState } from "react";
 import { DashboardHeader } from "@/components/dashboard";
 import {
+  LOCAL_RESTAURANT_SETTINGS_STORAGE_KEY,
+  LOCAL_RESTAURANT_SETTINGS_UPDATED_EVENT,
+  getLocalRestaurantSettings,
+  type RestaurantSettings,
+} from "@/lib/localRestaurantSettings";
+import {
+  getCurrentServiceContext,
+  getTodayServiceHours,
+  type CurrentServiceContext,
+} from "@/lib/serviceContext";
+import {
   LOCAL_ORDER_CREATED_EVENT,
   LOCAL_ORDER_RESET_EVENT,
   LOCAL_ORDER_UPDATED_EVENT,
@@ -78,8 +89,14 @@ function formatOrderDelta(delta: number) {
 }
 
 
-function getPeriodReadingTitle(period: StatisticsPeriod) {
-  const titles: Record<StatisticsPeriod, string> = {
+function getPeriodReadingTitle(period: StatisticsPeriod, serviceContext: CurrentServiceContext | null) {
+  if (period === "current") {
+    return serviceContext?.status === "open"
+      ? `Lecture du ${serviceContext.label.toLowerCase()}`
+      : "Lecture du dernier service disponible";
+  }
+
+  const titles: Record<Exclude<StatisticsPeriod, "current">, string> = {
     today: "Résumé du service",
     "7d": "Tendance de la semaine",
     "30d": "Vue mensuelle",
@@ -134,6 +151,62 @@ function buildRecommendedDecisions({ peakHour, topProductName, delayedOrders, av
           description: "Cet emplacement concentre l’activité et mérite un suivi attentif.",
         },
   ];
+}
+
+
+function formatServiceHours(startTime: string | null, endTime: string | null) {
+  if (!startTime || !endTime) {
+    return null;
+  }
+
+  return `${startTime} — ${endTime}`;
+}
+
+function getServiceCardTone(status: CurrentServiceContext["status"]) {
+  if (status === "open") return "border-emerald-200 bg-white shadow-emerald-900/5";
+  if (status === "between-services") return "border-amber-200 bg-amber-50/70 shadow-amber-900/5";
+  if (status === "paused") return "border-orange-200 bg-orange-50/70 shadow-orange-900/5";
+  return "border-slate-200 bg-white shadow-slate-200/70";
+}
+
+function ServiceContextCard({ serviceContext }: { serviceContext: CurrentServiceContext | null }) {
+  if (!serviceContext) {
+    return (
+      <section className="relative overflow-hidden rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm shadow-slate-200/70">
+        <p className="text-sm font-black uppercase tracking-[0.12em] text-slate-400">Contexte de service</p>
+        <h2 className="mt-3 text-2xl font-black tracking-tight text-slate-950">Analyse du service…</h2>
+        <p className="mt-2 text-sm font-semibold leading-6 text-slate-500">Les horaires du restaurant seront chargés après l’ouverture du tableau de bord.</p>
+      </section>
+    );
+  }
+
+  const serviceHours = formatServiceHours(serviceContext.startTime, serviceContext.endTime);
+  const statusHelper = serviceContext.status === "open" && serviceHours
+    ? `${serviceHours} · ${serviceContext.message}`
+    : serviceContext.status === "between-services" && serviceContext.nextServiceLabel && serviceContext.nextServiceStart
+      ? `Prochain service : ${serviceContext.nextServiceLabel.toLowerCase()} à ${serviceContext.nextServiceStart}`
+      : serviceContext.message;
+
+  return (
+    <section className={`relative overflow-hidden rounded-[2rem] border p-6 shadow-sm ${getServiceCardTone(serviceContext.status)}`}>
+      <div className="absolute right-0 top-0 h-32 w-32 rounded-full bg-emerald-100/60 blur-3xl" aria-hidden="true" />
+      <div className="relative flex min-w-0 flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+        <div className="min-w-0">
+          <p className="text-sm font-black uppercase tracking-[0.12em] text-emerald-700">Contexte de service</p>
+          <h2 className="mt-3 break-words text-2xl font-black tracking-tight text-slate-950">{serviceContext.label}</h2>
+          <p className="mt-2 break-words text-sm font-semibold leading-6 text-slate-600">{statusHelper}</p>
+        </div>
+        <div className="flex shrink-0 flex-wrap gap-2">
+          {serviceHours ? (
+            <span className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700">{serviceHours}</span>
+          ) : null}
+          <span className={`rounded-full border px-4 py-2 text-sm font-black ${serviceContext.status === "open" ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-slate-200 bg-white text-slate-600"}`}>
+            {serviceContext.status === "open" ? "Commandes ouvertes" : serviceContext.label}
+          </span>
+        </div>
+      </div>
+    </section>
+  );
 }
 
 function mapLocalOrderToAnalytics(order: LocalSubmittedOrder): AnalyticsOrder {
@@ -211,64 +284,66 @@ function buildActiveTables(orders: AnalyticsOrder[], multiplier: number): Active
 }
 
 export function InteractiveStatisticsDashboard() {
-  const [activePeriod, setActivePeriod] = useState<StatisticsPeriod>("today");
+  const [mounted, setMounted] = useState(false);
+  const [activePeriod, setActivePeriod] = useState<StatisticsPeriod>("current");
   const [localOrders, setLocalOrders] = useState<LocalSubmittedOrder[]>([]);
   const [localReviews, setLocalReviews] = useState<LocalSubmittedReview[]>([]);
+  const [settings, setSettings] = useState<RestaurantSettings>(() => getLocalRestaurantSettings());
+  const [serviceContext, setServiceContext] = useState<CurrentServiceContext | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [periodPanelOpen, setPeriodPanelOpen] = useState(false);
 
   const activeOption = periodOptions.find((period) => period.id === activePeriod) ?? periodOptions[0];
   const analyticsOrders = useMemo(() => [...referenceAnalyticsOrders, ...localOrders.map(mapLocalOrderToAnalytics)], [localOrders]);
   const analyticsReviews = useMemo(() => [...referenceAnalyticsReviews, ...localReviews.map(mapLocalReviewToAnalytics)], [localReviews]);
-  const multiplier = activeOption.multiplier;
+  const todayLunchHours = mounted ? getTodayServiceHours(settings, new Date(), "midi") : null;
+  const todayDinnerHours = mounted ? getTodayServiceHours(settings, new Date(), "soir") : null;
+  const currentServiceMultiplier = serviceContext?.status === "open"
+    ? serviceContext.activePeriod === "soir" ? 0.42 : serviceContext.activePeriod === "all-day" ? 1 : 0.72
+    : 0.72;
+  const multiplier = activePeriod === "current" ? currentServiceMultiplier : activeOption.multiplier;
 
-  const stats = useMemo(() => {
-    const orderCount = scale(analyticsOrders.length, multiplier);
-    const localRevenue = localOrders.reduce((sum, order) => sum + order.total, 0);
-    const baseRevenue = analyticsOrders.reduce((sum, order) => sum + order.total, 0) - localRevenue;
-    const revenue = baseRevenue * multiplier + localRevenue;
-    const averageBasket = orderCount > 0 ? revenue / orderCount : 0;
-    const averagePrep = Math.round(analyticsOrders.reduce((sum, order) => sum + order.prepMinutes, 0) / Math.max(analyticsOrders.length, 1));
-    const delayedOrders = analyticsOrders.filter((order) => order.prepMinutes > order.estimatedPrepMinutes + 2).length;
-    const watchOrders = analyticsOrders.filter((order) => order.prepMinutes > order.estimatedPrepMinutes && order.prepMinutes <= order.estimatedPrepMinutes + 2).length;
-    const onTimeOrders = Math.max(0, analyticsOrders.length - delayedOrders - watchOrders);
-    const averageRating = analyticsReviews.reduce((sum, review) => sum + review.rating, 0) / Math.max(analyticsReviews.length, 1);
-    const positiveReviews = scale(analyticsReviews.filter((review) => review.rating >= 4).length, multiplier);
-    const reviewsToHandle = analyticsReviews.filter((review) => review.status === "À traiter" || review.status === "Nouveau").length;
-    const activeTables = buildActiveTables(analyticsOrders, multiplier);
-    const status: ServiceStatus = delayedOrders > 0 ? "Attention aux retards" : "Service fluide";
+  const orderCount = scale(analyticsOrders.length, multiplier);
+  const localRevenue = localOrders.reduce((sum, order) => sum + order.total, 0);
+  const baseRevenue = analyticsOrders.reduce((sum, order) => sum + order.total, 0) - localRevenue;
+  const revenue = baseRevenue * multiplier + localRevenue;
+  const averageBasket = orderCount > 0 ? revenue / orderCount : 0;
+  const averagePrep = Math.round(analyticsOrders.reduce((sum, order) => sum + order.prepMinutes, 0) / Math.max(analyticsOrders.length, 1));
+  const delayedOrders = analyticsOrders.filter((order) => order.prepMinutes > order.estimatedPrepMinutes + 2).length;
+  const watchOrders = analyticsOrders.filter((order) => order.prepMinutes > order.estimatedPrepMinutes && order.prepMinutes <= order.estimatedPrepMinutes + 2).length;
+  const onTimeOrders = Math.max(0, analyticsOrders.length - delayedOrders - watchOrders);
+  const averageRating = analyticsReviews.reduce((sum, review) => sum + review.rating, 0) / Math.max(analyticsReviews.length, 1);
+  const positiveReviews = scale(analyticsReviews.filter((review) => review.rating >= 4).length, multiplier);
+  const reviewsToHandle = analyticsReviews.filter((review) => review.status === "À traiter" || review.status === "Nouveau").length;
+  const activeTables = buildActiveTables(analyticsOrders, multiplier);
+  const status: ServiceStatus = delayedOrders > 0 ? "Attention aux retards" : "Service fluide";
+  const stats = {
+    orderCount,
+    revenue,
+    averageBasket,
+    averagePrep,
+    delayedOrders,
+    watchOrders,
+    onTimeOrders,
+    averageRating,
+    positiveReviews,
+    reviewsToHandle,
+    activeTables,
+    serviceStatus: status,
+    recommendation: delayedOrders > 0 ? "Certaines commandes dépassent le délai estimé. Priorité aux commandes en préparation." : "Les commandes restent dans les délais prévus.",
+    latestSentiment: analyticsReviews[0]?.sentiment ?? "Positif",
+    topProducts: buildTopProducts(analyticsOrders, multiplier),
+  };
+
+  const trendPoints = ["11h", "12h", "13h", "14h"].map((hour) => {
+    const ordersAtHour = analyticsOrders.filter((order) => order.hour === hour);
 
     return {
-      orderCount,
-      revenue,
-      averageBasket,
-      averagePrep,
-      delayedOrders,
-      watchOrders,
-      onTimeOrders,
-      averageRating,
-      positiveReviews,
-      reviewsToHandle,
-      activeTables,
-      serviceStatus: status,
-      recommendation: delayedOrders > 0 ? "Certaines commandes dépassent le délai estimé. Priorité aux commandes en préparation." : "Les commandes restent dans les délais prévus.",
-      latestSentiment: analyticsReviews[0]?.sentiment ?? "Positif",
-      topProducts: buildTopProducts(analyticsOrders, multiplier),
+      hour,
+      orders: scale(ordersAtHour.length, multiplier),
+      revenue: ordersAtHour.reduce((sum, order) => sum + order.total, 0) * multiplier,
     };
-  }, [analyticsOrders, analyticsReviews, localOrders, multiplier]);
-
-  const trendPoints = useMemo(
-    () => ["11h", "12h", "13h", "14h"].map((hour) => {
-      const ordersAtHour = analyticsOrders.filter((order) => order.hour === hour);
-
-      return {
-        hour,
-        orders: scale(ordersAtHour.length, multiplier),
-        revenue: ordersAtHour.reduce((sum, order) => sum + order.total, 0) * multiplier,
-      };
-    }),
-    [analyticsOrders, multiplier],
-  );
+  });
 
   const peakPoint = trendPoints.reduce((bestPoint, point) => (point.orders > bestPoint.orders ? point : bestPoint), trendPoints[0]);
   const topProductName = stats.topProducts[0]?.name ?? "Burger Classique";
@@ -299,7 +374,33 @@ export function InteractiveStatisticsDashboard() {
     peakHour: peakPoint ? peakPoint.hour : "12h",
   });
   const serviceWrapUp = buildServiceWrapUp(stats.delayedOrders, topProductName, stats.averageRating);
-  const periodReadingTitle = getPeriodReadingTitle(activePeriod);
+  const periodReadingTitle = getPeriodReadingTitle(activePeriod, serviceContext);
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => setMounted(true), 0);
+    return () => window.clearTimeout(timeoutId);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) {
+      return;
+    }
+
+    function refreshServiceContext() {
+      const nextSettings = getLocalRestaurantSettings();
+      setSettings(nextSettings);
+      setServiceContext(getCurrentServiceContext(nextSettings, new Date()));
+    }
+
+    refreshServiceContext();
+    window.addEventListener(LOCAL_RESTAURANT_SETTINGS_UPDATED_EVENT, refreshServiceContext);
+    window.addEventListener("focus", refreshServiceContext);
+
+    return () => {
+      window.removeEventListener(LOCAL_RESTAURANT_SETTINGS_UPDATED_EVENT, refreshServiceContext);
+      window.removeEventListener("focus", refreshServiceContext);
+    };
+  }, [mounted]);
 
   useEffect(() => {
     function refreshLocalData() {
@@ -308,8 +409,13 @@ export function InteractiveStatisticsDashboard() {
     }
 
     function handleStorage(event: StorageEvent) {
-      if (event.key === LOCAL_ORDERS_STORAGE_KEY || event.key === LOCAL_REVIEWS_STORAGE_KEY) {
+      if (event.key === LOCAL_ORDERS_STORAGE_KEY || event.key === LOCAL_REVIEWS_STORAGE_KEY || event.key === LOCAL_RESTAURANT_SETTINGS_STORAGE_KEY) {
         refreshLocalData();
+        if (event.key === LOCAL_RESTAURANT_SETTINGS_STORAGE_KEY) {
+          const nextSettings = getLocalRestaurantSettings();
+          setSettings(nextSettings);
+          setServiceContext(getCurrentServiceContext(nextSettings, new Date()));
+        }
       }
     }
 
@@ -341,6 +447,9 @@ export function InteractiveStatisticsDashboard() {
   }, [toast]);
 
   function handleRefresh() {
+    const nextSettings = getLocalRestaurantSettings();
+    setSettings(nextSettings);
+    setServiceContext(getCurrentServiceContext(nextSettings, new Date()));
     setLocalOrders(getLocalOrders());
     setLocalReviews(getLocalReviews());
     setToast("Statistiques actualisées.");
@@ -382,7 +491,16 @@ export function InteractiveStatisticsDashboard() {
           </section>
         ) : null}
 
-        <StatisticsFilterBar periods={periodOptions} activePeriod={activePeriod} onChange={setActivePeriod} />
+        <ServiceContextCard serviceContext={serviceContext} />
+
+        <StatisticsFilterBar
+          periods={periodOptions}
+          activePeriod={activePeriod}
+          onChange={setActivePeriod}
+          serviceContext={serviceContext}
+          lunchHours={todayLunchHours}
+          dinnerHours={todayDinnerHours}
+        />
 
         {!hasData ? (
           <StatisticsEmptyState onRefresh={handleRefresh} />

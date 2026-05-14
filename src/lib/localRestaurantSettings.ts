@@ -1,5 +1,7 @@
 export const LOCAL_RESTAURANT_SETTINGS_STORAGE_KEY =
   "tableflash.localRestaurantSettings.v1";
+export const LOCAL_RESTAURANT_SETTINGS_UPDATED_EVENT =
+  "tableflash:local-restaurant-settings-updated";
 
 export type RestaurantSettings = {
   restaurantName: string;
@@ -226,6 +228,7 @@ export function saveLocalRestaurantSettings(settings: RestaurantSettings) {
       LOCAL_RESTAURANT_SETTINGS_STORAGE_KEY,
       JSON.stringify(settings),
     );
+    window.dispatchEvent(new Event(LOCAL_RESTAURANT_SETTINGS_UPDATED_EVENT));
   } catch {
     return;
   }
@@ -235,6 +238,7 @@ export function resetLocalRestaurantSettings(): RestaurantSettings {
   if (typeof window !== "undefined") {
     try {
       window.localStorage.removeItem(LOCAL_RESTAURANT_SETTINGS_STORAGE_KEY);
+      window.dispatchEvent(new Event(LOCAL_RESTAURANT_SETTINGS_UPDATED_EVENT));
     } catch {
       return defaultRestaurantSettings;
     }

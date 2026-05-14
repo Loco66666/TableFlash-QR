@@ -22,7 +22,7 @@ export function LiveServiceStatusCard({ servicePaused }: LiveServiceStatusCardPr
           </div>
         </div>
         <div className="flex flex-wrap gap-3">
-          <span className="rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-black text-slate-700">11:30 — 14:30</span>
+          <span className="rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-black text-slate-700">Horaires paramétrables</span>
           <span className={`rounded-full border px-4 py-2 text-sm font-black ${servicePaused ? "border-amber-200 bg-amber-50 text-amber-700" : "border-emerald-200 bg-emerald-50 text-emerald-700"}`}>
             {servicePaused ? "Commandes fermées" : "Commandes ouvertes"}
           </span>
