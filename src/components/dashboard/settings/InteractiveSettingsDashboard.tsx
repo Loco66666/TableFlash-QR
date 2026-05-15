@@ -73,7 +73,7 @@ const settingsSections: Array<{
   { id: "reviews", label: "Avis", helper: "Réputation" },
   {
     id: "customerExperience",
-    label: "Expérience client",
+    label: "Apparence",
     helper: "Messages & identité visuelle",
   },
 ];
@@ -135,7 +135,7 @@ function getSlotLabel(hour: OpeningHour, period: "midi" | "soir") {
 
 function computeAutomaticStatus(
   settings: RestaurantSettings,
-  now = new Date(),
+  now: Date,
 ) {
   const todayHour = settings.hours.find(
     (hour) => hour.day === getTodayLabel(now),
@@ -155,7 +155,7 @@ function computeAutomaticStatus(
   return { isOpen: false, activeSlot: "Aucun créneau actif" };
 }
 
-function findNextSlot(settings: RestaurantSettings, now = new Date()) {
+function findNextSlot(settings: RestaurantSettings, now: Date) {
   const currentDayIndex = now.getDay();
   const nowMinutes = now.getHours() * 60 + now.getMinutes();
 
@@ -181,9 +181,9 @@ function findNextSlot(settings: RestaurantSettings, now = new Date()) {
   return "Aucun créneau prévu aujourd’hui";
 }
 
-function getOperationalStatus(settings: RestaurantSettings): OperationalStatus {
-  const automatic = computeAutomaticStatus(settings);
-  const nextSlot = findNextSlot(settings);
+function getOperationalStatus(settings: RestaurantSettings, now: Date): OperationalStatus {
+  const automatic = computeAutomaticStatus(settings, now);
+  const nextSlot = findNextSlot(settings, now);
 
   if (settings.serviceOpeningMode === "Forcer ouvert") {
     return {
@@ -260,12 +260,12 @@ function SettingsCard({
   children: ReactNode;
 }) {
   return (
-    <section className="min-w-0 rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/70 md:p-6">
-      <div className="mb-6 min-w-0">
+    <section className="min-w-0 rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/70 md:rounded-[2rem] md:p-6">
+      <div className="mb-4 min-w-0 md:mb-6">
         <p className="break-words text-xs font-black uppercase tracking-[0.2em] text-emerald-700">
           {eyebrow}
         </p>
-        <h2 className="mt-2 break-words text-2xl font-black tracking-tight text-slate-950">
+        <h2 className="mt-2 text-xl font-black tracking-tight text-slate-950 md:text-2xl">
           {title}
         </h2>
         {description ? (
@@ -298,7 +298,7 @@ function SettingsBlock({
         : "border-slate-200 bg-white";
 
   return (
-    <section className={`min-w-0 rounded-[1.75rem] border p-5 ${toneClass}`}>
+    <section className={`min-w-0 rounded-[1.5rem] border p-4 md:rounded-[1.75rem] md:p-5 ${toneClass}`}>
       <div className="min-w-0">
         <h3 className="break-words text-lg font-black tracking-tight text-slate-950">
           {title}
@@ -309,7 +309,7 @@ function SettingsBlock({
           </p>
         ) : null}
       </div>
-      <div className="mt-5 min-w-0 space-y-3">{children}</div>
+      <div className="mt-4 min-w-0 space-y-3 md:mt-5">{children}</div>
     </section>
   );
 }
@@ -393,7 +393,7 @@ function TimeField({
   onChange: (value: string) => void;
 }) {
   return (
-    <label className="block min-w-[112px] flex-1">
+    <label className="block min-w-0 flex-1">
       <span className="whitespace-nowrap text-xs font-black uppercase tracking-[0.12em] text-slate-500">
         {label}
       </span>
@@ -401,7 +401,7 @@ function TimeField({
         type="time"
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="mt-2 h-12 w-full min-w-[112px] rounded-2xl border border-slate-200 bg-white px-3 text-sm font-black text-slate-950 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
+        className="mt-2 h-12 w-full min-w-0 rounded-2xl border border-slate-200 bg-white px-3 text-sm font-black text-slate-950 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
       />
     </label>
   );
@@ -427,7 +427,7 @@ function SegmentedControl<T extends string>({
             key={option}
             type="button"
             onClick={() => onChange(option)}
-            className={`min-h-11 flex-1 basis-[190px] rounded-xl px-4 py-2.5 text-sm font-black transition ${
+            className={`min-h-11 flex-1 basis-full rounded-xl px-4 py-2.5 text-sm font-black transition sm:basis-[190px] ${
               value === option
                 ? "bg-emerald-700 text-white shadow-lg shadow-emerald-900/20"
                 : "text-slate-600 hover:bg-white hover:text-emerald-700"
@@ -482,7 +482,7 @@ function ToggleRow({
 
 function ReadinessChecklistItem({ item }: { item: ReadinessItem }) {
   return (
-    <div className="min-w-0 rounded-2xl border border-slate-200 bg-white px-4 py-3">
+    <div className="min-w-0 rounded-2xl border border-slate-200 bg-white px-3 py-3 md:px-4">
       <div className="flex min-w-0 items-start gap-3">
         <span
           className={`mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full text-sm font-black ${
@@ -549,10 +549,10 @@ function SettingsNavigation({
 }) {
   return (
     <nav
-      className="min-w-0 max-w-full rounded-full border border-slate-200 bg-white p-2 shadow-sm shadow-slate-200/70"
+      className="min-w-0 max-w-full rounded-[1.35rem] border border-slate-200 bg-white p-1.5 shadow-sm shadow-slate-200/70 md:rounded-full md:p-2"
       aria-label="Sections des paramètres"
     >
-      <div className="flex min-w-0 max-w-full gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div className="flex min-w-0 max-w-full snap-x gap-2 overflow-x-auto overscroll-x-contain pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {settingsSections.map((section) => {
           const isActive = activeSection === section.id;
           return (
@@ -560,7 +560,7 @@ function SettingsNavigation({
               key={section.id}
               type="button"
               onClick={() => onChange(section.id)}
-              className={`min-h-11 shrink-0 whitespace-nowrap rounded-full px-5 py-3 text-sm font-black transition ${
+              className={`min-h-10 shrink-0 snap-start whitespace-nowrap rounded-full px-4 py-2.5 text-sm font-black transition md:min-h-11 md:px-5 md:py-3 ${
                 isActive
                   ? "bg-slate-950 text-white shadow-lg shadow-slate-950/15"
                   : "bg-slate-50 text-slate-600 hover:bg-emerald-50 hover:text-emerald-800"
@@ -589,14 +589,14 @@ function ReadinessOverview({
   operationalStatus: OperationalStatus;
 }) {
   return (
-    <section className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1.2fr)_minmax(340px,0.8fr)]">
-      <div className="min-w-0 rounded-[2rem] border border-emerald-100 bg-gradient-to-br from-white to-emerald-50/70 p-5 shadow-sm shadow-emerald-950/5 md:p-6">
-        <div className="flex min-w-0 flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+    <section className="grid min-w-0 gap-4 md:gap-5 xl:grid-cols-[minmax(0,1.2fr)_minmax(340px,0.8fr)]">
+      <div className="min-w-0 rounded-[1.5rem] border border-emerald-100 bg-gradient-to-br from-white to-emerald-50/70 p-4 shadow-sm shadow-emerald-950/5 md:rounded-[2rem] md:p-6">
+        <div className="flex min-w-0 items-center justify-between gap-4 lg:gap-5">
           <div className="min-w-0">
             <p className="break-words text-xs font-black uppercase tracking-[0.22em] text-emerald-700">
               Avant le service
             </p>
-            <h2 className="mt-2 break-words text-3xl font-black tracking-tight text-slate-950">
+            <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950 md:text-3xl">
               État de préparation
             </h2>
             <p className="mt-2 max-w-3xl break-words text-sm font-semibold leading-6 text-slate-500">
@@ -604,21 +604,21 @@ function ReadinessOverview({
               commandes par QR.
             </p>
           </div>
-          <div className="grid h-28 w-28 shrink-0 place-items-center rounded-full bg-emerald-700 text-white shadow-xl shadow-emerald-900/20">
+          <div className="grid h-20 w-20 shrink-0 place-items-center rounded-full bg-emerald-700 text-white shadow-xl shadow-emerald-900/20 sm:h-24 sm:w-24 md:h-28 md:w-28">
             <div className="text-center">
-              <p className="text-3xl font-black">{score}%</p>
+              <p className="text-2xl font-black md:text-3xl">{score}%</p>
               <p className="text-[0.65rem] font-black uppercase tracking-[0.16em] opacity-80">
                 prêt
               </p>
             </div>
           </div>
         </div>
-        <div className="mt-5 grid min-w-0 gap-3 md:grid-cols-2 xl:grid-cols-3">
+        <div className="mt-4 grid min-w-0 gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {checklist.map((item) => (
             <ReadinessChecklistItem key={item.label} item={item} />
           ))}
         </div>
-        <p className="mt-4 break-words text-sm font-bold text-slate-500">
+        <p className="mt-3 text-sm font-bold text-slate-500 md:mt-4">
           Dernière sauvegarde locale ·{" "}
           {saveState === "saved"
             ? "Paramètres enregistrés"
@@ -637,13 +637,13 @@ function CustomerStateCard({
   operationalStatus: OperationalStatus;
 }) {
   return (
-    <section className="min-w-0 rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/70 md:p-6">
+    <section className="min-w-0 rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/70 md:rounded-[2rem] md:p-6">
       <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <p className="break-words text-xs font-black uppercase tracking-[0.22em] text-emerald-700">
             Pilotage du service
           </p>
-          <h2 className="mt-2 break-words text-2xl font-black tracking-tight text-slate-950">
+          <h2 className="mt-2 text-xl font-black tracking-tight text-slate-950 md:text-2xl">
             Ce que voit le client maintenant
           </h2>
         </div>
@@ -659,8 +659,8 @@ function CustomerStateCard({
           {operationalStatus.customerState}
         </StatusPill>
       </div>
-      <div className="mt-5 rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5">
-        <p className="break-words text-2xl font-black text-slate-950">
+      <div className="mt-4 rounded-[1.35rem] border border-slate-200 bg-slate-50 p-4 md:mt-5 md:rounded-[1.5rem] md:p-5">
+        <p className="text-xl font-black text-slate-950 md:text-2xl">
           {operationalStatus.customerState}
         </p>
         <p className="mt-2 break-words text-sm font-semibold leading-6 text-slate-500">
@@ -680,7 +680,7 @@ function CustomerStateCard({
 
 function StatusTile({ label, value }: { label: string; value: string }) {
   return (
-    <div className="min-w-0 rounded-2xl border border-slate-200 bg-white px-4 py-3">
+    <div className="min-w-0 rounded-2xl border border-slate-200 bg-white px-3 py-3 md:px-4">
       <p className="break-words text-xs font-black uppercase tracking-[0.16em] text-slate-400">
         {label}
       </p>
@@ -729,7 +729,7 @@ function TimeRangeEditor({
 
 function QrDecorativeCode() {
   return (
-    <div className="grid h-32 w-32 grid-cols-5 gap-1 rounded-2xl border border-slate-200 bg-white p-3">
+    <div className="grid h-28 w-28 grid-cols-5 gap-1 rounded-2xl border border-slate-200 bg-white p-3 md:h-32 md:w-32">
       {Array.from({ length: 25 }).map((_, index) => (
         <span
           key={index}
@@ -742,11 +742,11 @@ function QrDecorativeCode() {
 
 function QrPreview({ settings }: { settings: RestaurantSettings }) {
   return (
-    <div className="min-w-0 rounded-[2rem] border border-slate-200 bg-slate-50 p-5">
+    <div className="min-w-0 rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4 md:rounded-[2rem] md:p-5">
       <p className="break-words text-xs font-black uppercase tracking-[0.18em] text-emerald-700">
         QR premium imprimé
       </p>
-      <div className="mt-4 min-w-0 rounded-[1.75rem] border border-slate-200 bg-white p-5 text-center shadow-sm">
+      <div className="mt-4 min-w-0 rounded-[1.5rem] border border-slate-200 bg-white p-4 text-center shadow-sm md:rounded-[1.75rem] md:p-5">
         <p className="mx-auto inline-flex rounded-full bg-emerald-50 px-3 py-1 text-xs font-black text-emerald-700">
           TableFlash
         </p>
@@ -765,7 +765,7 @@ function QrPreview({ settings }: { settings: RestaurantSettings }) {
           {settings.qrInstruction}
         </p>
         {settings.qrShowPublicLink ? (
-          <p className="mt-4 break-all rounded-full bg-slate-100 px-3 py-2 text-xs font-black text-slate-600">
+          <p className="mt-4 rounded-2xl bg-slate-100 px-3 py-2 text-xs font-black text-slate-600 [overflow-wrap:anywhere]">
             /r/{settings.publicSlug}/table/table-1
           </p>
         ) : null}
@@ -785,7 +785,7 @@ function CustomerPreview({
     <aside
       ref={previewRef}
       tabIndex={-1}
-      className="min-w-0 rounded-[2rem] border border-emerald-100 bg-white p-5 shadow-xl shadow-emerald-950/10 outline-none"
+      className="min-w-0 rounded-[1.5rem] border border-emerald-100 bg-white p-4 shadow-xl shadow-emerald-950/10 outline-none md:rounded-[2rem] md:p-5"
     >
       <p className="break-words text-xs font-black uppercase tracking-[0.22em] text-emerald-700">
         Aperçu client
@@ -793,7 +793,7 @@ function CustomerPreview({
       <h3 className="mt-2 break-words text-2xl font-black text-slate-950">
         Expérience après scan
       </h3>
-      <div className="mt-5 overflow-hidden rounded-[2rem] border border-slate-200 bg-slate-950 p-3 shadow-inner shadow-slate-950/20">
+      <div className="mt-4 overflow-hidden rounded-[1.5rem] border border-slate-200 bg-slate-950 p-2 shadow-inner shadow-slate-950/20 md:mt-5 md:rounded-[2rem] md:p-3">
         <div className="min-w-0 rounded-[1.5rem] bg-white p-4">
           <div
             className={`min-w-0 rounded-[1.25rem] bg-gradient-to-br p-4 ${colorPreview[settings.primaryColor]}`}
@@ -845,11 +845,13 @@ export function InteractiveSettingsDashboard() {
     useState<SectionId>("establishment");
   const [toast, setToast] = useState<ToastMessage>(null);
   const [saveState, setSaveState] = useState<SaveState>("saved");
+  const [serviceClock, setServiceClock] = useState<Date | null>(null);
   const previewRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
       setSettings(getLocalRestaurantSettings());
+      setServiceClock(new globalThis.Date());
       setSaveState("saved");
     }, 0);
 
@@ -864,8 +866,8 @@ export function InteractiveSettingsDashboard() {
 
   const enabledZones = settings.zones.filter((zone) => zone.enabled);
   const operationalStatus = useMemo(
-    () => getOperationalStatus(settings),
-    [settings],
+    () => getOperationalStatus(settings, serviceClock ?? new globalThis.Date(2026, 0, 1, 12, 0)),
+    [serviceClock, settings],
   );
   const publicTableLink = `/r/${settings.publicSlug}/table/table-1`;
 
@@ -1024,18 +1026,26 @@ export function InteractiveSettingsDashboard() {
   };
 
   const addZone = () => {
-    const nextNumber = settings.zones.length + 1;
-    setSettings((currentSettings) => ({
-      ...currentSettings,
-      zones: [
-        ...currentSettings.zones,
-        {
-          id: `zone-${Date.now()}`,
-          name: `Zone ${nextNumber}`,
-          enabled: true,
-        },
-      ],
-    }));
+    setSettings((currentSettings) => {
+      const usedZoneIds = new Set(currentSettings.zones.map((zone) => zone.id));
+      let nextNumber = currentSettings.zones.length + 1;
+
+      while (usedZoneIds.has(`zone-${nextNumber}`)) {
+        nextNumber += 1;
+      }
+
+      return {
+        ...currentSettings,
+        zones: [
+          ...currentSettings.zones,
+          {
+            id: `zone-${nextNumber}`,
+            name: `Zone ${nextNumber}`,
+            enabled: true,
+          },
+        ],
+      };
+    });
     setSaveState("dirty");
     showToast("Zone ajoutée.");
   };
@@ -1104,7 +1114,7 @@ export function InteractiveSettingsDashboard() {
   };
 
   const getDayBadge = (hour: OpeningHour) => {
-    const today = getTodayLabel(new Date());
+    const today = getTodayLabel(serviceClock ?? new globalThis.Date(2026, 0, 1, 12, 0));
 
     if (!hour.open) return <StatusPill>Fermé</StatusPill>;
     if (hour.day === today && operationalStatus.isOpen) {
@@ -1185,7 +1195,7 @@ export function InteractiveSettingsDashboard() {
               tone="emerald"
             >
               <div className="rounded-[1.5rem] bg-white p-5 shadow-sm">
-                <p className="break-all text-lg font-black text-slate-950">
+                <p className="text-base font-black text-slate-950 [overflow-wrap:anywhere] md:text-lg">
                   {publicTableLink}
                 </p>
                 <p className="mt-3 break-words text-sm font-semibold leading-6 text-slate-500">
@@ -1198,14 +1208,14 @@ export function InteractiveSettingsDashboard() {
                   onClick={() =>
                     void copyText(publicTableLink, "Lien public copié.")
                   }
-                  className="min-h-11 rounded-full bg-slate-950 px-5 py-3 text-sm font-black text-white transition hover:bg-slate-800"
+                  className="min-h-11 w-full rounded-full bg-slate-950 px-5 py-3 text-sm font-black text-white transition hover:bg-slate-800 sm:w-auto"
                 >
                   Copier le lien
                 </button>
                 <button
                   type="button"
                   onClick={generateSlug}
-                  className="min-h-11 rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-black text-slate-700 transition hover:border-emerald-200 hover:bg-emerald-50"
+                  className="min-h-11 w-full rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-black text-slate-700 transition hover:border-emerald-200 hover:bg-emerald-50 sm:w-auto"
                 >
                   Générer le slug
                 </button>
@@ -1276,21 +1286,21 @@ export function InteractiveSettingsDashboard() {
                 <button
                   type="button"
                   onClick={copyMondayToWeek}
-                  className="min-h-11 rounded-full bg-slate-950 px-4 py-2 text-sm font-black text-white transition hover:bg-slate-800"
+                  className="min-h-11 w-full rounded-full bg-slate-950 px-4 py-2 text-sm font-black text-white transition hover:bg-slate-800 sm:w-auto"
                 >
                   Copier lundi sur la semaine
                 </button>
                 <button
                   type="button"
                   onClick={closeSundays}
-                  className="min-h-11 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 transition hover:border-emerald-200 hover:bg-emerald-50"
+                  className="min-h-11 w-full rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 transition hover:border-emerald-200 hover:bg-emerald-50 sm:w-auto"
                 >
                   Fermer tous les dimanches
                 </button>
                 <button
                   type="button"
                   onClick={resetHours}
-                  className="min-h-11 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 transition hover:border-emerald-200 hover:bg-emerald-50"
+                  className="min-h-11 w-full rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 transition hover:border-emerald-200 hover:bg-emerald-50 sm:w-auto"
                 >
                   Réinitialiser les horaires
                 </button>
@@ -1523,7 +1533,7 @@ export function InteractiveSettingsDashboard() {
                           onClick={() =>
                             updateZone(zone.id, { enabled: !zone.enabled })
                           }
-                          className={`min-h-11 rounded-full px-4 py-2 text-sm font-black transition ${
+                          className={`min-h-11 flex-1 rounded-full px-4 py-2 text-sm font-black transition sm:flex-none ${
                             zone.enabled
                               ? "bg-emerald-700 text-white"
                               : "bg-slate-100 text-slate-500"
@@ -1534,7 +1544,7 @@ export function InteractiveSettingsDashboard() {
                         <button
                           type="button"
                           onClick={() => deleteZone(zone.id)}
-                          className="min-h-11 rounded-full border border-rose-200 px-4 py-2 text-sm font-black text-rose-700 transition hover:bg-rose-50"
+                          className="min-h-11 flex-1 rounded-full border border-rose-200 px-4 py-2 text-sm font-black text-rose-700 transition hover:bg-rose-50 sm:flex-none"
                         >
                           Supprimer
                         </button>
@@ -1545,7 +1555,7 @@ export function InteractiveSettingsDashboard() {
                 <button
                   type="button"
                   onClick={addZone}
-                  className="min-h-11 rounded-full bg-slate-950 px-5 py-3 text-sm font-black text-white transition hover:bg-slate-800"
+                  className="min-h-11 w-full rounded-full bg-slate-950 px-5 py-3 text-sm font-black text-white transition hover:bg-slate-800 sm:w-auto"
                 >
                   Ajouter une zone
                 </button>
@@ -1560,7 +1570,7 @@ export function InteractiveSettingsDashboard() {
                   <button
                     type="button"
                     onClick={openTablesPage}
-                    className="min-h-11 rounded-full bg-slate-950 px-5 py-3 text-sm font-black text-white transition hover:bg-slate-800"
+                    className="min-h-11 w-full rounded-full bg-slate-950 px-5 py-3 text-sm font-black text-white transition hover:bg-slate-800 sm:w-auto"
                   >
                     Voir QR par table
                   </button>
@@ -1572,7 +1582,7 @@ export function InteractiveSettingsDashboard() {
                         "Instruction QR copiée.",
                       )
                     }
-                    className="min-h-11 rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-black text-slate-700 transition hover:border-emerald-200 hover:bg-emerald-50"
+                    className="min-h-11 w-full rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-black text-slate-700 transition hover:border-emerald-200 hover:bg-emerald-50 sm:w-auto"
                   >
                     Copier instruction QR
                   </button>
@@ -1633,14 +1643,14 @@ export function InteractiveSettingsDashboard() {
                 <button
                   type="button"
                   onClick={copyGoogleReviewLink}
-                  className="min-h-11 rounded-full bg-slate-950 px-5 py-3 text-sm font-black text-white transition hover:bg-slate-800"
+                  className="min-h-11 w-full rounded-full bg-slate-950 px-5 py-3 text-sm font-black text-white transition hover:bg-slate-800 sm:w-auto"
                 >
                   Copier le lien
                 </button>
                 <button
                   type="button"
                   onClick={testGoogleReviewLink}
-                  className="min-h-11 rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-black text-slate-700 transition hover:border-emerald-200 hover:bg-emerald-50"
+                  className="min-h-11 w-full rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-black text-slate-700 transition hover:border-emerald-200 hover:bg-emerald-50 sm:w-auto"
                 >
                   Tester le lien
                 </button>
@@ -1739,31 +1749,33 @@ export function InteractiveSettingsDashboard() {
         title="Paramètres"
         subtitle="Avant le service, vérifiez que l’établissement, les QR, les commandes et l’expérience client sont prêts."
       >
-        <button
-          type="button"
-          onClick={saveSettings}
-          className="min-h-11 rounded-full bg-emerald-700 px-5 py-3 text-sm font-black text-white shadow-lg shadow-emerald-900/20 transition hover:bg-emerald-800"
-        >
-          Enregistrer
-        </button>
-        <button
-          type="button"
-          onClick={previewSettings}
-          className="min-h-11 rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-black text-slate-700 transition hover:border-emerald-200 hover:bg-emerald-50"
-        >
-          Prévisualiser
-        </button>
-        <button
-          type="button"
-          onClick={resetSettings}
-          className="min-h-11 rounded-full border border-rose-200 bg-white px-5 py-3 text-sm font-black text-rose-700 transition hover:bg-rose-50"
-        >
-          Réinitialiser
-        </button>
+        <div className="grid w-full min-w-0 gap-2 sm:grid-cols-2 lg:flex lg:w-auto lg:flex-wrap lg:items-center lg:justify-end lg:gap-3">
+          <button
+            type="button"
+            onClick={saveSettings}
+            className="min-h-11 w-full rounded-full bg-emerald-700 px-5 py-3 text-sm font-black text-white shadow-lg shadow-emerald-900/20 transition hover:bg-emerald-800 sm:col-span-2 lg:w-auto"
+          >
+            Enregistrer
+          </button>
+          <button
+            type="button"
+            onClick={previewSettings}
+            className="min-h-11 w-full rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-black text-slate-700 transition hover:border-emerald-200 hover:bg-emerald-50 lg:w-auto"
+          >
+            Prévisualiser
+          </button>
+          <button
+            type="button"
+            onClick={resetSettings}
+            className="min-h-11 w-full rounded-full border border-rose-200 bg-white px-5 py-3 text-sm font-black text-rose-700 transition hover:bg-rose-50 lg:w-auto"
+          >
+            Réinitialiser
+          </button>
+        </div>
       </DashboardHeader>
 
-      <main className="flex-1 overflow-x-hidden bg-slate-50/70 p-4 sm:p-5 lg:p-8">
-        <div className="mx-auto min-w-0 max-w-[1500px] space-y-6">
+      <main className="min-w-0 flex-1 overflow-x-hidden bg-slate-50/70 p-4 sm:p-5 lg:p-8">
+        <div className="mx-auto min-w-0 max-w-[1500px] space-y-4 md:space-y-6">
           <ReadinessOverview
             score={readinessScore}
             checklist={readinessItems}
