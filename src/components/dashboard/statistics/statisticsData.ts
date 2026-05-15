@@ -12,7 +12,7 @@ export type StatisticsPeriodOption = {
 export type AnalyticsOrder = {
   id: string;
   table: string;
-  hour: "11h" | "12h" | "13h" | "14h" | "19h" | "20h" | "21h";
+  hour: string;
   total: number;
   prepMinutes: number;
   estimatedPrepMinutes: number;

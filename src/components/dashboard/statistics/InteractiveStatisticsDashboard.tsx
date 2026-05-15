@@ -68,6 +68,12 @@ type ServiceHours = {
   endTime: string;
 } | null;
 
+type TrendPoint = {
+  hour: string;
+  orders: number;
+  revenue: number;
+};
+
 const defaultTopProducts: ProductRow[] = [
   { name: "Burger Classique", quantity: 18, revenue: 324, badge: "Top vente" },
   { name: "Salade César", quantity: 12, revenue: 162, badge: "En hausse" },
@@ -75,6 +81,118 @@ const defaultTopProducts: ProductRow[] = [
   { name: "Tiramisu", quantity: 7, revenue: 45.5, badge: "En hausse" },
   { name: "Frites Maison", quantity: 6, revenue: 27, badge: "Stable" },
 ];
+
+function parseServiceTime(value: string | null) {
+  if (!value) {
+    return null;
+  }
+
+  const [rawHours = "", rawMinutes = ""] = value.split(":");
+  const hours = Number(rawHours);
+  const minutes = Number(rawMinutes);
+
+  if (!Number.isFinite(hours) || !Number.isFinite(minutes)) {
+    return null;
+  }
+
+  return Math.max(0, Math.min(23 * 60 + 59, hours * 60 + minutes));
+}
+
+function formatHourLabel(hour: number) {
+  return `${hour}h`;
+}
+
+function buildHourLabelsForRange(hours: ServiceHours) {
+  const startMinutes = parseServiceTime(hours?.startTime ?? null);
+  const endMinutes = parseServiceTime(hours?.endTime ?? null);
+
+  if (startMinutes === null || endMinutes === null) {
+    return [];
+  }
+
+  const startHour = Math.floor(startMinutes / 60);
+  const endHour = Math.floor(endMinutes / 60);
+
+  if (endMinutes < startMinutes) {
+    return [
+      ...Array.from({ length: 24 - startHour }, (_, index) => formatHourLabel(startHour + index)),
+      ...Array.from({ length: endHour + 1 }, (_, index) => formatHourLabel(index)),
+    ];
+  }
+
+  return Array.from({ length: Math.max(1, endHour - startHour + 1) }, (_, index) => formatHourLabel(startHour + index));
+}
+
+function uniqueHourLabels(hours: string[]) {
+  return Array.from(new Set(hours));
+}
+
+function getOrderHourLabel(time: string) {
+  const parsedMinutes = parseServiceTime(time);
+
+  if (parsedMinutes === null) {
+    return "12h";
+  }
+
+  return formatHourLabel(Math.floor(parsedMinutes / 60));
+}
+
+function buildTrendHours({
+  activePeriod,
+  serviceContext,
+  todayHours,
+  lunchHours,
+  dinnerHours,
+  usesAllDayHours,
+}: {
+  activePeriod: StatisticsPeriod;
+  serviceContext: CurrentServiceContext | null;
+  todayHours: ServiceHours;
+  lunchHours: ServiceHours;
+  dinnerHours: ServiceHours;
+  usesAllDayHours: boolean;
+}) {
+  if (activePeriod === "lunch") {
+    return buildHourLabelsForRange(lunchHours);
+  }
+
+  if (activePeriod === "dinner") {
+    return buildHourLabelsForRange(dinnerHours);
+  }
+
+  if (activePeriod === "current" && serviceContext?.status === "open") {
+    if (serviceContext.activePeriod === "midi") {
+      return buildHourLabelsForRange(lunchHours);
+    }
+
+    if (serviceContext.activePeriod === "soir") {
+      return buildHourLabelsForRange(dinnerHours);
+    }
+
+    return buildHourLabelsForRange(todayHours);
+  }
+
+  if (usesAllDayHours) {
+    return buildHourLabelsForRange(todayHours);
+  }
+
+  return uniqueHourLabels([
+    ...buildHourLabelsForRange(lunchHours),
+    ...buildHourLabelsForRange(dinnerHours),
+  ]);
+}
+
+function buildTrendPoints(orders: AnalyticsOrder[], hours: string[], multiplier: number): TrendPoint[] {
+  return hours.map((hour) => {
+    const ordersAtHour = orders.filter((order) => order.hour === hour);
+
+    return {
+      hour,
+      orders: scale(ordersAtHour.length, multiplier),
+      revenue: ordersAtHour.reduce((sum, order) => sum + order.total, 0) * multiplier,
+    };
+  });
+}
 
 function formatEuro(value: number) {
   return new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }).format(value);
@@ -225,12 +343,10 @@ function ServiceContextCard({ serviceContext }: { serviceContext: CurrentService
 }
 
 function mapLocalOrderToAnalytics(order: LocalSubmittedOrder): AnalyticsOrder {
-  const hour = order.time.startsWith("11") ? "11h" : order.time.startsWith("13") ? "13h" : order.time.startsWith("14") ? "14h" : "12h";
-
   return {
     id: order.id,
     table: order.tableName,
-    hour,
+    hour: getOrderHourLabel(order.time),
     total: order.total,
     prepMinutes: order.elapsedMinutes || order.estimatedPrepMinutes,
     estimatedPrepMinutes: order.estimatedPrepMinutes,
@@ -303,6 +419,8 @@ export function InteractiveStatisticsDashboard() {
   const [localOrders, setLocalOrders] = useState<LocalSubmittedOrder[]>([]);
   const [localReviews, setLocalReviews] = useState<LocalSubmittedReview[]>([]);
   const [serviceContext, setServiceContext] = useState<CurrentServiceContext | null>(null);
+  const [todayServiceHours, setTodayServiceHours] = useState<ServiceHours>(null);
+  const [todayUsesAllDayHours, setTodayUsesAllDayHours] = useState(false);
   const [todayLunchHours, setTodayLunchHours] = useState<ServiceHours>(null);
   const [todayDinnerHours, setTodayDinnerHours] = useState<ServiceHours>(null);
   const [toast, setToast] = useState<string | null>(null);
@@ -348,25 +466,30 @@ export function InteractiveStatisticsDashboard() {
     topProducts: buildTopProducts(analyticsOrders, multiplier),
   };
 
-  const trendPoints = ["11h", "12h", "13h", "14h"].map((hour) => {
-    const ordersAtHour = analyticsOrders.filter((order) => order.hour === hour);
-
-    return {
-      hour,
-      orders: scale(ordersAtHour.length, multiplier),
-      revenue: ordersAtHour.reduce((sum, order) => sum + order.total, 0) * multiplier,
-    };
+  const trendHours = buildTrendHours({
+    activePeriod,
+    serviceContext,
+    todayHours: todayServiceHours,
+    lunchHours: todayLunchHours,
+    dinnerHours: todayDinnerHours,
+    usesAllDayHours: todayUsesAllDayHours,
   });
+  const trendPoints = buildTrendPoints(analyticsOrders, trendHours, multiplier);
+  const peakPoint = trendPoints.reduce<TrendPoint | null>((bestPoint, point) => {
+    if (!bestPoint || point.orders > bestPoint.orders) {
+      return point;
+    }
 
-  const peakPoint = trendPoints.reduce((bestPoint, point) => (point.orders > bestPoint.orders ? point : bestPoint), trendPoints[0]);
+    return bestPoint;
+  }, null);
   const topProductName = stats.topProducts[0]?.name ?? "Burger Classique";
   const topLocationName = stats.activeTables[0]?.name ?? "Terrasse 3";
   const quickInsights = [
     { label: "Pic d’activité", value: peakPoint ? peakPoint.hour : "12h", helper: peakPoint ? `${peakPoint.orders} commandes` : "Commandes du jour" },
-    { label: "Produit le plus demandé", value: topProductName, helper: `${stats.topProducts[0]?.quantity ?? 0} commandes` },
-    { label: "Emplacement le plus actif", value: topLocationName, helper: `${stats.activeTables[0]?.orders ?? 0} commandes` },
+    { label: "Produit phare", value: topProductName, helper: `${stats.topProducts[0]?.quantity ?? 0} commandes` },
+    { label: "Emplacement actif", value: topLocationName, helper: `${stats.activeTables[0]?.orders ?? 0} commandes` },
     {
-      label: "Point à surveiller",
+      label: "À surveiller",
       value: stats.delayedOrders > 0 ? `${stats.delayedOrders} commandes en retard` : "Aucun retard",
       helper: stats.delayedOrders > 0 ? "Priorité à la préparation" : "Service dans les délais",
     },
@@ -395,6 +518,8 @@ export function InteractiveStatisticsDashboard() {
       const currentTime = new Date();
 
       setServiceContext(getCurrentServiceContext(nextSettings, currentTime));
+      setTodayServiceHours(getTodayServiceHours(nextSettings, currentTime, "all-day"));
+      setTodayUsesAllDayHours(nextSettings.serviceMode === "Toute la journée");
       setTodayLunchHours(getTodayServiceHours(nextSettings, currentTime, "midi"));
       setTodayDinnerHours(getTodayServiceHours(nextSettings, currentTime, "soir"));
     }
@@ -423,6 +548,8 @@ export function InteractiveStatisticsDashboard() {
           const currentTime = new Date();
 
           setServiceContext(getCurrentServiceContext(nextSettings, currentTime));
+          setTodayServiceHours(getTodayServiceHours(nextSettings, currentTime, "all-day"));
+          setTodayUsesAllDayHours(nextSettings.serviceMode === "Toute la journée");
           setTodayLunchHours(getTodayServiceHours(nextSettings, currentTime, "midi"));
           setTodayDinnerHours(getTodayServiceHours(nextSettings, currentTime, "soir"));
         }
@@ -461,6 +588,8 @@ export function InteractiveStatisticsDashboard() {
     const currentTime = new Date();
 
     setServiceContext(getCurrentServiceContext(nextSettings, currentTime));
+    setTodayServiceHours(getTodayServiceHours(nextSettings, currentTime, "all-day"));
+    setTodayUsesAllDayHours(nextSettings.serviceMode === "Toute la journée");
     setTodayLunchHours(getTodayServiceHours(nextSettings, currentTime, "midi"));
     setTodayDinnerHours(getTodayServiceHours(nextSettings, currentTime, "soir"));
     setLocalOrders(getLocalOrders());
