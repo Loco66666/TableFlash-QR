@@ -1,4 +1,4 @@
-export type StatisticsPeriod = "current" | "today" | "lunch" | "dinner" | "7d" | "30d";
+export type StatisticsPeriod = "today" | "7d" | "30d" | "lunch" | "dinner";
 export type ServiceStatus = "Service fluide" | "Attention aux retards";
 export type TrendBadge = "Top vente" | "En hausse" | "Stable" | "À surveiller" | "Complément fréquent";
 
@@ -39,12 +39,11 @@ export type ActiveLocation = {
 };
 
 export const periodOptions: StatisticsPeriodOption[] = [
-  { id: "current", label: "Service en cours", multiplier: 0.72, previousDelta: 4 },
   { id: "today", label: "Aujourd’hui", multiplier: 1, previousDelta: 6 },
-  { id: "lunch", label: "Service midi", multiplier: 0.72, previousDelta: 4 },
-  { id: "dinner", label: "Service soir", multiplier: 0.42, previousDelta: 2 },
   { id: "7d", label: "7 jours", multiplier: 5.4, previousDelta: 18 },
   { id: "30d", label: "30 jours", multiplier: 19.8, previousDelta: 72 },
+  { id: "lunch", label: "Service midi", multiplier: 0.72, previousDelta: 4 },
+  { id: "dinner", label: "Service soir", multiplier: 0.42, previousDelta: 2 },
 ];
 
 export const referenceAnalyticsOrders: AnalyticsOrder[] = [
