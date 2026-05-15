@@ -28,6 +28,24 @@ summary {
   -webkit-tap-highlight-color: transparent;
 }
 
+.tableflash-dashboard-shell {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.tableflash-dashboard-shell main {
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+@media (max-width: 1023px) {
+  .tableflash-dashboard-shell button,
+  .tableflash-dashboard-mobile-nav a {
+    min-height: 44px;
+  }
+}
+
 .print-only,
 .tableflash-print-area {
   display: none;
